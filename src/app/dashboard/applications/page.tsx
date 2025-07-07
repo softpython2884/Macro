@@ -10,8 +10,12 @@ import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { useUser } from '@/context/UserContext';
 import { ALL_APPS } from '@/lib/data';
 import type { AppInfo } from '@/lib/data';
+import { useSound } from '@/context/SoundContext';
+import { launchWebApp } from '@/lib/webapp-launcher';
 
 const AppCard = ({ name, icon: Icon, href, description, onClick }: AppInfo) => {
+    const { playSound } = useSound();
+
     const cardContent = (
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-center items-center p-6 aspect-video transform group-hover:scale-105 group-focus-within:scale-105">
         <Icon className="h-16 w-16 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110" />
@@ -25,28 +29,52 @@ const AppCard = ({ name, icon: Icon, href, description, onClick }: AppInfo) => {
     const commonProps = {
         className:"block group w-full h-full rounded-lg focus:outline-none"
     };
+    
+    const handleLaunch = async () => {
+        if (href) {
+            const isHttp = href.startsWith('http');
+            const isSpecialProtocol = href.startsWith('steam') || href.startsWith('spotify');
 
-    if (href) {
-        const isExternal = href.startsWith('http') || href.startsWith('steam') || href.startsWith('spotify');
+            if (isHttp) {
+                playSound('launch');
+                await launchWebApp(href);
+                return;
+            }
+
+            // For special protocols, we need to use window.location, not Next's Link.
+            if (isSpecialProtocol) {
+                playSound('launch');
+                window.location.href = href;
+                return;
+            }
+        }
+
+        if (onClick) {
+            playSound('select');
+            onClick();
+        }
+    };
+    
+    // Internal Next.js links use the Link component for SPA transitions
+    if (href && !href.startsWith('http') && !href.startsWith('steam') && !href.startsWith('spotify')) {
         return (
-            <Link 
+             <Link 
                 href={href} 
-                onClick={onClick}
-                target={isExternal ? '_blank' : '_self'} 
-                rel="noopener noreferrer" 
+                onClick={() => playSound('select')}
                 {...commonProps}
             >
               {cardContent}
             </Link>
-        )
+        );
     }
-
+    
+    // Everything else (web apps, special protocols, custom functions) uses a button.
     return (
-        <button onClick={onClick} {...commonProps} type="button">
+        <button onClick={handleLaunch} {...commonProps} type="button">
             {cardContent}
         </button>
-    )
-  };
+    );
+};
 
 
 export default function ApplicationsPage() {

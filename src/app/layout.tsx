@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from "@/context/UserContext";
+import { SoundProvider } from "@/context/SoundContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,10 +18,12 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body>
         <UserProvider>
+          <SoundProvider>
             <div className="relative z-10">
             {children}
             </div>
             <Toaster />
+          </SoundProvider>
         </UserProvider>
       </body>
     </html>

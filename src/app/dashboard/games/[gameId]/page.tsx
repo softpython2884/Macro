@@ -12,6 +12,7 @@ import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { useHints } from "@/context/HintContext";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { launchGame } from "@/lib/game-launcher";
+import { useSound } from "@/context/SoundContext";
 
 export default function GameDetailPage() {
     const params = useParams();
@@ -19,6 +20,7 @@ export default function GameDetailPage() {
     const { games } = useGames();
     const { currentUser } = useUser();
     const { setHints } = useHints();
+    const { playSound } = useSound();
     const executableListRef = useRef<HTMLDivElement>(null);
     
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
@@ -45,6 +47,7 @@ export default function GameDetailPage() {
     }
 
     const handleLaunch = async (executable: string) => {
+        playSound('launch');
         await launchGame(game.path, executable);
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }

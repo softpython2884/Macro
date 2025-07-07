@@ -9,6 +9,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import { useHints } from '@/context/HintContext';
+import { useSound } from '@/context/SoundContext';
 
 const mainMenuItems = [
     { 
@@ -64,8 +65,10 @@ export default function DashboardPage() {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = React.useState(0)
   const { setHints } = useHints();
+  const { playSound } = useSound();
   const carouselContainerRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const isInitialCarouselMount = React.useRef(true);
   
   React.useEffect(() => {
     setHints([
@@ -89,15 +92,25 @@ export default function DashboardPage() {
     setCurrent(api.selectedScrollSnap())
 
     const onSelect = () => {
+       // Play sound only on user interaction, not initial mount
+      if (!isInitialCarouselMount.current) {
+        playSound('navigate');
+      }
       setCurrent(api.selectedScrollSnap())
     }
 
     api.on("select", onSelect)
 
+    // Defer setting the initial mount flag to false
+    const timer = setTimeout(() => {
+        isInitialCarouselMount.current = false;
+    }, 500);
+
     return () => {
+      clearTimeout(timer);
       api.off("select", onSelect)
     }
-  }, [api])
+  }, [api, playSound])
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -107,6 +120,7 @@ export default function DashboardPage() {
 
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
+            playSound('select');
             const targetHref = mainMenuItems[current]?.href;
             if (targetHref) {
                 router.push(targetHref);
@@ -118,7 +132,7 @@ export default function DashboardPage() {
     return () => {
         document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [current, router]);
+  }, [current, router, playSound]);
 
   return (
     <div className="flex flex-1 items-center justify-center animate-zoom-in-fade w-full">

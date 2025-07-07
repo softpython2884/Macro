@@ -1,6 +1,7 @@
 
 'use client';
 import { useEffect, useCallback } from 'react';
+import { useSound } from '@/context/SoundContext';
 
 interface GridNavigationOptions {
   gridRef: React.RefObject<HTMLElement>;
@@ -16,6 +17,8 @@ function getDistance(rect1: DOMRect, rect2: DOMRect): number {
 }
 
 export function useGridNavigation({ gridRef }: GridNavigationOptions) {
+  const { playSound } = useSound();
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const grid = gridRef.current;
     if (!grid) return;
@@ -35,6 +38,7 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
     e.stopPropagation();
 
     if (e.key === 'Enter' || e.key === ' ') {
+      playSound('select');
       if (typeof activeElement.click === 'function') {
         activeElement.click();
       }
@@ -96,9 +100,10 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
     }
 
     if (bestCandidate) {
+      playSound('navigate');
       bestCandidate.focus();
     }
-  }, [gridRef]);
+  }, [gridRef, playSound]);
 
   useEffect(() => {
     // Add the listener to the document to capture keys globally

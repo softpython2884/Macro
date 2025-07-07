@@ -2,6 +2,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSound } from '@/context/SoundContext';
 
 /**
  * A hook to handle back navigation on Escape or Backspace key press.
@@ -9,12 +10,14 @@ import { useRouter } from 'next/navigation';
  */
 export function useBackNavigation(path: string) {
     const router = useRouter();
+    const { playSound } = useSound();
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Use 'B' for controller 'Back' button, and standard keyboard keys
             if (e.key === 'Escape' || e.key === 'Backspace') {
                 e.preventDefault();
+                playSound('back');
                 router.push(path);
             }
         };
@@ -24,5 +27,5 @@ export function useBackNavigation(path: string) {
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [router, path]);
+    }, [router, path, playSound]);
 }
