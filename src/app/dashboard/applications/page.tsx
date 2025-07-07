@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card } from "@/components/ui/card";
-import { Film, Youtube, Twitch, Globe, Settings, Music, Power } from 'lucide-react';
+import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon } from 'lucide-react';
 import { SiAmazonalexa, SiSteam } from '@icons-pack/react-simple-icons';
 import { useHints } from '@/context/HintContext';
 import React, { useRef, useEffect } from 'react';
@@ -14,6 +14,7 @@ const applications = [
   { name: 'Netflix', icon: Film, href: 'https://netflix.com', description: 'Stream movies & shows' },
   { name: 'YouTube', icon: Youtube, href: 'https://youtube.com', description: 'Watch & share videos' },
   { name: 'Twitch', icon: Twitch, href: 'https://twitch.tv', description: 'Live streaming for gamers' },
+  { name: 'Moonlight', icon: Moon, href: 'https://moonlight-stream.org/', description: 'Stream games from your PC' },
   { name: 'Brave', icon: Globe, href: 'https://brave.com', description: 'Secure & private browser' },
   { name: 'Alexa', icon: SiAmazonalexa, href: 'https://alexa.amazon.com', description: 'Manage your assistant' },
 ];
