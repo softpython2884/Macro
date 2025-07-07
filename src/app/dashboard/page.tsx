@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Film, Youtube, Twitch, Globe, Settings, Music, Power } from 'lucide-react';
 import Link from 'next/link';
 import { SiAmazonalexa, SiSteam } from '@icons-pack/react-simple-icons';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const applications = [
   { name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
@@ -79,16 +80,32 @@ export default function DashboardPage() {
     <div className="animate-fade-in space-y-12">
       <div>
         <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Quick Actions</h2>
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
-            {mainShortcuts.map(app => <AppCard key={app.name} {...app} />)}
-        </div>
+        <Carousel opts={{ align: "start", slidesToScroll: 'auto' }} className="w-full">
+          <CarouselContent>
+            {mainShortcuts.map((app, index) => (
+              <CarouselItem key={index} className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                  <AppCard {...app} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
       </div>
 
       <div>
         <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Applications</h2>
-        <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {applications.map(app => <AppCard key={app.name} {...app} />)}
-        </div>
+         <Carousel opts={{ align: "start", slidesToScroll: 'auto' }} className="w-full">
+          <CarouselContent>
+            {applications.map((app, index) => (
+              <CarouselItem key={index} className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                <AppCard {...app} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
       </div>
     </div>
   );

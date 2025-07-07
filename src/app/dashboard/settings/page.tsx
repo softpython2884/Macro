@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { PlusCircle, Trash2 } from "lucide-react";
 
 const formSchema = z.object({
-  games: z.string().min(1, "Game directory is required."),
+  games: z.array(z.object({
+    value: z.string().min(1, "Directory path cannot be empty."),
+  })).min(1, "At least one game directory is required."),
   media: z.string().min(1, "Media directory is required."),
   apps: z.string().min(1, "Application directory is required."),
   plugins: z.string().min(1, "Plugin directory is required."),
@@ -31,11 +34,16 @@ export default function SettingsPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      games: "",
+      games: [{ value: "" }],
       media: "",
       apps: "",
       plugins: "",
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "games"
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -58,22 +66,57 @@ export default function SettingsPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="games"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Game Directory</FormLabel>
-                    <FormControl>
-                      <Input placeholder="/path/to/your/games" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      The folder where your games are installed.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div>
+                <FormLabel>Game Directories</FormLabel>
+                <FormDescription className="mb-4">
+                  Add the folders where your games are installed.
+                </FormDescription>
+                <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <FormField
+                      key={field.id}
+                      control={form.control}
+                      name={`games.${index}.value`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-2">
+                            <FormControl>
+                              <Input placeholder="/path/to/your/games" {...field} />
+                            </FormControl>
+                            {fields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => remove(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => append({ value: "" })}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Directory
+                </Button>
+                 <FormField
+                    control={form.control}
+                    name="games"
+                    render={() => <FormMessage className="mt-2" />}
+                  />
+              </div>
+
               <FormField
                 control={form.control}
                 name="media"

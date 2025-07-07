@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserNav } from "@/components/user-nav";
 import { cn } from "@/lib/utils";
-import { Home, User, Settings } from "lucide-react";
+import { Home, User, Settings, Gamepad2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { VideoBackground } from "@/components/video-background";
 
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
+  { href: "/dashboard/games", label: "Games", icon: Gamepad2 },
   { href: "/dashboard/profiles", label: "Profiles", icon: User },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
@@ -37,7 +39,7 @@ export default function DashboardLayout({
                     href={item.href}
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary",
-                      pathname.startsWith(item.href) && item.href !== '/dashboard' || pathname === item.href
+                      pathname === item.href
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground"
                     )}

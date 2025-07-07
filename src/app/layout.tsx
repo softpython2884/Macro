@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
-import { VideoBackground } from "@/components/video-background";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +15,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body>
-        <VideoBackground />
         <div className="relative z-10">
           {children}
         </div>
