@@ -1,93 +1,110 @@
 
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 interface GridNavigationOptions {
   gridRef: React.RefObject<HTMLElement>;
 }
 
+// Function to calculate distance between the centers of two rectangles
+function getDistance(rect1: DOMRect, rect2: DOMRect): number {
+  const center1 = { x: rect1.left + rect1.width / 2, y: rect1.top + rect1.height / 2 };
+  const center2 = { x: rect2.left + rect2.width / 2, y: rect2.top + rect2.height / 2 };
+  const dx = center1.x - center2.x;
+  const dy = center1.y - center2.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 export function useGridNavigation({ gridRef }: GridNavigationOptions) {
-  useEffect(() => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const grid = gridRef.current;
     if (!grid) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // We only care about navigation and selection keys
-      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) {
-        return;
-      }
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) {
+      return;
+    }
 
-      const focusable = Array.from(
-        grid.querySelectorAll<HTMLElement>('a[href]:not([disabled]), button:not([disabled])')
-      );
-      
-      if (focusable.length === 0) return;
+    const activeElement = document.activeElement as HTMLElement;
+    // Important: Only act if focus is inside the controlled grid
+    if (!grid.contains(activeElement)) {
+      return;
+    }
 
-      const activeElement = document.activeElement as HTMLElement;
-      
-      // IMPORTANT: Only handle the event if the focus is currently inside this grid.
-      // This prevents multiple grid navigation hooks from conflicting on the same page.
-      if (!grid.contains(activeElement)) {
-        return;
-      }
-      
-      const currentIndex = focusable.indexOf(activeElement);
-      
-      // Stop the browser's default behavior for these keys (e.g., scrolling the page)
-      e.preventDefault();
-      e.stopPropagation();
+    // Stop default browser action (like scrolling) for these keys
+    e.preventDefault();
+    e.stopPropagation();
 
-      // Handle selection (A button on controller)
-      if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (typeof activeElement.click === 'function') {
         activeElement.click();
-        return;
       }
+      return;
+    }
+    
+    const focusable = Array.from(
+      grid.querySelectorAll<HTMLElement>('a[href]:not([disabled]), button:not([disabled])')
+    );
 
-      // Handle D-Pad/Arrow navigation
-      const getColumnCount = () => {
-        // This is a more reliable way to determine the grid's column count.
-        // It reads the actual computed CSS `grid-template-columns` property.
-        const gridStyles = window.getComputedStyle(grid);
-        const columnValue = gridStyles.getPropertyValue('grid-template-columns');
-        return columnValue.split(' ').length;
-      };
+    if (focusable.length < 2) return; // Not enough elements to navigate between
 
-      const columnCount = getColumnCount();
-      let nextIndex = currentIndex;
+    const currentRect = activeElement.getBoundingClientRect();
+    let bestCandidate: HTMLElement | null = null;
+    let minDistance = Infinity;
 
+    for (const candidate of focusable) {
+      if (candidate === activeElement) continue;
+
+      const candidateRect = candidate.getBoundingClientRect();
+      const distance = getDistance(currentRect, candidateRect);
+      let isViableCandidate = false;
+
+      // Project a vector in the direction of navigation and check if the candidate is in that general direction.
+      const dx = (candidateRect.left + candidateRect.width / 2) - (currentRect.left + currentRect.width / 2);
+      const dy = (candidateRect.top + candidateRect.height / 2) - (currentRect.top + currentRect.height / 2);
+      
       switch (e.key) {
         case 'ArrowUp':
-          nextIndex = currentIndex - columnCount;
+          // Must be above, and more vertical than horizontal
+          if (dy < 0 && Math.abs(dy) > Math.abs(dx)) {
+            isViableCandidate = true;
+          }
           break;
         case 'ArrowDown':
-          nextIndex = currentIndex + columnCount;
+          // Must be below, and more vertical than horizontal
+          if (dy > 0 && Math.abs(dy) > Math.abs(dx)) {
+            isViableCandidate = true;
+          }
           break;
         case 'ArrowLeft':
-          // Prevent moving left from the first column of any row
-          if (currentIndex % columnCount !== 0) {
-            nextIndex = currentIndex - 1;
+          // Must be to the left, and more horizontal than vertical
+          if (dx < 0 && Math.abs(dx) > Math.abs(dy)) {
+            isViableCandidate = true;
           }
           break;
         case 'ArrowRight':
-          // Prevent moving right from the last column of any row, or from the last item
-          if ((currentIndex + 1) % columnCount !== 0 && currentIndex + 1 < focusable.length) {
-             nextIndex = currentIndex + 1;
+          // Must be to the right, and more horizontal than vertical
+          if (dx > 0 && Math.abs(dx) > Math.abs(dy)) {
+            isViableCandidate = true;
           }
           break;
       }
       
-      // If the calculated nextIndex is valid, move focus to that element
-      if (nextIndex >= 0 && nextIndex < focusable.length) {
-        focusable[nextIndex].focus();
+      if (isViableCandidate && distance < minDistance) {
+        minDistance = distance;
+        bestCandidate = candidate;
       }
-    };
+    }
 
-    // The event listener needs to be on the document to catch key presses
-    // regardless of what specific element has focus.
+    if (bestCandidate) {
+      bestCandidate.focus();
+    }
+  }, [gridRef]);
+
+  useEffect(() => {
+    // Add the listener to the document to capture keys globally
     document.addEventListener('keydown', handleKeyDown);
-
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gridRef]);
+  }, [handleKeyDown]);
 }
