@@ -6,6 +6,7 @@ import { Gamepad2 } from 'lucide-react';
 import React, { useRef, useEffect } from 'react';
 import { useHints } from '@/context/HintContext';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
+import { useBackNavigation } from '@/hooks/use-back-navigation';
 
 const games = [
   { name: 'Cyberpunk 2077', hint: 'dystopian city' },
@@ -37,6 +38,7 @@ export default function GamesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   useGridNavigation({ gridRef });
+  useBackNavigation('/dashboard');
   
   useEffect(() => {
     setHints([

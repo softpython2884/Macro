@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import React, { useRef, useEffect } from 'react';
 import { useHints } from '@/context/HintContext';
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
+import { useBackNavigation } from "@/hooks/use-back-navigation";
 
 const users = [
   { id: "user1", name: "Galaxy Wanderer", email: "wanderer@space.com", hint: "astronaut helmet" },
@@ -20,6 +21,7 @@ export default function ProfilesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   useGridNavigation({ gridRef });
+  useBackNavigation('/dashboard');
 
   useEffect(() => {
     setHints([

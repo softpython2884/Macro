@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Trash2 } from "lucide-react";
 import React from 'react';
 import { useHints } from '@/context/HintContext';
+import { useBackNavigation } from "@/hooks/use-back-navigation";
 
 const formSchema = z.object({
   games: z.array(z.object({
@@ -33,6 +34,7 @@ const formSchema = z.object({
 export default function SettingsPage() {
   const { toast } = useToast();
   const { setHints } = useHints();
+  useBackNavigation('/dashboard');
   
   React.useEffect(() => {
     setHints([

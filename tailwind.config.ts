@@ -86,7 +86,7 @@ const config = {
         },
         "zoom-out-fade": {
             "0%": { opacity: '1', transform: 'scale(1)' },
-            "100%": { opacity: '0', transform: 'scale(1.05)' },
+            "100%": { opacity: '0', transform: 'scale(0.95)' },
         },
       },
       animation: {

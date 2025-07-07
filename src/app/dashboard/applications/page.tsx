@@ -8,6 +8,7 @@ import { SiAmazonalexa, SiSteam } from '@icons-pack/react-simple-icons';
 import { useHints } from '@/context/HintContext';
 import React, { useRef, useEffect } from 'react';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
+import { useBackNavigation } from '@/hooks/use-back-navigation';
 
 const applications = [
   { name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
@@ -70,6 +71,7 @@ export default function ApplicationsPage() {
   const systemActionsGridRef = useRef<HTMLDivElement>(null);
   useGridNavigation({ gridRef: applicationsGridRef });
   useGridNavigation({ gridRef: systemActionsGridRef });
+  useBackNavigation('/dashboard');
 
   useEffect(() => {
     setHints([
