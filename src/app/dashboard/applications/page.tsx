@@ -38,7 +38,7 @@ const AppCard = ({ name, icon: Icon, href, description, onClick }: AppCardProps)
     );
 
     const commonProps = {
-        className:"block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className:"block group w-full h-full rounded-lg focus:outline-none"
     };
 
     if (href) {

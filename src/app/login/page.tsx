@@ -91,7 +91,7 @@ const LoginView = () => {
             <Link
               href="/dashboard"
               key={user.id}
-              className="block group rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background animate-fade-in-slow"
+              className="block group rounded-lg focus:outline-none animate-fade-in-slow"
               style={{ animationDelay: `${200 + index * 100}ms` }}
             >
               <div className="flex flex-col items-center gap-4 transition-all duration-300 group-hover:scale-110 group-focus:scale-110">

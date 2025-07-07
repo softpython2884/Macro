@@ -42,7 +42,7 @@ const mainMenuItems = [
 
 const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMenuItems[0]) => {
   return (
-    <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+    <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none">
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-40 group-focus-within:opacity-40 transition-opacity" 

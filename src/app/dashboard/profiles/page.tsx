@@ -54,7 +54,7 @@ export default function ProfilesPage() {
         {users.map(user => (
           <button 
             key={user.id} 
-            className="block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background text-left"
+            className="block group w-full h-full rounded-lg focus:outline-none text-left"
             onClick={() => handleSelectProfile(user.name)}
           >
             <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow hover:border-primary focus-within:border-primary transition-all duration-300 ease-in-out transform group-hover:scale-105 group-focus-within:scale-105 h-full">
