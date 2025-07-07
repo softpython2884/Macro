@@ -28,6 +28,8 @@ export default function ProfilesPage() {
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Select' },
       { key: 'B', action: 'Back' },
+      { key: 'Q', action: 'Prev Tab' },
+      { key: 'E', action: 'Next Tab' },
     ]);
      // Focus the first element on mount for immediate navigation
     const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
@@ -44,7 +46,7 @@ export default function ProfilesPage() {
   };
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-glow">Manage Profiles</h2>

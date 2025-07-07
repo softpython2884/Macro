@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { UserNav } from "@/components/user-nav";
 import { cn } from "@/lib/utils";
 import { Home, User, Settings, Gamepad2, LayoutGrid } from "lucide-react";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { HintProvider } from "@/context/HintContext";
 import { ControllerHints } from "@/components/controller-hints";
+import React from "react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -28,6 +30,35 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        const key = e.key.toLowerCase();
+        if (key === 'q' || key === 'e') {
+            const currentIndex = navItems.findIndex(item => item.href === pathname);
+            if (currentIndex === -1) return;
+
+            let nextIndex;
+            if (key === 'q') { // Previous (LB)
+                nextIndex = (currentIndex - 1 + navItems.length) % navItems.length;
+            } else { // Next (RB)
+                nextIndex = (currentIndex + 1) % navItems.length;
+            }
+            
+            const nextItem = navItems[nextIndex];
+            if (nextItem) {
+                router.push(nextItem.href);
+            }
+        }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [pathname, router]);
+
   return (
     <HintProvider>
       <div className="flex min-h-screen w-full flex-col bg-transparent">
@@ -62,7 +93,7 @@ export default function DashboardLayout({
             <UserNav />
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pt-0">
+        <main key={pathname} className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pt-0 animate-fade-in">
           {children}
         </main>
         <ControllerHints />

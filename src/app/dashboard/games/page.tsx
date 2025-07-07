@@ -45,6 +45,8 @@ export default function GamesPage() {
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Launch' },
       { key: 'B', action: 'Back' },
+      { key: 'Q', action: 'Prev Tab' },
+      { key: 'E', action: 'Next Tab' },
     ]);
      // Focus the first element on mount for immediate navigation
     const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
@@ -54,7 +56,7 @@ export default function GamesPage() {
   }, [setHints]);
 
   return (
-    <div className="animate-fade-in space-y-12">
+    <div className="space-y-12">
       <div>
         <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">My Game Library</h2>
         <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

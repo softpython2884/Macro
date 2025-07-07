@@ -71,7 +71,9 @@ export default function DashboardPage() {
   React.useEffect(() => {
     setHints([
         { key: '↔', action: 'Navigate' },
-        { key: 'A', action: 'Select' }
+        { key: 'A', action: 'Select' },
+        { key: 'Q', action: 'Prev Tab' },
+        { key: 'E', action: 'Next Tab' },
     ]);
 
     // Focus the carousel container to enable keyboard navigation

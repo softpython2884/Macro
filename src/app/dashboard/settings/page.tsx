@@ -41,6 +41,8 @@ export default function SettingsPage() {
       { key: '↕', action: 'Navigate' },
       { key: 'A', action: 'Interact' },
       { key: 'B', action: 'Back' },
+      { key: 'Q', action: 'Prev Tab' },
+      { key: 'E', action: 'Next Tab' },
     ]);
     return () => setHints([]);
   }, [setHints]);
@@ -69,7 +71,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div>
       <Card>
         <CardHeader>
           <CardTitle>Configuration</CardTitle>

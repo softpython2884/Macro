@@ -10,7 +10,7 @@ import React, { useRef, useEffect } from 'react';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
 import { useBackNavigation } from '@/hooks/use-back-navigation';
 
-const applications = [
+const allItems = [
   { name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
   { name: 'Netflix', icon: Film, href: 'https://netflix.com', description: 'Stream movies & shows' },
   { name: 'YouTube', icon: Youtube, href: 'https://youtube.com', description: 'Watch & share videos' },
@@ -18,6 +18,10 @@ const applications = [
   { name: 'Moonlight', icon: Moon, href: 'https://moonlight-stream.org/', description: 'Stream games from your PC' },
   { name: 'Brave', icon: Globe, href: 'https://brave.com', description: 'Secure & private browser' },
   { name: 'Alexa', icon: SiAmazonalexa, href: 'https://alexa.amazon.com', description: 'Manage your assistant' },
+  { name: 'Steam', icon: SiSteam, href: 'steam://open/main', description: 'Access your game library' },
+  { name: 'Spotify', icon: Music, href: 'spotify:', description: 'Open your music' },
+  { name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system' },
+  { name: 'Shutdown', icon: Power, onClick: () => console.log('Shutdown initiated'), description: 'Shutdown the PC' },
 ];
 
 type AppCardProps = {
@@ -25,7 +29,7 @@ type AppCardProps = {
   icon: React.ElementType;
   description: string;
   href?: string;
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  onClick?: React.MouseEventHandler<HTMLButtonElement | HTMLAnchorElement>;
 }
 
 const AppCard = ({ name, icon: Icon, href, description, onClick }: AppCardProps) => {
@@ -48,6 +52,7 @@ const AppCard = ({ name, icon: Icon, href, description, onClick }: AppCardProps)
         return (
             <Link 
                 href={href} 
+                onClick={onClick}
                 target={isExternal ? '_blank' : '_self'} 
                 rel="noopener noreferrer" 
                 {...commonProps}
@@ -67,10 +72,8 @@ const AppCard = ({ name, icon: Icon, href, description, onClick }: AppCardProps)
 
 export default function ApplicationsPage() {
   const { setHints } = useHints();
-  const applicationsGridRef = useRef<HTMLDivElement>(null);
-  const systemActionsGridRef = useRef<HTMLDivElement>(null);
-  useGridNavigation({ gridRef: applicationsGridRef });
-  useGridNavigation({ gridRef: systemActionsGridRef });
+  const gridRef = useRef<HTMLDivElement>(null);
+  useGridNavigation({ gridRef });
   useBackNavigation('/dashboard');
 
   useEffect(() => {
@@ -78,39 +81,22 @@ export default function ApplicationsPage() {
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Launch' },
       { key: 'B', action: 'Back' },
+      { key: 'Q', action: 'Prev Tab' },
+      { key: 'E', action: 'Next Tab' },
     ]);
      // Focus the first element on mount for immediate navigation
-    const firstElement = applicationsGridRef.current?.querySelector('button, a') as HTMLElement;
+    const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
     firstElement?.focus();
 
     return () => setHints([]);
   }, [setHints]);
 
-  const handleShutdown = () => {
-    console.log('Action triggered: Shutdown PC. This would call the local server API.');
-    // In a real implementation, you would make an API call here, e.g.:
-    // fetch('http://localhost:YOUR_SERVER_PORT/api/system/shutdown', { method: 'POST' });
-  };
-  
-  const systemActions: AppCardProps[] = [
-      { name: 'Steam', icon: SiSteam, href: 'steam://open/main', description: 'Access your game library' },
-      { name: 'Spotify', icon: Music, href: 'spotify:', description: 'Open your music' },
-      { name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system'
-      },
-      { name: 'Shutdown', icon: Power, onClick: handleShutdown, description: 'Shutdown the PC' },
-  ];
   return (
     <div className="animate-fade-in space-y-12">
       <div>
-        <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Applications</h2>
-        <div ref={applicationsGridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {applications.map((app, index) => <AppCard key={index} {...app} />)}
-        </div>
-      </div>
-      <div>
-        <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">System Actions</h2>
-        <div ref={systemActionsGridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {systemActions.map((app, index) => <AppCard key={index} {...app} />)}
+        <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Applications &amp; Actions</h2>
+        <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {allItems.map((app, index) => <AppCard key={index} {...app} />)}
         </div>
       </div>
     </div>
