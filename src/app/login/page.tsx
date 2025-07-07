@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -111,7 +112,7 @@ const LoginView = () => {
             <button
               key={user.id}
               onClick={() => handleProfileSelect(user)}
-              className="block group rounded-lg focus:outline-none animate-fade-in-slow text-left"
+              className="block group rounded-lg focus:outline-none animate-fade-in-slow text-center"
               style={{ animationDelay: `${200 + index * 100}ms` }}
             >
               <div className="flex flex-col items-center gap-4 transition-all duration-300 group-hover:scale-110 group-focus:scale-110">

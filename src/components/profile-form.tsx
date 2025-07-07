@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,7 @@ import { ALL_APPS } from '@/lib/data';
 import { useUser } from '@/context/UserContext';
 import { ScrollArea } from './ui/scroll-area';
 import { useGames } from '@/context/GameContext';
+import React from 'react';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -33,16 +35,27 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: userToEdit?.name || '',
-      avatar: userToEdit?.avatar || '',
-      pin: userToEdit?.pin || '',
-      permissions: {
-        apps: userToEdit?.permissions.apps || [],
-        games: userToEdit?.permissions.games || [],
-      },
-    },
+    defaultValues: userToEdit
+      ? userToEdit
+      : {
+          name: '',
+          avatar: '',
+          pin: '',
+          permissions: {
+            apps: ALL_APPS.map((app) => app.id),
+            games: allScannedGames.map((game) => game.id),
+          },
+        },
   });
+
+  // When creating a new user, this ensures their game permissions are updated
+  // if the list of scanned games finishes loading after the form has opened.
+  React.useEffect(() => {
+    if (!userToEdit) {
+      form.setValue('permissions.games', allScannedGames.map((game) => game.id));
+    }
+  }, [allScannedGames, userToEdit, form]);
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const userData = {
