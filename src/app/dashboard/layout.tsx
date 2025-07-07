@@ -15,6 +15,7 @@ import {
 import { HintProvider } from "@/context/HintContext";
 import { ControllerHints } from "@/components/controller-hints";
 import React from "react";
+import { SystemStatus } from "@/components/system-status";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -90,6 +91,7 @@ export default function DashboardLayout({
           </TooltipProvider>
 
           <div className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 flex items-center gap-4">
+            <SystemStatus />
             <UserNav />
           </div>
         </header>
