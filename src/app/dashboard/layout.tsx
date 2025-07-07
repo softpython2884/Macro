@@ -36,6 +36,10 @@ export default function DashboardLayout({
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+        // Defensive check to prevent crash if e.key is undefined
+        if (typeof e.key !== 'string') {
+            return;
+        }
         const key = e.key.toLowerCase();
         if (key === 'q' || key === 'e') {
             const currentIndex = navItems.findIndex(item => pathname.startsWith(item.href) && item.href !== '/dashboard' || item.href === pathname);
