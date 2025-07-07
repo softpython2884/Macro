@@ -11,100 +11,78 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
     const grid = gridRef.current;
     if (!grid) return;
 
-    const getFocusableElements = (): HTMLElement[] => {
-      if (!grid) return [];
-      // This selector ensures we only get interactive elements within the grid
-      return Array.from(
-        grid.querySelectorAll('a[href]:not([disabled]), button:not([disabled])')
-      );
-    };
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      const activeElement = document.activeElement as HTMLElement;
-
-      // Crucially, only act if the focused element is within this specific grid.
-      // This prevents conflicts if multiple navigable grids are on the same page.
-      if (!grid.contains(activeElement)) {
-        return;
-      }
-
-      const validKeys = [
-        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-        'z', 'q', 's', 'd', 'w', 'a' // Support ZQSD (French) and WASD (English)
-      ];
-
-      if (!validKeys.includes(e.key.toLowerCase())) {
-        return;
-      }
+      const focusable = Array.from(
+        grid.querySelectorAll<HTMLElement>('a[href]:not([disabled]), button:not([disabled])')
+      );
       
-      // Prevent default browser behavior (like scrolling) and stop the event
-      // from bubbling up to other listeners.
-      e.preventDefault();
-      e.stopPropagation();
-
-      const focusable = getFocusableElements();
       if (focusable.length === 0) return;
 
+      const activeElement = document.activeElement as HTMLElement;
+      
+      // Only handle navigation if focus is one of the interactive elements within THIS grid
       const currentIndex = focusable.indexOf(activeElement);
-      if (currentIndex === -1) return; // Safeguard
+      if (currentIndex === -1) {
+        return;
+      }
 
-      // Determine column count by checking element positions, which is very reliable.
-      const getColumnCount = (): number => {
+      const keyMap: Record<string, string> = {
+        ArrowUp: 'up', z: 'up', w: 'up',
+        ArrowDown: 'down', s: 'down',
+        ArrowLeft: 'left', q: 'left', a: 'left',
+        ArrowRight: 'right', d: 'right',
+      };
+
+      const direction = keyMap[e.key.toLowerCase()];
+
+      if (!direction) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // This is a more reliable way to determine grid layout than checking CSS classes
+      const getColumnCount = () => {
         if (focusable.length <= 1) return 1;
         const firstElementTop = focusable[0].offsetTop;
-        let count = 0;
-        for (const element of focusable) {
-          if (element.offsetTop === firstElementTop) {
-            count++;
-          } else {
-            break;
-          }
-        }
-        return count > 0 ? count : 1;
+        const firstRowElements = focusable.filter(el => el.offsetTop === firstElementTop);
+        // Fallback to 1 if layout is not detected correctly
+        return firstRowElements.length > 0 ? firstRowElements.length : 1;
       };
 
       const columnCount = getColumnCount();
       let nextIndex = currentIndex;
 
-      switch (e.key.toLowerCase()) {
-        case 'arrowup':
-        case 'z':
-        case 'w':
+      switch (direction) {
+        case 'up':
           nextIndex = currentIndex - columnCount;
           break;
-        case 'arrowdown':
-        case 's':
+        case 'down':
           nextIndex = currentIndex + columnCount;
           break;
-        case 'arrowleft':
-        case 'q':
-        case 'a':
-          // Only move left if not in the first column
+        case 'left':
+          // Move left only if not in the first column
           if (currentIndex % columnCount !== 0) {
             nextIndex = currentIndex - 1;
           }
           break;
-        case 'arrowright':
-        case 'd':
-          // Only move right if not in the last column of the grid
-          if (currentIndex % columnCount < columnCount - 1) {
-            nextIndex = currentIndex + 1;
+        case 'right':
+          // Move right only if not in the last column of its row
+          if ((currentIndex + 1) % columnCount !== 0) {
+             nextIndex = currentIndex + 1;
           }
           break;
       }
-
-      // Check if the calculated nextIndex is valid and exists in the array
+      
+      // If the calculated index is valid, focus the element
       if (nextIndex >= 0 && nextIndex < focusable.length) {
         focusable[nextIndex].focus();
       }
     };
-    
-    // Listen for keydown events on the document
+
     document.addEventListener('keydown', handleKeyDown);
 
-    // Cleanup the event listener when the component unmounts
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gridRef]); // Rerun the effect if the grid ref changes
+  }, [gridRef]); // Re-run if gridRef changes
 }

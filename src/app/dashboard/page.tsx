@@ -43,7 +43,7 @@ const mainMenuItems = [
 const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMenuItems[0]) => {
   return (
     <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none">
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] overflow-hidden">
+      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] overflow-hidden group-focus-within:scale-100 group-hover:scale-100">
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-40 group-focus-within:opacity-40 transition-opacity" 
           style={{backgroundImage: `url(https://placehold.co/1280x720.png)`}} 
@@ -64,12 +64,17 @@ export default function DashboardPage() {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = React.useState(0)
   const { setHints } = useHints();
+  const carouselContainerRef = React.useRef<HTMLDivElement>(null);
   
   React.useEffect(() => {
     setHints([
         { key: '↔', action: 'Navigate' },
         { key: 'A', action: 'Select' }
     ]);
+
+    // Focus the carousel container to enable keyboard navigation
+    carouselContainerRef.current?.focus();
+
     return () => setHints([]);
   }, [setHints]);
 
@@ -94,15 +99,17 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 items-center justify-center animate-zoom-in-fade w-full">
         <Carousel 
+            ref={carouselContainerRef}
             setApi={setApi}
             opts={{ align: "center", loop: true }} 
-            className="w-full max-w-6xl"
+            className="w-full max-w-6xl focus:outline-none"
+            tabIndex={-1} // Make it focusable but not via Tab key
         >
           <CarouselContent className="-ml-8 py-12">
             {mainMenuItems.map((item, index) => (
               <CarouselItem key={index} className="pl-8 md:basis-1/2 lg:basis-[50%]">
                   <div className={cn(
-                    "transition-all duration-500 ease-in-out",
+                    "transition-all duration-500 ease-in-out transform",
                     index === current ? 'scale-100 opacity-100' : 'scale-75 opacity-50'
                   )}>
                     <MenuCard {...item} />
@@ -110,8 +117,8 @@ export default function DashboardPage() {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-8 z-10" />
-          <CarouselNext className="right-8 z-10" />
+          <CarouselPrevious className="left-[-4rem] z-10" />
+          <CarouselNext className="right-[-4rem] z-10" />
         </Carousel>
     </div>
   );
