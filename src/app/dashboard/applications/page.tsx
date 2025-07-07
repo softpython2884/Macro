@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Film, Youtube, Twitch, Globe, Settings, Music, Power } from 'lucide-react';
 import { SiAmazonalexa, SiSteam } from '@icons-pack/react-simple-icons';
 import { useHints } from '@/context/HintContext';
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import { useGridNavigation } from '@/hooks/use-grid-navigation';
 
 const applications = [
   { name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
@@ -64,13 +65,21 @@ const AppCard = ({ name, icon: Icon, href, description, onClick }: AppCardProps)
 
 export default function ApplicationsPage() {
   const { setHints } = useHints();
-  
-  React.useEffect(() => {
+  const applicationsGridRef = useRef<HTMLDivElement>(null);
+  const systemActionsGridRef = useRef<HTMLDivElement>(null);
+  useGridNavigation({ gridRef: applicationsGridRef });
+  useGridNavigation({ gridRef: systemActionsGridRef });
+
+  useEffect(() => {
     setHints([
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Launch' },
       { key: 'B', action: 'Back' },
     ]);
+     // Focus the first element on mount for immediate navigation
+    const firstElement = applicationsGridRef.current?.querySelector('button, a') as HTMLElement;
+    firstElement?.focus();
+
     return () => setHints([]);
   }, [setHints]);
 
@@ -91,13 +100,13 @@ export default function ApplicationsPage() {
     <div className="animate-fade-in space-y-12">
       <div>
         <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Applications</h2>
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div ref={applicationsGridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {applications.map((app, index) => <AppCard key={index} {...app} />)}
         </div>
       </div>
       <div>
         <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">System Actions</h2>
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div ref={systemActionsGridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {systemActions.map((app, index) => <AppCard key={index} {...app} />)}
         </div>
       </div>

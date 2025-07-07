@@ -3,8 +3,9 @@
 
 import { Card } from "@/components/ui/card";
 import { Gamepad2 } from 'lucide-react';
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useHints } from '@/context/HintContext';
+import { useGridNavigation } from '@/hooks/use-grid-navigation';
 
 const games = [
   { name: 'Cyberpunk 2077', hint: 'dystopian city' },
@@ -34,13 +35,19 @@ const GameCard = ({ name, hint }: { name: string, hint: string }) => (
 
 export default function GamesPage() {
   const { setHints } = useHints();
+  const gridRef = useRef<HTMLDivElement>(null);
+  useGridNavigation({ gridRef });
   
-  React.useEffect(() => {
+  useEffect(() => {
     setHints([
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Launch' },
       { key: 'B', action: 'Back' },
     ]);
+     // Focus the first element on mount for immediate navigation
+    const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+    firstElement?.focus();
+
     return () => setHints([]);
   }, [setHints]);
 
@@ -48,7 +55,7 @@ export default function GamesPage() {
     <div className="animate-fade-in space-y-12">
       <div>
         <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">My Game Library</h2>
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {games.map(game => <GameCard key={game.name} {...game} />)}
         </div>
       </div>

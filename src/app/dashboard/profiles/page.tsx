@@ -3,11 +3,10 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useHints } from '@/context/HintContext';
+import { useGridNavigation } from "@/hooks/use-grid-navigation";
 
 const users = [
   { id: "user1", name: "Galaxy Wanderer", email: "wanderer@space.com", hint: "astronaut helmet" },
@@ -19,13 +18,19 @@ const users = [
 export default function ProfilesPage() {
   const router = useRouter();
   const { setHints } = useHints();
-  
-  React.useEffect(() => {
+  const gridRef = useRef<HTMLDivElement>(null);
+  useGridNavigation({ gridRef });
+
+  useEffect(() => {
     setHints([
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Select' },
       { key: 'B', action: 'Back' },
     ]);
+     // Focus the first element on mount for immediate navigation
+    const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+    firstElement?.focus();
+    
     return () => setHints([]);
   }, [setHints]);
 
@@ -41,15 +46,11 @@ export default function ProfilesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-glow">Manage Profiles</h2>
-          <p className="text-muted-foreground mt-2">Select a profile to use or add a new one.</p>
+          <p className="text-muted-foreground mt-2">Select a profile to use.</p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Profile
-        </Button>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div ref={gridRef} className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {users.map(user => (
           <button 
             key={user.id} 
@@ -70,7 +71,7 @@ export default function ProfilesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-sm text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="text-center text-sm text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                   Switch to Profile
                 </p>
               </CardContent>

@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { VideoBackground } from '@/components/video-background';
 import { HintProvider, useHints } from '@/context/HintContext';
 import { ControllerHints } from '@/components/controller-hints';
+import { useGridNavigation } from '@/hooks/use-grid-navigation';
 
 const users = [
   { id: 'user1', name: 'Galaxy Wanderer', hint: 'astronaut helmet' },
@@ -18,6 +19,8 @@ const users = [
 const LoginView = () => {
   const [introState, setIntroState] = useState('playing'); // playing, fading, finished
   const { setHints } = useHints();
+  const gridRef = useRef<HTMLDivElement>(null);
+  useGridNavigation({ gridRef });
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => {
@@ -40,6 +43,10 @@ const LoginView = () => {
           { key: '↕↔', action: 'Navigate' },
           { key: 'A', action: 'Select' }
       ]);
+      // Focus the first element for immediate navigation
+      const firstElement = gridRef.current?.querySelector('a') as HTMLElement;
+      firstElement?.focus();
+
     } else {
       setHints([]);
     }
@@ -79,7 +86,7 @@ const LoginView = () => {
             Select a profile to launch
           </p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+        <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {users.map((user, index) => (
             <Link
               href="/dashboard"
