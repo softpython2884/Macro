@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Card } from "@/components/ui/card";
 import { Film, Youtube, Twitch, Globe, Settings, Music, Power } from 'lucide-react';
 import { SiAmazonalexa, SiSteam } from '@icons-pack/react-simple-icons';
+import { useHints } from '@/context/HintContext';
+import React from 'react';
 
 const applications = [
   { name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
@@ -61,6 +63,17 @@ const AppCard = ({ name, icon: Icon, href, description, onClick }: AppCardProps)
 
 
 export default function ApplicationsPage() {
+  const { setHints } = useHints();
+  
+  React.useEffect(() => {
+    setHints([
+      { key: '↕↔', action: 'Navigate' },
+      { key: 'A', action: 'Launch' },
+      { key: 'B', action: 'Back' },
+    ]);
+    return () => setHints([]);
+  }, [setHints]);
+
   const handleShutdown = () => {
     console.log('Action triggered: Shutdown PC. This would call the local server API.');
     // In a real implementation, you would make an API call here, e.g.:

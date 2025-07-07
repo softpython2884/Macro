@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import React from 'react';
+import { useHints } from '@/context/HintContext';
 
 const users = [
   { id: "user1", name: "Galaxy Wanderer", email: "wanderer@space.com", hint: "astronaut helmet" },
@@ -16,6 +18,16 @@ const users = [
 
 export default function ProfilesPage() {
   const router = useRouter();
+  const { setHints } = useHints();
+  
+  React.useEffect(() => {
+    setHints([
+      { key: '↕↔', action: 'Navigate' },
+      { key: 'A', action: 'Select' },
+      { key: 'B', action: 'Back' },
+    ]);
+    return () => setHints([]);
+  }, [setHints]);
 
   const handleSelectProfile = (userName: string) => {
     // This would handle the logic for switching user profiles

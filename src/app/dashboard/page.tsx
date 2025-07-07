@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import React from 'react';
 import { cn } from "@/lib/utils";
+import { useHints } from '@/context/HintContext';
 
 const mainMenuItems = [
     { 
@@ -62,6 +63,15 @@ const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMen
 export default function DashboardPage() {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = React.useState(0)
+  const { setHints } = useHints();
+  
+  React.useEffect(() => {
+    setHints([
+        { key: '↔', action: 'Navigate' },
+        { key: 'A', action: 'Select' }
+    ]);
+    return () => setHints([]);
+  }, [setHints]);
 
   React.useEffect(() => {
     if (!api) {

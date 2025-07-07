@@ -1,5 +1,10 @@
+
+'use client';
+
 import { Card } from "@/components/ui/card";
 import { Gamepad2 } from 'lucide-react';
+import React from 'react';
+import { useHints } from '@/context/HintContext';
 
 const games = [
   { name: 'Cyberpunk 2077', hint: 'dystopian city' },
@@ -28,6 +33,17 @@ const GameCard = ({ name, hint }: { name: string, hint: string }) => (
 );
 
 export default function GamesPage() {
+  const { setHints } = useHints();
+  
+  React.useEffect(() => {
+    setHints([
+      { key: '↕↔', action: 'Navigate' },
+      { key: 'A', action: 'Launch' },
+      { key: 'B', action: 'Back' },
+    ]);
+    return () => setHints([]);
+  }, [setHints]);
+
   return (
     <div className="animate-fade-in space-y-12">
       <div>

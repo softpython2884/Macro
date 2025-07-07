@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Trash2 } from "lucide-react";
+import React from 'react';
+import { useHints } from '@/context/HintContext';
 
 const formSchema = z.object({
   games: z.array(z.object({
@@ -30,6 +32,16 @@ const formSchema = z.object({
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { setHints } = useHints();
+  
+  React.useEffect(() => {
+    setHints([
+      { key: '↕', action: 'Navigate' },
+      { key: 'A', action: 'Interact' },
+      { key: 'B', action: 'Back' },
+    ]);
+    return () => setHints([]);
+  }, [setHints]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

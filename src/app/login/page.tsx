@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { VideoBackground } from '@/components/video-background';
+import { HintProvider, useHints } from '@/context/HintContext';
+import { ControllerHints } from '@/components/controller-hints';
 
 const users = [
   { id: 'user1', name: 'Galaxy Wanderer', hint: 'astronaut helmet' },
@@ -13,8 +15,9 @@ const users = [
   { id: 'user4', name: 'Guest', hint: 'planet earth' },
 ];
 
-export default function LoginPage() {
+const LoginView = () => {
   const [introState, setIntroState] = useState('playing'); // playing, fading, finished
+  const { setHints } = useHints();
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => {
@@ -31,6 +34,18 @@ export default function LoginPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (introState === 'finished') {
+      setHints([
+          { key: '↕↔', action: 'Navigate' },
+          { key: 'A', action: 'Select' }
+      ]);
+    } else {
+      setHints([]);
+    }
+    return () => setHints([]);
+  }, [introState, setHints]);
+
   if (introState !== 'finished') {
     return (
       <div
@@ -44,7 +59,6 @@ export default function LoginPage() {
           muted
           playsInline
           className="w-full h-full object-cover"
-          // Make sure to add your intro video to the /public folder
           src="/intro.mp4"
         >
           Your browser does not support the video tag.
@@ -94,4 +108,13 @@ export default function LoginPage() {
       </main>
     </>
   );
+}
+
+export default function LoginPage() {
+    return (
+        <HintProvider>
+            <LoginView />
+            <ControllerHints />
+        </HintProvider>
+    )
 }
