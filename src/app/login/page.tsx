@@ -1,14 +1,57 @@
-import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 const users = [
-  { id: "user1", name: "Galaxy Wanderer", hint: "astronaut helmet" },
-  { id: "user2", name: "Starlight Seeker", hint: "nebula space" },
-  { id: "user3", name: "Cosmic Voyager", hint: "spaceship cockpit" },
-  { id: "user4", name: "Guest", hint: "planet earth" },
+  { id: 'user1', name: 'Galaxy Wanderer', hint: 'astronaut helmet' },
+  { id: 'user2', name: 'Starlight Seeker', hint: 'nebula space' },
+  { id: 'user3', name: 'Cosmic Voyager', hint: 'spaceship cockpit' },
+  { id: 'user4', name: 'Guest', hint: 'planet earth' },
 ];
 
 export default function LoginPage() {
+  const [introState, setIntroState] = useState('playing'); // playing, fading, finished
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => {
+      setIntroState('fading');
+    }, 3500); // Start fading 0.5s before end
+
+    const endTimer = setTimeout(() => {
+      setIntroState('finished');
+    }, 4000); // 4-second total
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(endTimer);
+    };
+  }, []);
+
+  if (introState !== 'finished') {
+    return (
+      <div
+        className={cn(
+          'fixed inset-0 z-50 bg-black transition-opacity duration-500 ease-in-out',
+          introState === 'fading' ? 'opacity-0' : 'opacity-100'
+        )}
+      >
+        <video
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          // Make sure to add your intro video to the /public folder
+          src="/intro.mp4"
+        >
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    );
+  }
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-transparent animate-fade-in p-4">
       <div className="text-center">
@@ -24,7 +67,7 @@ export default function LoginPage() {
           <Link
             href="/dashboard"
             key={user.id}
-            className="block group rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+            className="block group rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background animate-fade-in-slow"
             style={{ animationDelay: `${200 + index * 100}ms` }}
           >
             <div className="flex flex-col items-center gap-4 transition-all duration-300 group-hover:scale-110 group-focus:scale-110">
