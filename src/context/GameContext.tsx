@@ -24,7 +24,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const hasFetched = useRef(false);
 
   const fetchGameMetadata = useCallback(async () => {
-    if (hasFetched.current || isLoading) return;
+    if (isLoading) return;
 
     setIsLoading(true);
     hasFetched.current = true;
@@ -54,21 +54,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     const enrichedGames = await Promise.all(
       initialGames.map(async (game) => {
-        const foundGame = await searchGame(game.name);
-        if (!foundGame) return game as Game;
+        try {
+            const foundGame = await searchGame(game.name);
+            if (!foundGame) return game as Game;
 
-        const [grids, heroes, logos] = await Promise.all([
-            getGrids(foundGame.id, ['600x900']),
-            getHeroes(foundGame.id),
-            getLogos(foundGame.id)
-        ]);
+            const [grids, heroes, logos] = await Promise.all([
+                getGrids(foundGame.id, ['600x900']),
+                getHeroes(foundGame.id),
+                getLogos(foundGame.id)
+            ]);
 
-        return {
-          ...game,
-          posterUrl: grids.length > 0 ? grids[0].url : undefined,
-          heroUrl: heroes.length > 0 ? heroes[0].url : undefined,
-          logoUrl: logos.length > 0 ? logos[0].url : undefined,
-        };
+            return {
+              ...game,
+              posterUrl: grids.length > 0 ? grids[0].url : undefined,
+              heroUrl: heroes.length > 0 ? heroes[0].url : undefined,
+              logoUrl: logos.length > 0 ? logos[0].url : undefined,
+            };
+        } catch (error) {
+            console.error(`Failed to enrich metadata for game "${game.name}":`, error);
+            // Return the basic game info so it still appears in the list
+            return game as Game;
+        }
       })
     );
 
@@ -78,10 +84,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const handleSettingsUpdate = () => {
+      // Reset state to allow re-fetching
       hasFetched.current = false;
       setGames([]);
       setAllScannedGames([]);
-      fetchGameMetadata();
+      // Use a timeout to ensure state has been reset before fetching
+      setTimeout(() => fetchGameMetadata(), 0);
     };
     window.addEventListener('settings-updated', handleSettingsUpdate);
     return () => {

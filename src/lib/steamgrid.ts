@@ -17,6 +17,14 @@ const options = {
   }
 };
 
+const checkApiKey = () => {
+    if (!API_KEY) {
+        console.error("SteamGridDB API Key is missing. Make sure it's set in a .env.local file as STEAMGRIDDB_API_KEY=YOUR_KEY_HERE (no NEXT_PUBLIC_ prefix).");
+        return false;
+    }
+    return true;
+}
+
 export interface SteamGridDbGame {
     id: number;
     name: string;
@@ -31,13 +39,11 @@ export interface SteamGridDbImage {
 }
 
 export const searchGame = async (name: string): Promise<SteamGridDbGame | null> => {
-    if (!API_KEY) {
-        console.error("SteamGridDB API Key is missing. Make sure it's set in a .env.local file as STEAMGRIDDB_API_KEY=YOUR_KEY_HERE (no NEXT_PUBLIC_ prefix).");
-        return null;
-    }
+    if (!checkApiKey()) return null;
+    
     try {
         const response = await fetch(`${BASE_URL}/search/autocomplete/${encodeURIComponent(name)}`, options);
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
         const result = await response.json();
         return result.success && result.data.length > 0 ? result.data[0] : null;
     } catch (error) {
@@ -47,10 +53,10 @@ export const searchGame = async (name: string): Promise<SteamGridDbGame | null> 
 };
 
 export const getGrids = async (gameId: number, dimensions: ('600x900' | '920x430')[]): Promise<SteamGridDbImage[]> => {
-    if (!API_KEY) return [];
+    if (!checkApiKey()) return [];
     try {
         const response = await fetch(`${BASE_URL}/grids/game/${gameId}?dimensions=${dimensions.join(',')}`, options);
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
         const result = await response.json();
         return result.success ? result.data : [];
     } catch (error) {
@@ -60,10 +66,10 @@ export const getGrids = async (gameId: number, dimensions: ('600x900' | '920x430
 }
 
 export const getHeroes = async (gameId: number): Promise<SteamGridDbImage[]> => {
-    if (!API_KEY) return [];
+    if (!checkApiKey()) return [];
     try {
         const response = await fetch(`${BASE_URL}/heroes/game/${gameId}`, options);
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
         const result = await response.json();
         return result.success ? result.data : [];
     } catch (error) {
@@ -73,10 +79,10 @@ export const getHeroes = async (gameId: number): Promise<SteamGridDbImage[]> => 
 };
 
 export const getLogos = async (gameId: number): Promise<SteamGridDbImage[]> => {
-    if (!API_KEY) return [];
+    if (!checkApiKey()) return [];
     try {
         const response = await fetch(`${BASE_URL}/logos/game/${gameId}`, options);
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
         const result = await response.json();
         return result.success ? result.data : [];
     } catch (error) {
