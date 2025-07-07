@@ -13,7 +13,7 @@ const games = [
 ];
 
 const GameCard = ({ name, hint }: { name: string, hint: string }) => (
-    <div className="block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+    <button className="block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background text-left">
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-between items-start p-4 aspect-[3/4] transform group-hover:scale-105 group-focus-within:scale-105">
         <div 
             className="w-full h-4/5 bg-cover bg-center rounded-md flex items-center justify-center mb-4" 
@@ -24,7 +24,7 @@ const GameCard = ({ name, hint }: { name: string, hint: string }) => (
         </div>
         <h3 className="text-lg font-bold text-card-foreground truncate w-full">{name}</h3>
       </Card>
-    </div>
+    </button>
 );
 
 export default function GamesPage() {
