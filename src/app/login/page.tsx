@@ -27,8 +27,8 @@ const LoginView = () => {
   useGridNavigation({ gridRef });
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setIntroState('fading'), 4500);
-    const endTimer = setTimeout(() => setIntroState('finished'), 5000);
+    const fadeTimer = setTimeout(() => setIntroState('fading'), 5500);
+    const endTimer = setTimeout(() => setIntroState('finished'), 6000);
     return () => { clearTimeout(fadeTimer); clearTimeout(endTimer); };
   }, []);
 

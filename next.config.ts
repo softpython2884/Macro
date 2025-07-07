@@ -40,6 +40,12 @@ const nextConfig: NextConfig = {
         hostname: 'cdn.steamgriddb.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn2.steamgriddb.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
