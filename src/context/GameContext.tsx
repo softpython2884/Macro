@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import type { Game } from '@/lib/data';
 import { searchGame, getGrids, getHeroes, getLogos } from '@/lib/steamgrid';
 import { scanForGames } from '@/lib/game-scanner';
@@ -21,12 +21,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [games, setGames] = useState<Game[]>([]);
   const [allScannedGames, setAllScannedGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
+  const hasFetched = useRef(false);
 
   const fetchGameMetadata = useCallback(async () => {
-    if (hasFetched || isLoading) return;
+    if (hasFetched.current || isLoading) return;
 
     setIsLoading(true);
+    hasFetched.current = true;
 
     let initialGames: Omit<Game, 'posterUrl' | 'heroUrl' | 'logoUrl'>[] = [];
     try {
@@ -48,7 +49,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (initialGames.length === 0) {
         setGames([]);
         setIsLoading(false);
-        setHasFetched(true);
         return;
     }
 
@@ -74,12 +74,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     setGames(enrichedGames);
     setIsLoading(false);
-    setHasFetched(true);
-  }, [hasFetched, isLoading]);
+  }, [isLoading]);
 
   useEffect(() => {
     const handleSettingsUpdate = () => {
-      setHasFetched(false);
+      hasFetched.current = false;
       setGames([]);
       setAllScannedGames([]);
       fetchGameMetadata();
