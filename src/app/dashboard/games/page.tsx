@@ -14,13 +14,13 @@ const games = [
 
 const GameCard = ({ name, hint }: { name: string, hint: string }) => (
     <div className="block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-white/20 group-hover:border-primary group-focus:bg-white/20 group-focus:border-primary transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-between items-start p-4 aspect-[3/4] transform group-hover:scale-105 group-focus:scale-105">
+      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-between items-start p-4 aspect-[3/4] transform group-hover:scale-105 group-focus-within:scale-105">
         <div 
             className="w-full h-4/5 bg-cover bg-center rounded-md flex items-center justify-center mb-4" 
             style={{backgroundImage: `url(https://placehold.co/300x400.png)`}}
             data-ai-hint={hint}
         >
-          <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus:scale-110 group-hover:text-primary" />
+          <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
         </div>
         <h3 className="text-lg font-bold text-card-foreground truncate w-full">{name}</h3>
       </Card>

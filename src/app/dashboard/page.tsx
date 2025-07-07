@@ -2,111 +2,78 @@
 'use client';
 
 import { Card } from "@/components/ui/card";
-import { Film, Youtube, Twitch, Globe, Settings, Music, Power } from 'lucide-react';
+import { Gamepad2, LayoutGrid, User, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { SiAmazonalexa, SiSteam } from '@icons-pack/react-simple-icons';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
-const applications = [
-  { name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
-  { name: 'Netflix', icon: Film, href: 'https://netflix.com', description: 'Stream movies & shows' },
-  { name: 'YouTube', icon: Youtube, href: 'https://youtube.com', description: 'Watch & share videos' },
-  { name: 'Twitch', icon: Twitch, href: 'https://twitch.tv', description: 'Live streaming for gamers' },
-  { name: 'Brave', icon: Globe, href: 'https://brave.com', description: 'Secure & private browser' },
-  { name: 'Alexa', icon: SiAmazonalexa, href: 'https://alexa.amazon.com', description: 'Manage your assistant' },
+const mainMenuItems = [
+    { 
+        title: 'Games', 
+        description: 'Access your game library', 
+        href: '/dashboard/games', 
+        icon: Gamepad2, 
+        hint: 'gaming controller' 
+    },
+    { 
+        title: 'Applications', 
+        description: 'Launch your favorite apps', 
+        href: '/dashboard/applications', 
+        icon: LayoutGrid, 
+        hint: 'app grid' 
+    },
+    { 
+        title: 'Profiles', 
+        description: 'Manage user profiles', 
+        href: '/dashboard/profiles', 
+        icon: User, 
+        hint: 'user avatar' 
+    },
+    { 
+        title: 'Settings', 
+        description: 'Configure Macro', 
+        href: '/dashboard/settings', 
+        icon: Settings, 
+        hint: 'cogwheel gear' 
+    },
 ];
 
-type AppCardProps = {
-  name: string;
-  icon: React.ElementType;
-  description: string;
-  href?: string;
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
-}
-
-const AppCard = ({ name, icon: Icon, href, description, onClick }: AppCardProps) => {
-    const cardContent = (
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-white/20 group-hover:border-primary group-focus:bg-white/20 group-focus:border-primary transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-center items-center p-6 aspect-video transform group-hover:scale-105 group-focus:scale-105">
-        <Icon className="h-16 w-16 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus:scale-110" />
-        <h3 className="mt-4 text-xl font-bold text-card-foreground">{name}</h3>
-        <p className="mt-1 text-sm text-muted-foreground text-center">
-          {description}
-        </p>
+const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMenuItems[0]) => {
+  return (
+    <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+      <Card className="bg-black/30 backdrop-blur-md border border-white/10 group-hover:bg-primary/30 group-focus:bg-primary/30 group-hover:backdrop-blur-lg group-focus:backdrop-blur-lg group-hover:drop-shadow-glow group-focus:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] transform group-hover:scale-105 group-focus:scale-105 overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-30 group-focus:opacity-30 transition-opacity" 
+          style={{backgroundImage: `url(https://placehold.co/1280x720.png)`}} 
+          data-ai-hint={hint}
+        />
+        <div className="relative z-10">
+          <Icon className="h-12 w-12 mb-4 text-primary drop-shadow-glow" />
+          <h2 className="text-4xl font-bold text-white text-glow">{title}</h2>
+          <p className="text-lg text-muted-foreground">{description}</p>
+        </div>
       </Card>
-    );
-
-    const commonProps = {
-        className:"block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-    };
-
-    if (href) {
-        const isExternal = href.startsWith('http') || href.startsWith('steam') || href.startsWith('spotify');
-        return (
-            <Link 
-                href={href} 
-                target={isExternal ? '_blank' : '_self'} 
-                rel="noopener noreferrer" 
-                {...commonProps}
-            >
-              {cardContent}
-            </Link>
-        )
-    }
-
-    return (
-        <button onClick={onClick} {...commonProps} type="button">
-            {cardContent}
-        </button>
-    )
-  };
+    </Link>
+  );
+};
 
 
 export default function DashboardPage() {
-  const handleShutdown = () => {
-    console.log('Action triggered: Shutdown PC. This would call the local server API.');
-    // In a real implementation, you would make an API call here, e.g.:
-    // fetch('http://localhost:YOUR_SERVER_PORT/api/system/shutdown', { method: 'POST' });
-  };
-  
-  const mainShortcuts: AppCardProps[] = [
-      { name: 'Steam', icon: SiSteam, href: 'steam://open/main', description: 'Access your game library' },
-      { name: 'Spotify', icon: Music, href: 'spotify:', description: 'Open your music' },
-      { name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system'
-      },
-      { name: 'Shutdown', icon: Power, onClick: handleShutdown, description: 'Shutdown the PC' },
-  ];
-
   return (
-    <div className="animate-fade-in space-y-12">
-      <div>
-        <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Quick Actions</h2>
-        <Carousel opts={{ align: "start", slidesToScroll: 'auto' }} className="w-full">
-          <CarouselContent>
-            {mainShortcuts.map((app, index) => (
-              <CarouselItem key={index} className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
-                  <AppCard {...app} />
+    <div className="flex flex-1 items-center justify-center animate-fade-in">
+        <Carousel 
+            opts={{ align: "start", loop: true }} 
+            className="w-full max-w-5xl"
+        >
+          <CarouselContent className="-ml-8">
+            {mainMenuItems.map((item, index) => (
+              <CarouselItem key={index} className="pl-8 md:basis-1/2 lg:basis-2/3">
+                  <MenuCard {...item} />
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
+          <CarouselPrevious className="left-[-50px]" />
+          <CarouselNext className="right-[-50px]" />
         </Carousel>
-      </div>
-
-      <div>
-        <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Applications</h2>
-         <Carousel opts={{ align: "start", slidesToScroll: 'auto' }} className="w-full">
-          <CarouselContent>
-            {applications.map((app, index) => (
-              <CarouselItem key={index} className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
-                <AppCard {...app} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
-      </div>
     </div>
   );
 }

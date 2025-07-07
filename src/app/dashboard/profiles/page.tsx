@@ -16,7 +16,7 @@ export default function ProfilesPage() {
     <div className="animate-fade-in space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-accent">Manage Profiles</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-glow">Manage Profiles</h2>
           <p className="text-muted-foreground mt-2">Add, edit, or remove user profiles.</p>
         </div>
         <Button>
@@ -27,7 +27,7 @@ export default function ProfilesPage() {
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {users.map(user => (
-          <Card key={user.id} className="bg-card/80 backdrop-blur-sm border border-transparent hover:border-primary transition-colors">
+          <Card key={user.id} className="bg-black/20 backdrop-blur-lg border border-white/10 hover:bg-primary/30 focus-within:bg-primary/30 hover:backdrop-blur-xl focus-within:backdrop-blur-xl hover:drop-shadow-glow focus-within:drop-shadow-glow hover:border-primary focus-within:border-primary transition-all duration-300 ease-in-out transform hover:scale-105 focus-within:scale-105">
             <CardHeader>
               <div className="flex items-center gap-4">
                 <Avatar className="w-16 h-16">
