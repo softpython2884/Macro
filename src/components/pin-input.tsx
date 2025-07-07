@@ -1,9 +1,11 @@
+
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useGridNavigation } from '@/hooks/use-grid-navigation';
 
 interface PinInputProps {
   onPinComplete: (pin: string) => void;
@@ -14,6 +16,15 @@ interface PinInputProps {
 export const PinInputPad = ({ onPinComplete, onCancel, showError }: PinInputProps) => {
   const [pin, setPin] = useState('');
   const [isWrong, setIsWrong] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+  useGridNavigation({ gridRef });
+
+  useEffect(() => {
+    if (gridRef.current) {
+        const firstButton = gridRef.current.querySelector('button');
+        firstButton?.focus();
+    }
+  }, []);
 
   const handleInput = (value: string) => {
     if (pin.length < 4) {
@@ -63,7 +74,7 @@ export const PinInputPad = ({ onPinComplete, onCancel, showError }: PinInputProp
          />
       </div>
       {showError && <p className="text-destructive text-sm -mt-2">Incorrect PIN. Please try again.</p>}
-      <div className="grid grid-cols-3 gap-4">
+      <div ref={gridRef} className="grid grid-cols-3 gap-4">
         {[...Array(9)].map((_, i) => (
           <Button key={i + 1} variant="outline" size="lg" className="text-2xl" onClick={() => handleInput(String(i + 1))}>
             {i + 1}

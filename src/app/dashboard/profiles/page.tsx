@@ -10,7 +10,7 @@ import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { useUser } from "@/context/UserContext";
 import type { User } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, Edit, LogIn, KeyRound } from "lucide-react";
+import { PlusCircle, Trash2, Edit, LogIn, KeyRound, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ProfileForm } from "@/components/profile-form";
@@ -21,7 +21,7 @@ export default function ProfilesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { users, currentUser, login, deleteUser } = useUser();
+  const { users, currentUser, login, logout, deleteUser } = useUser();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
@@ -94,9 +94,14 @@ export default function ProfilesPage() {
           <h2 className="text-3xl font-bold tracking-tight text-glow">Manage Profiles</h2>
           <p className="text-muted-foreground mt-2">Add, edit, or switch profiles.</p>
         </div>
-        <Button onClick={handleAddNew}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New Profile
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button onClick={logout} variant="outline">
+                <LogOut className="mr-2 h-4 w-4" /> Change User
+            </Button>
+            <Button onClick={handleAddNew}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Profile
+            </Button>
+        </div>
       </div>
 
       <div ref={gridRef} className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">

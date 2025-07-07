@@ -4,7 +4,7 @@
 import { Card } from "@/components/ui/card";
 import { Gamepad2, LayoutGrid, User, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
@@ -16,39 +16,38 @@ const mainMenuItems = [
         description: 'Access your game library', 
         href: '/dashboard/games', 
         icon: Gamepad2, 
-        hint: 'gaming controller' 
+        imageUrl: 'https://images.unsplash.com/photo-1542751371-33cf67b2c125?q=80&w=1280&auto=format&fit=crop'
     },
     { 
         title: 'Applications', 
         description: 'Launch your favorite apps', 
         href: '/dashboard/applications', 
         icon: LayoutGrid, 
-        hint: 'app grid' 
+        imageUrl: 'https://images.unsplash.com/photo-1611263253634-9aa4351347dc?q=80&w=1280&auto=format&fit=crop'
     },
     { 
         title: 'Profiles', 
         description: 'Manage user profiles', 
         href: '/dashboard/profiles', 
         icon: User, 
-        hint: 'user avatar' 
+        imageUrl: 'https://images.unsplash.com/photo-1507972821236-12153c8246a4?q=80&w=1280&auto=format&fit=crop'
     },
     { 
         title: 'Settings', 
         description: 'Configure Macro', 
         href: '/dashboard/settings', 
         icon: Settings, 
-        hint: 'cogwheel gear' 
+        imageUrl: 'https://images.unsplash.com/photo-1524727933941-8c4d18c2d288?q=80&w=1280&auto=format&fit=crop' 
     },
 ];
 
-const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMenuItems[0]) => {
+const MenuCard = ({ title, description, icon: Icon, href, imageUrl }: typeof mainMenuItems[0]) => {
   return (
     <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none" tabIndex={-1}>
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] overflow-hidden group-focus-within:scale-100 group-hover:scale-100">
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-40 group-focus-within:opacity-40 transition-opacity" 
-          style={{backgroundImage: `url(https://placehold.co/1280x720.png)`}} 
-          data-ai-hint={hint}
+          style={{backgroundImage: `url(${imageUrl})`}} 
         />
         <div className="relative z-10">
           <Icon className="h-12 w-12 mb-4 text-primary drop-shadow-glow" />
@@ -142,8 +141,6 @@ export default function DashboardPage() {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-[-4rem] z-10" />
-          <CarouselNext className="right-[-4rem] z-10" />
         </Carousel>
     </div>
   );
