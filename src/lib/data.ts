@@ -47,18 +47,9 @@ export const ALL_APPS: AppInfo[] = [
   { id: 'shutdown', name: 'Shutdown', icon: Power, onClick: () => console.log('Shutdown initiated'), description: 'Shutdown the PC' },
 ];
 
-// This simulates the result of scanning the filesystem.
-// In a real app, this would be generated dynamically.
-export const INITIAL_GAMES: Game[] = [
-  { id: 'cyberpunk', name: 'Cyberpunk 2077', path: 'D:/Games/Cyberpunk 2077', executables: ['bin/x64/Cyberpunk2077.exe', 'redprelauncher.exe'] },
-  { id: 'witcher3', name: 'The Witcher 3', path: 'D:/Games/The Witcher 3', executables: ['bin/x64/witcher3.exe'] },
-  { id: 'rdr2', name: 'Red Dead Redemption 2', path: 'D:/Games/Red Dead Redemption 2', executables: ['RDR2.exe', 'PlayRDR2.exe'] },
-  { id: 'eldenring', name: 'Elden Ring', path: 'D:/Games/Elden Ring', executables: ['game/eldenring.exe'] },
-  { id: 'bg3', name: 'Baldur\'s Gate 3', path: 'D:/Games/Baldurs Gate 3', executables: ['bin/bg3.exe', 'bin/bg3_dx11.exe'] },
-  { id: 'starfield', name: 'Starfield', path: 'D:/Games/Starfield', executables: ['Starfield.exe'] },
-  { id: 'forza5', name: 'Forza Horizon 5', path: 'D:/Games/Forza Horizon 5', executables: ['ForzaHorizon5.exe'] },
-  { id: 'helldivers2', name: 'Helldivers 2', path: 'D:/Games/Helldivers 2', executables: ['bin/helldivers2.exe'] },
-];
+// This simulates the result of scanning the filesystem for the first load.
+// It will be replaced by the actual scan result from the user's settings.
+export const INITIAL_GAMES: Game[] = [];
 
 export const INITIAL_USERS: User[] = [
   {
@@ -68,7 +59,7 @@ export const INITIAL_USERS: User[] = [
     pin: '1234',
     permissions: {
       apps: ALL_APPS.map(app => app.id),
-      games: INITIAL_GAMES.map(game => game.id),
+      games: [],
     },
   },
   {
@@ -77,7 +68,7 @@ export const INITIAL_USERS: User[] = [
     avatar: 'https://static.wikia.nocookie.net/925fa2de-087e-47f4-8aed-4f5487f0a78c/scale-to-width/755',
     permissions: {
       apps: ['netflix', 'youtube', 'spotify'],
-      games: ['forza5'],
+      games: [],
     },
   },
 ];

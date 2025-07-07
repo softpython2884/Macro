@@ -1,20 +1,25 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { INITIAL_GAMES, type Game } from '@/lib/data';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import type { Game } from '@/lib/data';
 import { searchGame, getGrids, getHeroes, getLogos } from '@/lib/steamgrid';
+import { scanForGames } from '@/lib/game-scanner';
+
+const SETTINGS_KEY = 'macro-settings';
 
 type GameContextType = {
   games: Game[];
   isLoading: boolean;
   fetchGameMetadata: () => Promise<void>;
+  allScannedGames: Game[];
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
-  const [games, setGames] = useState<Game[]>(INITIAL_GAMES);
+  const [games, setGames] = useState<Game[]>([]);
+  const [allScannedGames, setAllScannedGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
 
@@ -23,10 +28,34 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     setIsLoading(true);
 
+    let initialGames: Omit<Game, 'posterUrl' | 'heroUrl' | 'logoUrl'>[] = [];
+    try {
+        const savedSettings = localStorage.getItem(SETTINGS_KEY);
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            const gameDirs = settings.games?.map((g: { value: string }) => g.value).filter(Boolean) ?? [];
+            if (gameDirs.length > 0) {
+                initialGames = await scanForGames(gameDirs);
+                setAllScannedGames(initialGames as Game[]);
+            }
+        }
+    } catch (error) {
+        console.error("Failed to scan for games:", error);
+        setIsLoading(false);
+        return;
+    }
+    
+    if (initialGames.length === 0) {
+        setGames([]);
+        setIsLoading(false);
+        setHasFetched(true);
+        return;
+    }
+
     const enrichedGames = await Promise.all(
-      INITIAL_GAMES.map(async (game) => {
+      initialGames.map(async (game) => {
         const foundGame = await searchGame(game.name);
-        if (!foundGame) return game;
+        if (!foundGame) return game as Game;
 
         const [grids, heroes, logos] = await Promise.all([
             getGrids(foundGame.id, ['600x900']),
@@ -48,7 +77,20 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setHasFetched(true);
   }, [hasFetched, isLoading]);
 
-  const value = { games, isLoading, fetchGameMetadata };
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      setHasFetched(false);
+      setGames([]);
+      setAllScannedGames([]);
+      fetchGameMetadata();
+    };
+    window.addEventListener('settings-updated', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('settings-updated', handleSettingsUpdate);
+    };
+  }, [fetchGameMetadata]);
+
+  const value = { games, isLoading, fetchGameMetadata, allScannedGames };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };

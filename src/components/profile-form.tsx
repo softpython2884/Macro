@@ -7,9 +7,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { User } from '@/lib/data';
-import { ALL_APPS, INITIAL_GAMES } from '@/lib/data';
+import { ALL_APPS } from '@/lib/data';
 import { useUser } from '@/context/UserContext';
 import { ScrollArea } from './ui/scroll-area';
+import { useGames } from '@/context/GameContext';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -28,6 +29,7 @@ interface ProfileFormProps {
 
 export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
   const { addUser, updateUser } = useUser();
+  const { allScannedGames } = useGames();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -122,23 +124,27 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
                         <FormDescription>Select the games this profile can access.</FormDescription>
                     </div>
                     <ScrollArea className="h-40 rounded-md border p-4">
-                    {INITIAL_GAMES.map((game) => (
-                        <FormField key={game.id} control={form.control} name="permissions.games" render={({ field }) => (
-                            <FormItem key={game.id} className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                                <Checkbox
-                                checked={field.value?.includes(game.id)}
-                                onCheckedChange={(checked) => {
-                                    return checked
-                                    ? field.onChange([...field.value, game.id])
-                                    : field.onChange(field.value?.filter((value) => value !== game.id));
-                                }}
-                                />
-                            </FormControl>
-                            <FormLabel className="font-normal">{game.name}</FormLabel>
-                            </FormItem>
-                        )} />
-                    ))}
+                    {allScannedGames.length > 0 ? (
+                      allScannedGames.map((game) => (
+                          <FormField key={game.id} control={form.control} name="permissions.games" render={({ field }) => (
+                              <FormItem key={game.id} className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                  <Checkbox
+                                  checked={field.value?.includes(game.id)}
+                                  onCheckedChange={(checked) => {
+                                      return checked
+                                      ? field.onChange([...field.value, game.id])
+                                      : field.onChange(field.value?.filter((value) => value !== game.id));
+                                  }}
+                                  />
+                              </FormControl>
+                              <FormLabel className="font-normal">{game.name}</FormLabel>
+                              </FormItem>
+                          )} />
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No games found. Configure directories in settings.</p>
+                    )}
                     </ScrollArea>
                     <FormMessage />
                 </FormItem>

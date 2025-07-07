@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -22,20 +21,46 @@ import React from 'react';
 import { useHints } from '@/context/HintContext';
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 
+const SETTINGS_KEY = 'macro-settings';
+
 const formSchema = z.object({
   games: z.array(z.object({
     value: z.string().min(1, "Directory path cannot be empty."),
   })).min(1, "At least one game directory is required."),
-  media: z.string().min(1, "Media directory is required."),
-  apps: z.string().min(1, "Application directory is required."),
-  plugins: z.string().min(1, "Plugin directory is required."),
+  media: z.string().optional(),
+  apps: z.string().optional(),
+  plugins: z.string().optional(),
 });
+
+type SettingsFormValues = z.infer<typeof formSchema>;
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const { setHints } = useHints();
   useBackNavigation('/dashboard');
   
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      games: [{ value: "" }],
+      media: "",
+      apps: "",
+      plugins: "",
+    },
+  });
+
+  React.useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem(SETTINGS_KEY);
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings) as SettingsFormValues;
+        form.reset(parsedSettings);
+      }
+    } catch (error) {
+        console.error("Failed to load settings from localStorage", error);
+    }
+  }, [form]);
+
   React.useEffect(() => {
     setHints([
       { key: '↕', action: 'Navigate' },
@@ -47,27 +72,27 @@ export default function SettingsPage() {
     return () => setHints([]);
   }, [setHints]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      games: [{ value: "" }],
-      media: "",
-      apps: "",
-      plugins: "",
-    },
-  });
-
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "games"
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "Settings saved!",
-      description: "Your directory configurations have been updated.",
-    });
+  function onSubmit(values: SettingsFormValues) {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(values));
+      toast({
+        title: "Settings saved!",
+        description: "Your directory configurations have been updated.",
+      });
+      // Optionally, trigger a refresh of game data context if needed
+      window.dispatchEvent(new Event('settings-updated'));
+    } catch (error) {
+       toast({
+        title: "Error saving settings",
+        description: "Could not save settings to local storage.",
+        variant: "destructive"
+      });
+    }
   }
 
   return (
@@ -76,7 +101,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Configuration</CardTitle>
           <CardDescription>
-            Configure the directories for your games, media, applications, and plugins.
+            Configure the directories for your games, media, applications, and plugins. These paths are local to the machine running the server.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -85,7 +110,7 @@ export default function SettingsPage() {
               <div>
                 <FormLabel>Game Directories</FormLabel>
                 <FormDescription className="mb-4">
-                  Add the folders where your games are installed.
+                  Add the folders where your games are installed. Macro will scan each folder for sub-directories, treating each as a separate game.
                 </FormDescription>
                 <div className="space-y-4">
                   {fields.map((field, index) => (
@@ -97,7 +122,7 @@ export default function SettingsPage() {
                         <FormItem>
                           <div className="flex items-center gap-2">
                             <FormControl>
-                              <Input placeholder="/path/to/your/games" {...field} />
+                              <Input placeholder="C:/Games" {...field} />
                             </FormControl>
                             {fields.length > 1 && (
                               <Button
@@ -143,7 +168,7 @@ export default function SettingsPage() {
                       <Input placeholder="/path/to/your/media" {...field} />
                     </FormControl>
                     <FormDescription>
-                      The folder where your movies and shows are stored.
+                      The folder where your movies and shows are stored. (Not yet implemented)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -159,7 +184,7 @@ export default function SettingsPage() {
                       <Input placeholder="/path/to/your/applications" {...field} />
                     </FormControl>
                     <FormDescription>
-                      The folder for other applications.
+                      The folder for other applications. (Not yet implemented)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -175,7 +200,7 @@ export default function SettingsPage() {
                       <Input placeholder="/path/to/your/plugins" {...field} />
                     </FormControl>
                     <FormDescription>
-                      The folder for Macro plugins.
+                      The folder for Macro plugins. (Not yet implemented)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
