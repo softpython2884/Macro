@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
+import { VideoBackground } from "@/components/video-background";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Macro",
@@ -17,8 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+      <body>
+        <VideoBackground />
+        <div className="relative z-10">
+          {children}
+        </div>
         <Toaster />
       </body>
     </html>

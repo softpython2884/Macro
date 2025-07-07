@@ -27,33 +27,33 @@
   }
 
   .dark {
-    --background: 180 25% 25%; /* Dark Slate Gray */
-    --foreground: 180 100% 94%; /* Light Cyan */
+    --background: 224 71% 4%; /* Deep Blue-Black */
+    --foreground: 210 40% 98%; /* Almost White */
     
-    --card: 248 39% 30%; /* Darker Purple */
-    --card-foreground: 180 100% 94%; /* Light Cyan */
+    --card: 216 34% 17%; /* Dark Slate Blue */
+    --card-foreground: 210 40% 98%;
     
-    --popover: 248 39% 20%;
-    --popover-foreground: 180 100% 94%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
     
-    --primary: 248 39% 39%; /* Deep Purple */
-    --primary-foreground: 180 100% 94%; /* Light Cyan */
+    --primary: 217 91% 60%; /* Bright Blue */
+    --primary-foreground: 210 40% 98%;
     
-    --secondary: 248 39% 30%;
-    --secondary-foreground: 180 100% 94%;
+    --secondary: 216 34% 17%;
+    --secondary-foreground: 210 40% 98%;
     
-    --muted: 248 39% 30%;
-    --muted-foreground: 180 20% 70%; /* Lighter cyan/gray for muted text */
+    --muted: 216 34% 17%;
+    --muted-foreground: 215 28% 63%;
     
-    --accent: 180 100% 94%; /* Light Cyan */
-    --accent-foreground: 248 39% 39%; /* Deep Purple */
+    --accent: 217 91% 60%;
+    --accent-foreground: 210 40% 98%;
     
-    --destructive: 0 72% 51%; /* A standard red */
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 248 39% 35%; /* Lighter Purple */
-    --input: 248 39% 35%;
-    --ring: 180 100% 85%; /* Slightly darker cyan for rings */
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 217 91% 60%;
     --radius: 0.75rem;
   }
 }
@@ -64,5 +64,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    background-image: radial-gradient(ellipse 80% 80% at 50% -20%, hsl(var(--primary) / 0.3), transparent);
+    background-repeat: no-repeat;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.75);
   }
 }
