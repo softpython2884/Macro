@@ -24,7 +24,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const hasFetched = useRef(false);
 
   const fetchGameMetadata = useCallback(async () => {
-    if (isLoading) return;
+    if (hasFetched.current) {
+        return;
+    }
 
     setIsLoading(true);
     hasFetched.current = true;
@@ -72,7 +74,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             };
         } catch (error) {
             console.error(`Failed to enrich metadata for game "${game.name}":`, error);
-            // Return the basic game info so it still appears in the list
             return game as Game;
         }
       })
@@ -80,11 +81,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     setGames(enrichedGames);
     setIsLoading(false);
-  }, [isLoading]);
+  }, []);
 
   useEffect(() => {
     const handleSettingsUpdate = () => {
-      // Reset state to allow re-fetching
       hasFetched.current = false;
       setGames([]);
       setAllScannedGames([]);
