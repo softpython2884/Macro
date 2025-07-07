@@ -4,7 +4,9 @@
 import { Card } from "@/components/ui/card";
 import { Gamepad2, LayoutGrid, User, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
+import React from 'react';
+import { cn } from "@/lib/utils";
 
 const mainMenuItems = [
     { 
@@ -40,9 +42,9 @@ const mainMenuItems = [
 const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMenuItems[0]) => {
   return (
     <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-      <Card className="bg-black/30 backdrop-blur-md border border-white/10 group-hover:bg-primary/30 group-focus:bg-primary/30 group-hover:backdrop-blur-lg group-focus:backdrop-blur-lg group-hover:drop-shadow-glow group-focus:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] transform group-hover:scale-105 group-focus:scale-105 overflow-hidden">
+      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] overflow-hidden">
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-30 group-focus:opacity-30 transition-opacity" 
+          className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-40 group-focus-within:opacity-40 transition-opacity" 
           style={{backgroundImage: `url(https://placehold.co/1280x720.png)`}} 
           data-ai-hint={hint}
         />
@@ -58,21 +60,48 @@ const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMen
 
 
 export default function DashboardPage() {
+  const [api, setApi] = React.useState<CarouselApi>()
+  const [current, setCurrent] = React.useState(0)
+
+  React.useEffect(() => {
+    if (!api) {
+      return
+    }
+
+    setCurrent(api.selectedScrollSnap())
+
+    const onSelect = () => {
+      setCurrent(api.selectedScrollSnap())
+    }
+
+    api.on("select", onSelect)
+
+    return () => {
+      api.off("select", onSelect)
+    }
+  }, [api])
+
   return (
-    <div className="flex flex-1 items-center justify-center animate-fade-in">
+    <div className="flex flex-1 items-center justify-center animate-fade-in w-full">
         <Carousel 
-            opts={{ align: "start", loop: true }} 
-            className="w-full max-w-5xl"
+            setApi={setApi}
+            opts={{ align: "center", loop: true }} 
+            className="w-full max-w-6xl"
         >
-          <CarouselContent className="-ml-8">
+          <CarouselContent className="-ml-8 py-12">
             {mainMenuItems.map((item, index) => (
-              <CarouselItem key={index} className="pl-8 md:basis-1/2 lg:basis-2/3">
-                  <MenuCard {...item} />
+              <CarouselItem key={index} className="pl-8 md:basis-1/2 lg:basis-[50%]">
+                  <div className={cn(
+                    "transition-all duration-500 ease-in-out",
+                    index === current ? 'scale-100 opacity-100' : 'scale-75 opacity-50'
+                  )}>
+                    <MenuCard {...item} />
+                  </div>
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-[-50px]" />
-          <CarouselNext className="right-[-50px]" />
+          <CarouselPrevious className="left-8 z-10" />
+          <CarouselNext className="right-8 z-10" />
         </Carousel>
     </div>
   );
