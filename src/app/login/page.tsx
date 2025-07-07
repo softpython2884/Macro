@@ -1,7 +1,8 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { VideoBackground } from '@/components/video-background';
@@ -18,8 +19,10 @@ const users = [
 
 const LoginView = () => {
   const [introState, setIntroState] = useState('playing'); // playing, fading, finished
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   useGridNavigation({ gridRef });
 
   useEffect(() => {
@@ -44,7 +47,7 @@ const LoginView = () => {
           { key: 'A', action: 'Select' }
       ]);
       // Focus the first element for immediate navigation
-      const firstElement = gridRef.current?.querySelector('a') as HTMLElement;
+      const firstElement = gridRef.current?.querySelector('button') as HTMLElement;
       firstElement?.focus();
 
     } else {
@@ -52,6 +55,14 @@ const LoginView = () => {
     }
     return () => setHints([]);
   }, [introState, setHints]);
+
+  const handleProfileSelect = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setIsTransitioning(true);
+    setTimeout(() => {
+        router.push('/dashboard');
+    }, 500); // match animation duration
+  };
 
   if (introState !== 'finished') {
     return (
@@ -77,7 +88,10 @@ const LoginView = () => {
   return (
     <>
       <VideoBackground />
-      <main className="flex flex-col items-center justify-center min-h-screen bg-transparent animate-fade-in p-4">
+      <main className={cn(
+        "flex flex-col items-center justify-center min-h-screen bg-transparent p-4 transition-all duration-500",
+        isTransitioning ? 'animate-zoom-out-fade' : 'animate-fade-in'
+      )}>
         <div className="text-center">
           <h2 className="text-7xl font-bold tracking-tight text-glow mb-4 animate-fade-in-slow">
             Who's Watching?
@@ -88,10 +102,10 @@ const LoginView = () => {
         </div>
         <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {users.map((user, index) => (
-            <Link
-              href="/dashboard"
+            <button
               key={user.id}
-              className="block group rounded-lg focus:outline-none animate-fade-in-slow"
+              onClick={handleProfileSelect}
+              className="block group rounded-lg focus:outline-none animate-fade-in-slow text-left"
               style={{ animationDelay: `${200 + index * 100}ms` }}
             >
               <div className="flex flex-col items-center gap-4 transition-all duration-300 group-hover:scale-110 group-focus:scale-110">
@@ -109,7 +123,7 @@ const LoginView = () => {
                   {user.name}
                 </h3>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
       </main>

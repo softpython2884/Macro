@@ -92,7 +92,7 @@ export default function DashboardPage() {
   }, [api])
 
   return (
-    <div className="flex flex-1 items-center justify-center animate-fade-in w-full">
+    <div className="flex flex-1 items-center justify-center animate-zoom-in-fade w-full">
         <Carousel 
             setApi={setApi}
             opts={{ align: "center", loop: true }} 

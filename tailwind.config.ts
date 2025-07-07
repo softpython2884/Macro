@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss"
 import { fontFamily } from "tailwindcss/defaultTheme"
 
@@ -79,12 +80,22 @@ const config = {
           "0%": { opacity: '0', transform: 'translateY(10px)' },
           "100%": { opacity: '1', transform: 'translateY(0)' },
         },
+        "zoom-in-fade": {
+          "0%": { opacity: '0', transform: 'scale(0.95)' },
+          "100%": { opacity: '1', transform: 'scale(1)' },
+        },
+        "zoom-out-fade": {
+            "0%": { opacity: '1', transform: 'scale(1)' },
+            "100%": { opacity: '0', transform: 'scale(1.05)' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": 'fade-in 0.5s ease-in-out forwards',
         "fade-in-slow": 'fade-in-slow 0.8s ease-in-out forwards',
+        "zoom-in-fade": 'zoom-in-fade 0.5s ease-out forwards',
+        "zoom-out-fade": 'zoom-out-fade 0.5s ease-out forwards',
       },
       dropShadow: {
         'glow': '0 0 10px hsl(var(--primary) / 0.8)',

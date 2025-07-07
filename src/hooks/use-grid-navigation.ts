@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect } from 'react';
 
@@ -27,10 +28,12 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
         return;
       }
 
-      const focusable = getFocusableElements();
-      if (focusable.length === 0) return;
+      const validKeys = [
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'z', 'q', 's', 'd', 'w', 'a' // Support ZQSD (French) and WASD (English)
+      ];
 
-      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      if (!validKeys.includes(e.key.toLowerCase())) {
         return;
       }
       
@@ -39,12 +42,15 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
       e.preventDefault();
       e.stopPropagation();
 
+      const focusable = getFocusableElements();
+      if (focusable.length === 0) return;
+
       const currentIndex = focusable.indexOf(activeElement);
       if (currentIndex === -1) return; // Safeguard
 
       // Determine column count by checking element positions, which is very reliable.
       const getColumnCount = (): number => {
-        if (focusable.length === 0) return 1;
+        if (focusable.length <= 1) return 1;
         const firstElementTop = focusable[0].offsetTop;
         let count = 0;
         for (const element of focusable) {
@@ -60,22 +66,28 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
       const columnCount = getColumnCount();
       let nextIndex = currentIndex;
 
-      switch (e.key) {
-        case 'ArrowUp':
+      switch (e.key.toLowerCase()) {
+        case 'arrowup':
+        case 'z':
+        case 'w':
           nextIndex = currentIndex - columnCount;
           break;
-        case 'ArrowDown':
+        case 'arrowdown':
+        case 's':
           nextIndex = currentIndex + columnCount;
           break;
-        case 'ArrowLeft':
+        case 'arrowleft':
+        case 'q':
+        case 'a':
           // Only move left if not in the first column
           if (currentIndex % columnCount !== 0) {
             nextIndex = currentIndex - 1;
           }
           break;
-        case 'ArrowRight':
-          // Only move right if not in the last column
-          if ((currentIndex + 1) % columnCount !== 0) {
+        case 'arrowright':
+        case 'd':
+          // Only move right if not in the last column of the grid
+          if (currentIndex % columnCount < columnCount - 1) {
             nextIndex = currentIndex + 1;
           }
           break;
