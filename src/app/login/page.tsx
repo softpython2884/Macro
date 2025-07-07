@@ -9,76 +9,81 @@ import { VideoBackground } from '@/components/video-background';
 import { HintProvider, useHints } from '@/context/HintContext';
 import { ControllerHints } from '@/components/controller-hints';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
-
-const users = [
-  { id: 'user1', name: 'Galaxy Wanderer', hint: 'astronaut helmet' },
-  { id: 'user2', name: 'Starlight Seeker', hint: 'nebula space' },
-  { id: 'user3', name: 'Cosmic Voyager', hint: 'spaceship cockpit' },
-  { id: 'user4', name: 'Guest', hint: 'planet earth' },
-];
+import { useUser } from '@/context/UserContext';
+import type { User } from '@/lib/data';
+import { PinInputPad } from '@/components/pin-input';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const LoginView = () => {
   const [introState, setIntroState] = useState('playing'); // playing, fading, finished
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showPinPad, setShowPinPad] = useState(false);
+  
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { users, login } = useUser();
   useGridNavigation({ gridRef });
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => {
-      setIntroState('fading');
-    }, 3500); // Start fading 0.5s before end
-
-    const endTimer = setTimeout(() => {
-      setIntroState('finished');
-    }, 4000); // 4-second total
-
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(endTimer);
-    };
+    const fadeTimer = setTimeout(() => setIntroState('fading'), 3500);
+    const endTimer = setTimeout(() => setIntroState('finished'), 4000);
+    return () => { clearTimeout(fadeTimer); clearTimeout(endTimer); };
   }, []);
 
   useEffect(() => {
-    if (introState === 'finished') {
-      setHints([
-          { key: '↕↔', action: 'Navigate' },
-          { key: 'A', action: 'Select' }
-      ]);
-      // Focus the first element for immediate navigation
+    if (introState === 'finished' && !showPinPad) {
+      setHints([{ key: '↕↔', action: 'Navigate' }, { key: 'A', action: 'Select' }]);
       const firstElement = gridRef.current?.querySelector('button') as HTMLElement;
       firstElement?.focus();
-
     } else {
       setHints([]);
     }
-    return () => setHints([]);
-  }, [introState, setHints]);
+  }, [introState, showPinPad, setHints]);
 
-  const handleProfileSelect = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setIsTransitioning(true);
-    setTimeout(() => {
-        router.push('/dashboard');
-    }, 500); // match animation duration
+  const handleProfileSelect = (user: User) => {
+    setSelectedUser(user);
+    if (user.pin) {
+      setShowPinPad(true);
+    } else {
+      if(login(user)) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+            router.push('/dashboard');
+        }, 500);
+      }
+    }
+  };
+
+  const handlePinComplete = (pin: string) => {
+    if (selectedUser) {
+        const success = login(selectedUser, pin);
+        if (success) {
+            setShowPinPad(false);
+            setIsTransitioning(true);
+             setTimeout(() => {
+                router.push('/dashboard');
+            }, 500);
+        } else {
+            // Add a visual indicator for wrong pin
+            alert("Incorrect PIN!");
+        }
+    }
+  };
+
+  const handleCancelPin = () => {
+    setShowPinPad(false);
+    setSelectedUser(null);
+    // Refocus grid
+    const firstElement = gridRef.current?.querySelector('button') as HTMLElement;
+    firstElement?.focus();
   };
 
   if (introState !== 'finished') {
     return (
-      <div
-        className={cn(
-          'fixed inset-0 z-50 bg-black transition-opacity duration-500 ease-in-out',
-          introState === 'fading' ? 'opacity-0' : 'opacity-100'
-        )}
-      >
-        <video
-          autoPlay
-          muted
-          playsInline
-          className="w-full h-full object-cover"
-          src="/intro.mp4"
-        >
+      <div className={cn('fixed inset-0 z-50 bg-black transition-opacity duration-500 ease-in-out', introState === 'fading' ? 'opacity-0' : 'opacity-100')}>
+        <video autoPlay muted playsInline className="w-full h-full object-cover" src="/intro.mp4">
           Your browser does not support the video tag.
         </video>
       </div>
@@ -104,17 +109,13 @@ const LoginView = () => {
           {users.map((user, index) => (
             <button
               key={user.id}
-              onClick={handleProfileSelect}
+              onClick={() => handleProfileSelect(user)}
               className="block group rounded-lg focus:outline-none animate-fade-in-slow text-left"
               style={{ animationDelay: `${200 + index * 100}ms` }}
             >
               <div className="flex flex-col items-center gap-4 transition-all duration-300 group-hover:scale-110 group-focus:scale-110">
                 <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-transparent group-hover:border-primary group-focus:border-primary transition-all duration-300 rounded-lg shadow-lg">
-                  <AvatarImage
-                    src={`https://placehold.co/160x160.png`}
-                    data-ai-hint={user.hint}
-                    alt={user.name}
-                  />
+                  <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="text-4xl rounded-lg">
                     {user.name.substring(0, 1)}
                   </AvatarFallback>
@@ -127,6 +128,11 @@ const LoginView = () => {
           ))}
         </div>
       </main>
+      <Dialog open={showPinPad} onOpenChange={setShowPinPad}>
+        <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
+            <PinInputPad onPinComplete={handlePinComplete} onCancel={handleCancelPin} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

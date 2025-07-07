@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
+import { UserProvider } from "@/context/UserContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,10 +16,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body>
-        <div className="relative z-10">
-          {children}
-        </div>
-        <Toaster />
+        <UserProvider>
+            <div className="relative z-10">
+            {children}
+            </div>
+            <Toaster />
+        </UserProvider>
       </body>
     </html>
   );

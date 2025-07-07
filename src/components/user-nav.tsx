@@ -13,30 +13,36 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 export function UserNav() {
   const router = useRouter();
+  const { currentUser, logout } = useUser();
 
   const handleLogout = () => {
-    router.push('/');
+    logout();
   };
+
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="astronaut helmet" alt="User" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+            <AvatarFallback>{currentUser.name.substring(0, 1).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Galaxy Wanderer</p>
+            <p className="text-sm font-medium leading-none">{currentUser.name}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              user@example.com
+              {currentUser.name.toLowerCase().replace(' ', '.')}@macro.sys
             </p>
           </div>
         </DropdownMenuLabel>

@@ -3,46 +3,55 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useRouter } from 'next/navigation';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useHints } from '@/context/HintContext';
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { useBackNavigation } from "@/hooks/use-back-navigation";
-
-const users = [
-  { id: "user1", name: "Galaxy Wanderer", email: "wanderer@space.com", hint: "astronaut helmet" },
-  { id: "user2", name: "Starlight Seeker", email: "seeker@stars.com", hint: "nebula space" },
-  { id: "user3", name: "Cosmic Voyager", email: "voyager@cosmos.com", hint: "spaceship cockpit" },
-  { id: "user4", name: "Guest", email: "guest@local.host", hint: "planet earth" },
-];
+import { useUser } from "@/context/UserContext";
+import type { User } from "@/lib/data";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Trash2, Edit, LogIn, KeyRound } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ProfileForm } from "@/components/profile-form";
 
 export default function ProfilesPage() {
-  const router = useRouter();
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
+  const { users, currentUser, login, deleteUser } = useUser();
+  
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+
   useGridNavigation({ gridRef });
   useBackNavigation('/dashboard');
 
   useEffect(() => {
     setHints([
-      { key: '↕↔', action: 'Navigate' },
-      { key: 'A', action: 'Select' },
+      { key: '↕↔', action: 'Navigate Cards' },
+      { key: 'A', action: 'Interact' },
       { key: 'B', action: 'Back' },
-      { key: 'Q', action: 'Prev Tab' },
-      { key: 'E', action: 'Next Tab' },
     ]);
-     // Focus the first element on mount for immediate navigation
     const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
     firstElement?.focus();
     
     return () => setHints([]);
   }, [setHints]);
 
-  const handleSelectProfile = (userName: string) => {
-    // This would handle the logic for switching user profiles
-    console.log(`Switched to profile: ${userName}`);
-    // Navigate back to dashboard after switching
-    router.push('/dashboard');
+  const handleAddNew = () => {
+    setUserToEdit(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (user: User) => {
+    setUserToEdit(user);
+    setIsFormOpen(true);
+  };
+
+  const handleSwitchProfile = (user: User) => {
+    if (login(user)) {
+        // success
+    }
   };
 
   return (
@@ -50,39 +59,75 @@ export default function ProfilesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-glow">Manage Profiles</h2>
-          <p className="text-muted-foreground mt-2">Select a profile to use.</p>
+          <p className="text-muted-foreground mt-2">Add, edit, or switch profiles.</p>
         </div>
+        <Button onClick={handleAddNew}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Profile
+        </Button>
       </div>
 
       <div ref={gridRef} className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {users.map(user => (
-          <button 
-            key={user.id} 
-            className="block group w-full h-full rounded-lg focus:outline-none text-left"
-            onClick={() => handleSelectProfile(user.name)}
-          >
-            <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow hover:border-primary focus-within:border-primary transition-all duration-300 ease-in-out transform group-hover:scale-105 group-focus-within:scale-105 h-full">
+          <Card key={user.id} className="bg-black/20 backdrop-blur-lg border border-white/10 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out transform hover:scale-105 focus-within:scale-105 h-full flex flex-col group">
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <Avatar className="w-16 h-16">
-                    <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint={user.hint} alt={user.name} />
+                    <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback className="text-2xl">{user.name.substring(0, 2)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle>{user.name}</CardTitle>
-                    <CardDescription>{user.email}</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                        {user.name}
+                        {user.pin && <KeyRound className="w-4 h-4 text-muted-foreground" />}
+                    </CardTitle>
+                    <CardDescription>{user.id === currentUser?.id ? 'Currently Active' : 'Inactive'}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-center text-sm text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-                  Switch to Profile
-                </p>
+              <CardContent className="flex-grow flex items-end justify-between">
+                <div className="flex gap-2">
+                    <Button variant="outline" size="icon" onClick={() => handleEdit(user)} aria-label={`Edit ${user.name}`}>
+                        <Edit className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon" aria-label={`Delete ${user.name}`} disabled={users.length <= 1}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the profile for "{user.name}". This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteUser(user.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+                <Button onClick={() => handleSwitchProfile(user)} disabled={user.id === currentUser?.id} aria-label={`Switch to ${user.name}`}>
+                    <LogIn className="mr-2 h-4 w-4" /> Switch
+                </Button>
               </CardContent>
             </Card>
-          </button>
         ))}
       </div>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-2xl bg-card/90 backdrop-blur-lg">
+            <DialogHeader>
+                <DialogTitle>{userToEdit ? 'Edit Profile' : 'Create New Profile'}</DialogTitle>
+                <DialogDescription>
+                    {userToEdit ? 'Modify the details for this profile.' : 'Fill in the details for the new profile.'}
+                </DialogDescription>
+            </DialogHeader>
+            <ProfileForm userToEdit={userToEdit} onFinished={() => setIsFormOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
