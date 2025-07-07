@@ -1,9 +1,9 @@
 // IMPORTANT: To use this service, you need to get an API key from https://www.steamgriddb.com/profile/api
 // Once you have your key, create a file named .env.local in the root of your project
 // and add the following line:
-// STEAMGRIDDB_API_KEY=YOUR_API_KEY_HERE
+// NEXT_PUBLIC_STEAMGRIDDB_API_KEY=YOUR_API_KEY_HERE
 
-const API_KEY = process.env.STEAMGRIDDB_API_KEY;
+const API_KEY = process.env.NEXT_PUBLIC_STEAMGRIDDB_API_KEY;
 const BASE_URL = 'https://www.steamgriddb.com/api/v2';
 
 const options = {
@@ -29,7 +29,7 @@ export interface SteamGridDbImage {
 
 export const searchGame = async (name: string): Promise<SteamGridDbGame | null> => {
     if (!API_KEY) {
-        console.error("SteamGridDB API Key is missing.");
+        console.error("SteamGridDB API Key is missing. Make sure it's set in .env.local and prefixed with NEXT_PUBLIC_");
         return null;
     }
     try {
