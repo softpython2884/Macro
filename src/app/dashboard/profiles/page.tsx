@@ -2,6 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { PlusCircle } from 'lucide-react';
 
 const users = [
   { id: "user1", name: "Galaxy Wanderer", email: "wanderer@space.com", hint: "astronaut helmet" },
@@ -12,23 +13,26 @@ const users = [
 
 export default function ProfilesPage() {
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-accent">User Profiles</h2>
-          <p className="text-muted-foreground">Manage user profiles and access permissions.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-accent">Manage Profiles</h2>
+          <p className="text-muted-foreground mt-2">Add, edit, or remove user profiles.</p>
         </div>
-        <Button>Add New Profile</Button>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add Profile
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {users.map(user => (
-          <Card key={user.id} className="hover:bg-card/60 transition-colors">
+          <Card key={user.id} className="bg-card/80 backdrop-blur-sm border border-transparent hover:border-primary transition-colors">
             <CardHeader>
               <div className="flex items-center gap-4">
                 <Avatar className="w-16 h-16">
                   <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint={user.hint} alt={user.name} />
-                  <AvatarFallback>{user.name.substring(0, 2)}</AvatarFallback>
+                  <AvatarFallback className="text-2xl">{user.name.substring(0, 2)}</AvatarFallback>
                 </Avatar>
                 <div>
                   <CardTitle>{user.name}</CardTitle>
