@@ -13,9 +13,13 @@ export type AppInfo = {
 };
 
 export type Game = {
-  id: string;
-  name: string;
-  hint: string;
+  id: string; // e.g., 'cyberpunk'
+  name: string; // e.g., 'Cyberpunk 2077'
+  path: string; // e.g., 'C:/Games/Cyberpunk 2077'
+  executables: string[]; // e.g., ['Cyberpunk2077.exe', 'launcher.exe']
+  posterUrl?: string;
+  heroUrl?: string;
+  logoUrl?: string;
 };
 
 export type User = {
@@ -43,15 +47,17 @@ export const ALL_APPS: AppInfo[] = [
   { id: 'shutdown', name: 'Shutdown', icon: Power, onClick: () => console.log('Shutdown initiated'), description: 'Shutdown the PC' },
 ];
 
-export const ALL_GAMES: Game[] = [
-  { id: 'cyberpunk', name: 'Cyberpunk 2077', hint: 'dystopian city' },
-  { id: 'witcher3', name: 'The Witcher 3', hint: 'fantasy landscape' },
-  { id: 'rdr2', name: 'Red Dead Redemption 2', hint: 'western landscape' },
-  { id: 'eldenring', name: 'Elden Ring', hint: 'dark fantasy' },
-  { id: 'bg3', name: 'Baldur\'s Gate 3', hint: 'fantasy rpg' },
-  { id: 'starfield', name: 'Starfield', hint: 'space exploration' },
-  { id: 'forza5', name: 'Forza Horizon 5', hint: 'race car' },
-  { id: 'helldivers2', name: 'Helldivers 2', hint: 'sci-fi soldiers' },
+// This simulates the result of scanning the filesystem.
+// In a real app, this would be generated dynamically.
+export const INITIAL_GAMES: Game[] = [
+  { id: 'cyberpunk', name: 'Cyberpunk 2077', path: 'D:/Games/Cyberpunk 2077', executables: ['bin/x64/Cyberpunk2077.exe', 'redprelauncher.exe'] },
+  { id: 'witcher3', name: 'The Witcher 3', path: 'D:/Games/The Witcher 3', executables: ['bin/x64/witcher3.exe'] },
+  { id: 'rdr2', name: 'Red Dead Redemption 2', path: 'D:/Games/Red Dead Redemption 2', executables: ['RDR2.exe', 'PlayRDR2.exe'] },
+  { id: 'eldenring', name: 'Elden Ring', path: 'D:/Games/Elden Ring', executables: ['game/eldenring.exe'] },
+  { id: 'bg3', name: 'Baldur\'s Gate 3', path: 'D:/Games/Baldurs Gate 3', executables: ['bin/bg3.exe', 'bin/bg3_dx11.exe'] },
+  { id: 'starfield', name: 'Starfield', path: 'D:/Games/Starfield', executables: ['Starfield.exe'] },
+  { id: 'forza5', name: 'Forza Horizon 5', path: 'D:/Games/Forza Horizon 5', executables: ['ForzaHorizon5.exe'] },
+  { id: 'helldivers2', name: 'Helldivers 2', path: 'D:/Games/Helldivers 2', executables: ['bin/helldivers2.exe'] },
 ];
 
 export const INITIAL_USERS: User[] = [
@@ -62,7 +68,7 @@ export const INITIAL_USERS: User[] = [
     pin: '1234',
     permissions: {
       apps: ALL_APPS.map(app => app.id),
-      games: ALL_GAMES.map(game => game.id),
+      games: INITIAL_GAMES.map(game => game.id),
     },
   },
   {

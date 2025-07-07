@@ -8,36 +8,56 @@ import { useHints } from '@/context/HintContext';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
 import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { useUser } from '@/context/UserContext';
-import { ALL_GAMES, type Game } from '@/lib/data';
+import type { Game } from '@/lib/data';
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
+import { useGames } from "@/context/GameContext";
+import Link from "next/link";
+import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const GameCard = ({ name, hint }: Game) => (
-    <button className="block group w-full h-full rounded-lg focus:outline-none text-left">
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-between items-start p-4 aspect-[3/4] transform group-hover:scale-105 group-focus-within:scale-105">
+const GameCard = ({ game }: { game: Game }) => (
+    <Link href={`/dashboard/games/${game.id}`} className="block group w-full h-full rounded-lg focus:outline-none text-left">
+      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-between items-start p-4 aspect-[3/4] transform group-hover:scale-105 group-focus-within:scale-105 overflow-hidden">
         <div 
-            className="w-full h-4/5 bg-cover bg-center rounded-md flex items-center justify-center mb-4" 
-            style={{backgroundImage: `url(https://placehold.co/300x400.png)`}}
-            data-ai-hint={hint}
+            className="w-full h-4/5 bg-cover bg-center rounded-md flex items-center justify-center mb-4 relative" 
         >
-          <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
+          {game.posterUrl ? (
+            <Image src={game.posterUrl} alt={game.name} fill className="object-cover" />
+          ) : (
+            <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
+          )}
         </div>
-        <h3 className="text-lg font-bold text-card-foreground truncate w-full">{name}</h3>
+        <h3 className="text-lg font-bold text-card-foreground truncate w-full">{game.name}</h3>
       </Card>
-    </button>
+    </Link>
 );
+
+const GameCardSkeleton = () => (
+    <div className="flex flex-col space-y-3">
+      <Skeleton className="h-[350px] w-full rounded-xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-4/5" />
+      </div>
+    </div>
+)
 
 export default function GamesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   const { currentUser } = useUser();
+  const { games, isLoading, fetchGameMetadata } = useGames();
   useGridNavigation({ gridRef });
   useBackNavigation('/dashboard');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   
+  useEffect(() => {
+    fetchGameMetadata();
+  }, [fetchGameMetadata]);
+
   useEffect(() => {
     setHints([
       { key: '↕↔', action: 'Navigate' },
@@ -46,17 +66,17 @@ export default function GamesPage() {
       { key: 'Q', action: 'Prev Tab' },
       { key: 'E', action: 'Next Tab' },
     ]);
-     // Focus the first element on mount for immediate navigation
+
     const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
-    firstElement?.focus();
+    if (firstElement) firstElement.focus();
 
     return () => setHints([]);
-  }, [setHints]);
+  }, [setHints, isLoading]);
 
   const permittedGames = React.useMemo(() => {
     if (!currentUser) return [];
-    return ALL_GAMES.filter(game => currentUser.permissions.games.includes(game.id));
-  }, [currentUser]);
+    return games.filter(game => currentUser.permissions.games.includes(game.id));
+  }, [currentUser, games]);
 
   const filteredGames = useMemo(() => {
     if (!searchQuery) return permittedGames;
@@ -67,9 +87,8 @@ export default function GamesPage() {
 
   const handleKeyboardClose = () => {
     setIsKeyboardOpen(false);
-    // Return focus to the grid
     const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
-    firstElement?.focus();
+    if (firstElement) firstElement.focus();
   }
 
   if (!currentUser) {
@@ -89,12 +108,15 @@ export default function GamesPage() {
                 value={searchQuery}
                 onFocus={() => setIsKeyboardOpen(true)}
                 onClick={() => setIsKeyboardOpen(true)}
-                readOnly // To force use of on-screen keyboard
+                readOnly
                 />
             </div>
         </div>
         <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {filteredGames.map(game => <GameCard key={game.id} {...game} />)}
+            {isLoading 
+              ? Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)
+              : filteredGames.map(game => <GameCard key={game.id} game={game} />)
+            }
         </div>
       </div>
 
