@@ -12,6 +12,11 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
     if (!grid) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // We only care about navigation and selection keys
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) {
+        return;
+      }
+
       const focusable = Array.from(
         grid.querySelectorAll<HTMLElement>('a[href]:not([disabled]), button:not([disabled])')
       );
@@ -20,33 +25,31 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
 
       const activeElement = document.activeElement as HTMLElement;
       
-      const currentIndex = focusable.indexOf(activeElement);
-      if (currentIndex === -1) {
+      // IMPORTANT: Only handle the event if the focus is currently inside this grid.
+      // This prevents multiple grid navigation hooks from conflicting on the same page.
+      if (!grid.contains(activeElement)) {
         return;
       }
       
-      // Handle selection
+      const currentIndex = focusable.indexOf(activeElement);
+      
+      // Stop the browser's default behavior for these keys (e.g., scrolling the page)
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Handle selection (A button on controller)
       if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        e.stopPropagation();
         activeElement.click();
         return;
       }
 
-      // Handle navigation
-      const isArrowKey = e.key.startsWith('Arrow');
-      if (!isArrowKey) {
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-      
+      // Handle D-Pad/Arrow navigation
       const getColumnCount = () => {
-        if (focusable.length <= 1) return 1;
-        const firstElementTop = focusable[0].offsetTop;
-        const firstRowElements = focusable.filter(el => el.offsetTop === firstElementTop);
-        return firstRowElements.length > 0 ? firstRowElements.length : 1;
+        // This is a more reliable way to determine the grid's column count.
+        // It reads the actual computed CSS `grid-template-columns` property.
+        const gridStyles = window.getComputedStyle(grid);
+        const columnValue = gridStyles.getPropertyValue('grid-template-columns');
+        return columnValue.split(' ').length;
       };
 
       const columnCount = getColumnCount();
@@ -60,22 +63,27 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
           nextIndex = currentIndex + columnCount;
           break;
         case 'ArrowLeft':
+          // Prevent moving left from the first column of any row
           if (currentIndex % columnCount !== 0) {
             nextIndex = currentIndex - 1;
           }
           break;
         case 'ArrowRight':
+          // Prevent moving right from the last column of any row, or from the last item
           if ((currentIndex + 1) % columnCount !== 0 && currentIndex + 1 < focusable.length) {
              nextIndex = currentIndex + 1;
           }
           break;
       }
       
+      // If the calculated nextIndex is valid, move focus to that element
       if (nextIndex >= 0 && nextIndex < focusable.length) {
         focusable[nextIndex].focus();
       }
     };
 
+    // The event listener needs to be on the document to catch key presses
+    // regardless of what specific element has focus.
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
