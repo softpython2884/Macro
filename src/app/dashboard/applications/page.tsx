@@ -101,7 +101,12 @@ export default function ApplicationsPage() {
 
   const permittedApps = React.useMemo(() => {
     if (!currentUser) return [];
-    // Ensure settings is always available
+
+    if (currentUser.name === 'Admin') {
+      return ALL_APPS;
+    }
+    
+    // Ensure settings is always available for other users
     const requiredAppIds = ['settings'];
     const userAppIds = new Set([...currentUser.permissions.apps, ...requiredAppIds]);
     return ALL_APPS.filter(app => userAppIds.has(app.id));

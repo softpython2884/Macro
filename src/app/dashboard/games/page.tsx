@@ -39,9 +39,6 @@ const GameCard = ({ game }: { game: Game }) => (
 const GameCardSkeleton = () => (
     <div className="flex flex-col space-y-3">
       <Skeleton className="h-[350px] w-full rounded-xl" />
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-4/5" />
-      </div>
     </div>
 )
 
@@ -77,6 +74,9 @@ export default function GamesPage() {
 
   const permittedGames = React.useMemo(() => {
     if (!currentUser) return [];
+    if (currentUser.name === 'Admin') {
+      return games;
+    }
     return games.filter(game => currentUser.permissions.games.includes(game.id));
   }, [currentUser, games]);
 
