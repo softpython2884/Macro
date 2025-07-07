@@ -6,8 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { MacroLogo } from "@/components/macro-logo";
+import { ArrowLeft, Rocket } from "lucide-react";
 import { useHints } from "@/context/HintContext";
 
 export default function GameLaunchingPage() {
@@ -56,10 +55,10 @@ export default function GameLaunchingPage() {
                 <h1 className="text-6xl font-bold text-glow">{game.name}</h1>
             )}
             
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <MacroLogo className="w-12 h-12 animate-pulse text-primary" />
-                <p>Launching {executable}...</p>
-                <p className="text-sm">(This is a simulation. Press B to return)</p>
+            <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
+                <Rocket className="w-12 h-12 animate-pulse text-primary mb-4" />
+                <p className="text-2xl text-foreground">Launching {executable}...</p>
+                <p className="mt-2 text-sm">The game should now be running. Press B to return to Macro.</p>
             </div>
 
             <Button variant="outline" onClick={() => router.back()} className="bg-black/30 hover:bg-black/50 border-white/20">

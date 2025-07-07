@@ -18,18 +18,20 @@ import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const GameCard = ({ game }: { game: Game }) => (
-    <Link href={`/dashboard/games/${game.id}`} className="block group w-full h-full rounded-lg focus:outline-none text-left">
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-between items-start p-4 aspect-[3/4] transform group-hover:scale-105 group-focus-within:scale-105 overflow-hidden">
-        <div 
-            className="w-full h-4/5 bg-cover bg-center rounded-md flex items-center justify-center mb-4 relative" 
-        >
-          {game.posterUrl ? (
-            <Image src={game.posterUrl} alt={game.name} fill className="object-cover" />
+    <Link href={`/dashboard/games/${game.id}`} className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]">
+      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
+        {game.posterUrl ? (
+            <Image 
+              src={game.posterUrl} 
+              alt={game.name} 
+              fill 
+              className="object-cover group-hover:scale-105 group-focus-within:scale-105 transition-transform duration-300"
+            />
           ) : (
-            <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
+            <div className="flex items-center justify-center h-full">
+                <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
+            </div>
           )}
-        </div>
-        <h3 className="text-lg font-bold text-card-foreground truncate w-full">{game.name}</h3>
       </Card>
     </Link>
 );

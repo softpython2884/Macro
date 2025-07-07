@@ -4,12 +4,14 @@
 import { useGames } from "@/context/GameContext";
 import { useUser } from "@/context/UserContext";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Rocket, FileCode, ArrowLeft } from "lucide-react";
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { useHints } from "@/context/HintContext";
+import { useGridNavigation } from "@/hooks/use-grid-navigation";
+import { launchGame } from "@/lib/game-launcher";
 
 export default function GameDetailPage() {
     const params = useParams();
@@ -17,17 +19,23 @@ export default function GameDetailPage() {
     const { games } = useGames();
     const { currentUser } = useUser();
     const { setHints } = useHints();
+    const executableListRef = useRef<HTMLDivElement>(null);
     
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
 
     useBackNavigation(`/dashboard/games`);
+    useGridNavigation({ gridRef: executableListRef });
 
     useEffect(() => {
         setHints([
             { key: 'A', action: 'Launch' },
             { key: 'B', action: 'Back' },
         ]);
+        
+        const firstButton = executableListRef.current?.querySelector('button') as HTMLElement;
+        firstButton?.focus();
+
         return () => setHints([]);
     }, [setHints]);
 
@@ -36,8 +44,8 @@ export default function GameDetailPage() {
         return null; 
     }
 
-    const handleLaunch = (executable: string) => {
-        console.log(`Launching ${executable} from ${game.path}`);
+    const handleLaunch = async (executable: string) => {
+        await launchGame(game.path, executable);
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }
 
@@ -62,7 +70,7 @@ export default function GameDetailPage() {
                 <div className="max-w-xl">
                     <p className="text-lg text-muted-foreground">Select an executable to launch the game.</p>
                 </div>
-                <div className="flex flex-col items-start gap-4">
+                <div ref={executableListRef} className="flex flex-col items-start gap-4">
                     {game.executables.map(exe => (
                          <Button key={exe} onClick={() => handleLaunch(exe)} size="lg">
                             <Rocket className="mr-2 h-5 w-5" />
