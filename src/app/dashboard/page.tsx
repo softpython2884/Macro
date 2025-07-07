@@ -6,6 +6,7 @@ import { Gamepad2, LayoutGrid, User, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import { useHints } from '@/context/HintContext';
 
@@ -42,7 +43,7 @@ const mainMenuItems = [
 
 const MenuCard = ({ title, description, icon: Icon, href, hint }: typeof mainMenuItems[0]) => {
   return (
-    <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none">
+    <Link href={href} className="block group w-full h-full rounded-lg focus:outline-none" tabIndex={-1}>
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-end p-8 aspect-[16/9] overflow-hidden group-focus-within:scale-100 group-hover:scale-100">
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-40 group-focus-within:opacity-40 transition-opacity" 
@@ -65,6 +66,7 @@ export default function DashboardPage() {
   const [current, setCurrent] = React.useState(0)
   const { setHints } = useHints();
   const carouselContainerRef = React.useRef<HTMLDivElement>(null);
+  const router = useRouter();
   
   React.useEffect(() => {
     setHints([
@@ -96,6 +98,27 @@ export default function DashboardPage() {
     }
   }, [api])
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (document.activeElement !== carouselContainerRef.current) {
+            return;
+        }
+
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const targetHref = mainMenuItems[current]?.href;
+            if (targetHref) {
+                router.push(targetHref);
+            }
+        }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [current, router]);
+
   return (
     <div className="flex flex-1 items-center justify-center animate-zoom-in-fade w-full">
         <Carousel 
@@ -103,7 +126,7 @@ export default function DashboardPage() {
             setApi={setApi}
             opts={{ align: "center", loop: true }} 
             className="w-full max-w-6xl focus:outline-none"
-            tabIndex={-1} // Make it focusable but not via Tab key
+            tabIndex={0} // Make it focusable
         >
           <CarouselContent className="-ml-8 py-12">
             {mainMenuItems.map((item, index) => (
