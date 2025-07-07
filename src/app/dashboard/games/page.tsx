@@ -10,7 +10,7 @@ import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { useUser } from '@/context/UserContext';
 import type { Game } from '@/lib/data';
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
 import { useGames } from "@/context/GameContext";
 import Link from "next/link";
@@ -122,6 +122,12 @@ export default function GamesPage() {
 
        <Dialog open={isKeyboardOpen} onOpenChange={(isOpen) => !isOpen && handleKeyboardClose()}>
         <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-4xl flex justify-center" onInteractOutside={(e) => e.preventDefault()}>
+            <DialogHeader className="sr-only">
+              <DialogTitle>On-Screen Keyboard</DialogTitle>
+              <DialogDescription>
+                Search for a game in your library.
+              </DialogDescription>
+            </DialogHeader>
             <OnScreenKeyboard
                 onInput={(char) => setSearchQuery(q => q + char)}
                 onDelete={() => setSearchQuery(q => q.slice(0, -1))}
