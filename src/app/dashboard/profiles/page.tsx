@@ -14,14 +14,21 @@ import { PlusCircle, Trash2, Edit, LogIn, KeyRound } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ProfileForm } from "@/components/profile-form";
+import { PinInputPad } from "@/components/pin-input";
+import { useRouter } from "next/navigation";
 
 export default function ProfilesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const { users, currentUser, login, deleteUser } = useUser();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
+
+  const [userToSwitch, setUserToSwitch] = useState<User | null>(null);
+  const [showPinPad, setShowPinPad] = useState(false);
+  const [pinError, setPinError] = useState(false);
 
   useGridNavigation({ gridRef });
   useBackNavigation('/dashboard');
@@ -49,9 +56,35 @@ export default function ProfilesPage() {
   };
 
   const handleSwitchProfile = (user: User) => {
-    if (login(user)) {
-        // success
+    if (user.pin) {
+      setUserToSwitch(user);
+      setShowPinPad(true);
+    } else {
+      if (login(user)) {
+        router.push('/dashboard');
+      }
     }
+  };
+
+  const handlePinComplete = (pin: string) => {
+    if (userToSwitch) {
+      if (login(userToSwitch, pin)) {
+        setShowPinPad(false);
+        setUserToSwitch(null);
+        setPinError(false);
+        router.push('/dashboard');
+      } else {
+        setPinError(true);
+      }
+    }
+  };
+
+  const handleCancelPin = () => {
+    setShowPinPad(false);
+    setUserToSwitch(null);
+    setPinError(false);
+    const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+    firstElement?.focus();
   };
 
   return (
@@ -126,6 +159,18 @@ export default function ProfilesPage() {
                 </DialogDescription>
             </DialogHeader>
             <ProfileForm userToEdit={userToEdit} onFinished={() => setIsFormOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPinPad} onOpenChange={(isOpen) => { if(!isOpen) handleCancelPin(); }}>
+        <DialogContent className="bg-card/90 backdrop-blur-lg max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Enter PIN for {userToSwitch?.name}</DialogTitle>
+            <DialogDescription>
+              This profile is protected. Please enter the 4-digit PIN.
+            </DialogDescription>
+          </DialogHeader>
+          <PinInputPad onPinComplete={handlePinComplete} onCancel={handleCancelPin} showError={pinError} />
         </DialogContent>
       </Dialog>
     </div>

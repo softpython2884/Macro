@@ -88,6 +88,12 @@ const config = {
             "0%": { opacity: '1', transform: 'scale(1)' },
             "100%": { opacity: '0', transform: 'scale(1.05)' },
         },
+        "shake": {
+          '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+          '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+          '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+          '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -96,6 +102,7 @@ const config = {
         "fade-in-slow": 'fade-in-slow 0.8s ease-in-out forwards',
         "zoom-in-fade": 'zoom-in-fade 0.5s ease-out forwards',
         "zoom-out-fade": 'zoom-out-fade 0.5s ease-out forwards',
+        "shake": 'shake 0.82s cubic-bezier(.36,.07,.19,.97) both',
       },
       dropShadow: {
         'glow': '0 0 10px hsl(var(--primary) / 0.8)',

@@ -68,7 +68,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-2',
     name: 'Guest',
-    avatar: 'https://placehold.co/160x160.png',
+    avatar: 'https://static.wikia.nocookie.net/925fa2de-087e-47f4-8aed-4f5487f0a78c/scale-to-width/755',
     permissions: {
       apps: ['netflix', 'youtube', 'spotify'],
       games: ['forza5'],

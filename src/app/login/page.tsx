@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -12,13 +11,14 @@ import { useGridNavigation } from '@/hooks/use-grid-navigation';
 import { useUser } from '@/context/UserContext';
 import type { User } from '@/lib/data';
 import { PinInputPad } from '@/components/pin-input';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const LoginView = () => {
   const [introState, setIntroState] = useState('playing'); // playing, fading, finished
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showPinPad, setShowPinPad] = useState(false);
+  const [pinError, setPinError] = useState(false);
   
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -27,8 +27,8 @@ const LoginView = () => {
   useGridNavigation({ gridRef });
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setIntroState('fading'), 3500);
-    const endTimer = setTimeout(() => setIntroState('finished'), 4000);
+    const fadeTimer = setTimeout(() => setIntroState('fading'), 4500);
+    const endTimer = setTimeout(() => setIntroState('finished'), 5000);
     return () => { clearTimeout(fadeTimer); clearTimeout(endTimer); };
   }, []);
 
@@ -61,13 +61,13 @@ const LoginView = () => {
         const success = login(selectedUser, pin);
         if (success) {
             setShowPinPad(false);
+            setPinError(false);
             setIsTransitioning(true);
              setTimeout(() => {
                 router.push('/dashboard');
             }, 500);
         } else {
-            // Add a visual indicator for wrong pin
-            alert("Incorrect PIN!");
+            setPinError(true);
         }
     }
   };
@@ -75,6 +75,7 @@ const LoginView = () => {
   const handleCancelPin = () => {
     setShowPinPad(false);
     setSelectedUser(null);
+    setPinError(false);
     // Refocus grid
     const firstElement = gridRef.current?.querySelector('button') as HTMLElement;
     firstElement?.focus();
@@ -128,9 +129,15 @@ const LoginView = () => {
           ))}
         </div>
       </main>
-      <Dialog open={showPinPad} onOpenChange={setShowPinPad}>
-        <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
-            <PinInputPad onPinComplete={handlePinComplete} onCancel={handleCancelPin} />
+      <Dialog open={showPinPad} onOpenChange={(isOpen) => { if (!isOpen) handleCancelPin(); }}>
+        <DialogContent className="bg-card/90 backdrop-blur-lg max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>Enter PIN for {selectedUser?.name}</DialogTitle>
+              <DialogDescription>
+                This profile is protected. Please enter the 4-digit PIN.
+              </DialogDescription>
+            </DialogHeader>
+            <PinInputPad onPinComplete={handlePinComplete} onCancel={handleCancelPin} showError={pinError} />
         </DialogContent>
       </Dialog>
     </>
