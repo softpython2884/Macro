@@ -28,8 +28,8 @@ const LoginView = () => {
   useGridNavigation({ gridRef });
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setIntroState('fading'), 5500);
-    const endTimer = setTimeout(() => setIntroState('finished'), 6000);
+    const fadeTimer = setTimeout(() => setIntroState('fading'), 6000);
+    const endTimer = setTimeout(() => setIntroState('finished'), 6500);
     return () => { clearTimeout(fadeTimer); clearTimeout(endTimer); };
   }, []);
 
@@ -107,7 +107,7 @@ const LoginView = () => {
             Select a profile to launch
           </p>
         </div>
-        <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+        <div ref={gridRef} className="flex flex-wrap items-start justify-center gap-8 md:gap-12">
           {users.map((user, index) => (
             <button
               key={user.id}
