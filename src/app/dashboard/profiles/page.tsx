@@ -16,12 +16,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ProfileForm } from "@/components/profile-form";
 import { PinInputPad } from "@/components/pin-input";
 import { useRouter } from "next/navigation";
+import { useSound } from "@/context/SoundContext";
 
 export default function ProfilesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { users, currentUser, login, logout, deleteUser } = useUser();
+  const { playSound } = useSound();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
@@ -46,16 +48,19 @@ export default function ProfilesPage() {
   }, [setHints]);
 
   const handleAddNew = () => {
+    playSound('select');
     setUserToEdit(null);
     setIsFormOpen(true);
   };
 
   const handleEdit = (user: User) => {
+    playSound('select');
     setUserToEdit(user);
     setIsFormOpen(true);
   };
 
   const handleSwitchProfile = (user: User) => {
+    playSound('select');
     if (user.pin) {
       setUserToSwitch(user);
       setShowPinPad(true);
@@ -69,17 +74,20 @@ export default function ProfilesPage() {
   const handlePinComplete = (pin: string) => {
     if (userToSwitch) {
       if (login(userToSwitch, pin)) {
+        playSound('select');
         setShowPinPad(false);
         setUserToSwitch(null);
         setPinError(false);
         router.push('/dashboard');
       } else {
+        playSound('error');
         setPinError(true);
       }
     }
   };
 
   const handleCancelPin = () => {
+    playSound('back');
     setShowPinPad(false);
     setUserToSwitch(null);
     setPinError(false);
@@ -95,7 +103,7 @@ export default function ProfilesPage() {
           <p className="text-muted-foreground mt-2">Add, edit, or switch profiles.</p>
         </div>
         <div className="flex items-center gap-2">
-            <Button onClick={logout} variant="outline">
+            <Button onClick={() => { playSound('select'); logout(); }} variant="outline">
                 <LogOut className="mr-2 h-4 w-4" /> Change User
             </Button>
             <Button onClick={handleAddNew}>
@@ -129,7 +137,7 @@ export default function ProfilesPage() {
                     </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="icon" aria-label={`Delete ${user.name}`} disabled={users.length <= 1}>
+                            <Button variant="destructive" size="icon" aria-label={`Delete ${user.name}`} disabled={users.length <= 1} onClick={() => playSound('select')}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </AlertDialogTrigger>
@@ -141,8 +149,8 @@ export default function ProfilesPage() {
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteUser(user.id)}>Delete</AlertDialogAction>
+                                <AlertDialogCancel onClick={() => playSound('back')}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => { playSound('select'); deleteUser(user.id); }}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

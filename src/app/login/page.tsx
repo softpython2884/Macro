@@ -13,6 +13,7 @@ import { useUser } from '@/context/UserContext';
 import type { User } from '@/lib/data';
 import { PinInputPad } from '@/components/pin-input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useSound } from '@/context/SoundContext';
 
 const LoginView = () => {
   const [introState, setIntroState] = useState('playing'); // playing, fading, finished
@@ -25,6 +26,7 @@ const LoginView = () => {
   const gridRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { users, login } = useUser();
+  const { playSound } = useSound();
   useGridNavigation({ gridRef });
 
   useEffect(() => {
@@ -44,6 +46,7 @@ const LoginView = () => {
   }, [introState, showPinPad, setHints]);
 
   const handleProfileSelect = (user: User) => {
+    playSound('select');
     setSelectedUser(user);
     if (user.pin) {
       setShowPinPad(true);
@@ -61,6 +64,7 @@ const LoginView = () => {
     if (selectedUser) {
         const success = login(selectedUser, pin);
         if (success) {
+            playSound('select');
             setShowPinPad(false);
             setPinError(false);
             setIsTransitioning(true);
@@ -68,12 +72,14 @@ const LoginView = () => {
                 router.push('/dashboard');
             }, 500);
         } else {
+            playSound('error');
             setPinError(true);
         }
     }
   };
 
   const handleCancelPin = () => {
+    playSound('back');
     setShowPinPad(false);
     setSelectedUser(null);
     setPinError(false);

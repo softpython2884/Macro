@@ -13,6 +13,7 @@ import { useUser } from '@/context/UserContext';
 import { ScrollArea } from './ui/scroll-area';
 import { useGames } from '@/context/GameContext';
 import React from 'react';
+import { useSound } from '@/context/SoundContext';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -32,6 +33,7 @@ interface ProfileFormProps {
 export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
   const { addUser, updateUser } = useUser();
   const { allScannedGames } = useGames();
+  const { playSound } = useSound();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,6 +72,12 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
     } else {
       addUser(userData as Omit<User, 'id'>);
     }
+    playSound('select');
+    onFinished();
+  }
+
+  const handleCancel = () => {
+    playSound('back');
     onFinished();
   }
 
@@ -165,7 +173,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
         </div>
 
         <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onFinished}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={handleCancel}>Cancel</Button>
             <Button type="submit">{userToEdit ? 'Save Changes' : 'Create Profile'}</Button>
         </div>
       </form>
