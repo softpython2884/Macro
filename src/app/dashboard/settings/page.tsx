@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -64,8 +63,18 @@ export default function SettingsPage() {
     try {
       const savedSettings = localStorage.getItem(SETTINGS_KEY);
       if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings) as SettingsFormValues;
-        form.reset(parsedSettings);
+        const parsed = JSON.parse(savedSettings);
+        // Ensure all fields have a default value to prevent uncontrolled -> controlled switch
+        // and that array fields have at least one entry for the form.
+        const sanitizedSettings: SettingsFormValues = {
+          games: (parsed.games && parsed.games.length > 0) ? parsed.games : [{ value: "" }],
+          plugins: (parsed.plugins && parsed.plugins.length > 0) ? parsed.plugins : [{ value: "" }],
+          browser: parsed.browser || 'chrome.exe',
+          moonlightPath: parsed.moonlightPath || '',
+          downloadsPath: parsed.downloadsPath || '',
+          localGamesPath: parsed.localGamesPath || '',
+        };
+        form.reset(sanitizedSettings);
       }
     } catch (error) {
         console.error("Failed to load settings from localStorage", error);
@@ -273,7 +282,7 @@ export default function SettingsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Default Browser</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a default browser for web apps" />

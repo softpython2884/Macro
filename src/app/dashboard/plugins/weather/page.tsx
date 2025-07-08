@@ -1,4 +1,4 @@
-import { WeatherWidget } from "../../../../plugins/weather/components/WeatherWidget";
+import { WeatherWidget } from '../../../../../plugins/weather/components/WeatherWidget';
 
 export default function WeatherPluginPage() {
   return (
