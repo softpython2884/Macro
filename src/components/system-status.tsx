@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -38,12 +39,20 @@ export function SystemStatus() {
 
     return () => clearInterval(timerId);
   }, []);
+  
+  const batteryColorClass = isCharging
+    ? 'text-green-500'
+    : batteryLevel !== null && batteryLevel <= 15
+    ? 'text-red-500'
+    : batteryLevel !== null && batteryLevel <= 25
+    ? 'text-yellow-500'
+    : '';
 
   return (
     <div className="flex items-center gap-4 text-sm text-muted-foreground">
       {batteryLevel !== null && (
         <div className="flex items-center gap-2">
-          <Battery className={cn("h-4 w-4", isCharging && "text-green-500")} />
+          <Battery className={cn("h-4 w-4", batteryColorClass)} />
           <span>{batteryLevel}%</span>
         </div>
       )}

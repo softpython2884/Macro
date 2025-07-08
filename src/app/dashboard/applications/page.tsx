@@ -13,10 +13,13 @@ import type { AppInfo } from '@/lib/data';
 import { useSound } from '@/context/SoundContext';
 import { launchWebApp } from '@/lib/webapp-launcher';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { launchExecutable } from '@/lib/launch-executable';
 
 const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) => {
     const { playSound } = useSound();
     const router = useRouter();
+    const { toast } = useToast();
 
     const cardContent = (
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-center items-center p-6 aspect-video transform group-hover:scale-105 group-focus-within:scale-105">
@@ -33,6 +36,35 @@ const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) 
     };
     
     const handleLaunch = async () => {
+        // Special case for Moonlight
+        if (id === 'moonlight') {
+            playSound('launch');
+            try {
+                const settingsString = localStorage.getItem('macro-settings');
+                const settings = settingsString ? JSON.parse(settingsString) : {};
+                const moonlightPath = settings.moonlightPath;
+
+                if (moonlightPath) {
+                    await launchExecutable(moonlightPath);
+                    router.push(`/dashboard/applications/${id}/launching`);
+                } else {
+                    toast({
+                        title: "Moonlight Not Configured",
+                        description: "Please set the path to your Moonlight executable in the Settings page.",
+                        variant: "destructive",
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to launch Moonlight:", error);
+                toast({
+                    title: "Launch Error",
+                    description: "Could not launch Moonlight.",
+                    variant: "destructive",
+                });
+            }
+            return;
+        }
+
         if (href) {
             const isHttp = href.startsWith('http');
             const isSpecialProtocol = href.startsWith('steam') || href.startsWith('spotify');

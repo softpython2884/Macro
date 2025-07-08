@@ -33,6 +33,7 @@ const formSchema = z.object({
   apps: z.string().optional(),
   plugins: z.string().optional(),
   browser: z.string().optional(),
+  moonlightPath: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
@@ -49,7 +50,8 @@ export default function SettingsPage() {
       media: "",
       apps: "",
       plugins: "",
-      browser: "chrome.exe"
+      browser: "chrome.exe",
+      moonlightPath: ""
     },
   });
 
@@ -182,6 +184,23 @@ export default function SettingsPage() {
                       </Select>
                     <FormDescription>
                       This browser will be used to open web apps, and will be the target of the F9 "kill process" command.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="moonlightPath"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Moonlight Executable Path</FormLabel>
+                    <FormControl>
+                      <Input placeholder="C:/path/to/Moonlight.exe" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Provide the full path to the Moonlight executable if it's installed via a custom path.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
