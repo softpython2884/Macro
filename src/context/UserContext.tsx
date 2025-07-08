@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
@@ -24,7 +25,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const login = (user: User, pin?: string): boolean => {
     if (user.pin && user.pin !== pin) {
-      console.error("Incorrect PIN");
       return false;
     }
     setCurrentUser(user);

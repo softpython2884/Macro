@@ -163,9 +163,15 @@ export default function ApplicationsPage() {
 
         const enriched = await Promise.all(
           permittedApps.map(async (app) => {
-            if (app.id === 'settings' || app.id === 'plugins' || app.id === 'shutdown') {
+            if (['settings', 'plugins', 'shutdown'].includes(app.id)) {
                 return app; 
             }
+            
+            // Hardcode YouTube image to a specific user-requested one
+            if (app.id === 'youtube') {
+              return { ...app, posterUrl: 'https://cdn.steamgriddb.com/grid/92257997181d2c6745f1715aab81e186.png' };
+            }
+            
             try {
                 const searchName = app.searchName || app.name;
                 const foundGame = await searchGame(searchName);
@@ -178,9 +184,6 @@ export default function ApplicationsPage() {
                 if (app.id === 'moonlight') {
                     // User requested the second image for Moonlight
                     posterUrl = grids.length > 1 ? grids[1].url : (grids.length > 0 ? grids[0].url : undefined);
-                } else if (app.id === 'youtube') {
-                    // User requested the fifth image for YouTube, fallback to first
-                    posterUrl = grids.length > 4 ? grids[4].url : (grids.length > 0 ? grids[0].url : undefined);
                 } else {
                     posterUrl = grids.length > 0 ? grids[0].url : undefined;
                 }
