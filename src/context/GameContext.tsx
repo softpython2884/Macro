@@ -31,7 +31,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     hasFetched.current = true;
 
-    let initialGames: Omit<Game, 'posterUrl' | 'heroUrl' | 'logoUrl'>[] = [];
+    let initialGames: Omit<Game, 'posterUrl' | 'heroUrls' | 'logoUrl'>[] = [];
     try {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
@@ -72,13 +72,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             ]);
 
             const posterUrl = grids.length > 0 ? grids[0].url : undefined;
-            const heroUrl = heroes.length > 0 ? heroes[0].url : undefined;
+            const heroUrls = heroes.length > 0 ? heroes.map(h => h.url).slice(0, 9) : undefined;
             const logoUrl = logos.length > 0 ? logos[0].url : undefined;
             
             return {
               ...game,
               posterUrl,
-              heroUrl,
+              heroUrls,
               logoUrl,
             };
         } catch (error) {

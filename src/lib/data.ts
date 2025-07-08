@@ -22,7 +22,7 @@ export type Game = {
   path: string; // e.g., 'C:/Games/Cyberpunk 2077'
   executables: string[]; // e.g., ['Cyberpunk2077.exe', 'launcher.exe']
   posterUrl?: string;
-  heroUrl?: string;
+  heroUrls?: string[];
   logoUrl?: string;
 };
 

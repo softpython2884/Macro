@@ -26,6 +26,7 @@ export default function GameDetailPage() {
     const executableListRef = useRef<HTMLDivElement>(null);
     const [playtime, setPlaytime] = useState<string | null>(null);
     const { setBackgroundImage } = useBackground();
+    const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
     
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
@@ -36,11 +37,22 @@ export default function GameDetailPage() {
     useEffect(() => {
         if (game) {
             // Use hero if available, otherwise fallback to poster for the background
-            setBackgroundImage(game.heroUrl || game.posterUrl || null);
+            setBackgroundImage(game.heroUrls?.[0] || game.posterUrl || null);
         }
         // On component unmount, clear the background
         return () => setBackgroundImage(null);
     }, [game, setBackgroundImage]);
+
+    useEffect(() => {
+        if (!game?.heroUrls || game.heroUrls.length <= 1) return;
+
+        const timer = setInterval(() => {
+            setCurrentHeroIndex(prevIndex => (prevIndex + 1) % game.heroUrls.length);
+        }, 5000); // Change image every 5 seconds
+
+        return () => clearInterval(timer);
+    }, [game]);
+
 
     useEffect(() => {
         try {
@@ -90,14 +102,15 @@ export default function GameDetailPage() {
             </Button>
 
             {/* Hero Banner Section */}
-            <div className="relative w-full h-72 md:h-[450px]">
-                {game.heroUrl && (
+            <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden">
+                {game.heroUrls && game.heroUrls.length > 0 && (
                     <Image
-                        src={game.heroUrl}
+                        key={currentHeroIndex}
+                        src={game.heroUrls[currentHeroIndex]}
                         alt={`${game.name} Hero Image`}
                         fill
-                        className="object-cover object-center"
-                        priority
+                        className="object-cover object-center animate-fade-in"
+                        priority={currentHeroIndex === 0}
                     />
                 )}
                 {/* Gradient overlay to blend with the content below */}
