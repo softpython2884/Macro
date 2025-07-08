@@ -28,7 +28,9 @@ function execPromise(command: string): Promise<{ stdout: string; stderr: string 
  */
 export async function killBrowserAndRelaunch(browserProcessName: string): Promise<{ success: boolean; error?: string }> {
     if (!browserProcessName) {
-        return { success: false, error: "Browser process name not provided." };
+        const errorMsg = "Browser process name not provided to killBrowserAndRelaunch.";
+        console.error(errorMsg);
+        return { success: false, error: errorMsg };
     }
     
     // This command is specific to Windows.
@@ -39,28 +41,33 @@ export async function killBrowserAndRelaunch(browserProcessName: string): Promis
     }
 
     try {
-        console.log(`Attempting to kill process: ${browserProcessName}`);
-        // The /F flag forces termination, /IM specifies the image (process) name, and /T kills child processes.
-        const { stderr } = await execPromise(`taskkill /F /IM ${browserProcessName} /T`);
+        console.log(`[PROCESS_MANAGER] Attempting to kill process: ${browserProcessName}`);
+        const { stdout, stderr } = await execPromise(`taskkill /F /IM ${browserProcessName} /T`);
 
-        if (stderr && !stderr.includes("not found")) {
+        if (stdout) console.log(`[PROCESS_MANAGER] taskkill stdout: ${stdout}`);
+        if (stderr && !stderr.includes("could not be found")) {
             // Log stderr if it's not the expected "process not found" message.
-            console.warn(`taskkill stderr for ${browserProcessName}: ${stderr}`);
+            console.warn(`[PROCESS_MANAGER] taskkill stderr for ${browserProcessName}: ${stderr}`);
+        } else {
+            console.log(`[PROCESS_MANAGER] Process ${browserProcessName} terminated or was not running.`);
         }
-
-        console.log(`Process ${browserProcessName} terminated. Relaunching Macro...`);
+        
+        console.log(`[PROCESS_MANAGER] Relaunching Macro...`);
 
         // Add a short delay to ensure the OS has time to free up resources
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Relaunch the browser to the Macro UI
-        // Note: The port should match your development server's port.
-        await launchWebApp('http://localhost:9002', browserProcessName);
+        const launchResult = await launchWebApp('http://localhost:9002', browserProcessName);
+        if (!launchResult.success) {
+            throw new Error(launchResult.error || "Relaunching web app failed.");
+        }
 
+        console.log(`[PROCESS_MANAGER] Relaunch command sent successfully.`);
         return { success: true };
 
     } catch (error: any) {
-        console.error(`Failed during kill/relaunch process for ${browserProcessName}:`, error);
+        console.error(`[PROCESS_MANAGER] Failed during kill/relaunch for ${browserProcessName}:`, error);
         return { success: false, error: error.message };
     }
 }

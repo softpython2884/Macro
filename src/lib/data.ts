@@ -11,6 +11,8 @@ export type AppInfo = {
   href?: string;
   onClick?: () => void;
   description: string;
+  searchName?: string; // For better search results on SteamGridDB
+  posterUrl?: string; // Will be populated at runtime
 };
 
 export type Game = {
@@ -34,20 +36,22 @@ export type User = {
   };
 };
 
+// Use searchName for apps where the common name might not yield the best result on SteamGridDB
 export const ALL_APPS: AppInfo[] = [
   { id: 'xalaflix', name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
   { id: 'netflix', name: 'Netflix', icon: Film, href: 'https://netflix.com', description: 'Stream movies & shows' },
   { id: 'youtube', name: 'YouTube', icon: Youtube, href: 'https://youtube.com', description: 'Watch & share videos' },
   { id: 'twitch', name: 'Twitch', icon: Twitch, href: 'https://twitch.tv', description: 'Live streaming for gamers' },
-  { id: 'moonlight', name: 'Moonlight', icon: Moon, description: 'Stream games from your PC' },
-  { id: 'brave', name: 'Brave', icon: Globe, href: 'https://brave.com', description: 'Secure & private browser' },
-  { id: 'alexa', name: 'Alexa', icon: SiAmazonalexa, href: 'https://alexa.amazon.com', description: 'Manage your assistant' },
+  { id: 'moonlight', name: 'Moonlight', icon: Moon, searchName: 'Moonlight Game Streaming', description: 'Stream games from your PC' },
+  { id: 'brave', name: 'Brave', icon: Globe, searchName: 'Brave Browser', href: 'https://brave.com', description: 'Secure & private browser' },
+  { id: 'alexa', name: 'Alexa', icon: SiAmazonalexa, searchName: 'Amazon Alexa', href: 'https://alexa.amazon.com', description: 'Manage your assistant' },
   { id: 'steam', name: 'Steam', icon: SiSteam, href: 'steam://open/bigpicture', description: 'Access your game library' },
   { id: 'spotify', name: 'Spotify', icon: Music, href: 'spotify:', description: 'Open your music' },
   { id: 'settings', name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system' },
   { id: 'plugins', name: 'Plugins', icon: Puzzle, href: '/dashboard/plugins', description: 'Manage plugins & add-ons' },
   { id: 'shutdown', name: 'Shutdown', icon: Power, onClick: () => console.log('Shutdown initiated'), description: 'Shutdown the PC' },
 ];
+
 
 // This simulates the result of scanning the filesystem for the first load.
 // It will be replaced by the actual scan result from the user's settings.

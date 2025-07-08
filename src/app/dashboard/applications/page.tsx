@@ -1,10 +1,9 @@
-
 'use client';
 
 import Link from 'next/link';
 import { Card } from "@/components/ui/card";
 import { useHints } from '@/context/HintContext';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
 import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { useUser } from '@/context/UserContext';
@@ -15,26 +14,17 @@ import { launchWebApp } from '@/lib/webapp-launcher';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { launchExecutable } from '@/lib/launch-executable';
+import { searchGame, getGrids } from '@/lib/steamgrid';
+import Image from 'next/image';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) => {
+// New AppCard component, similar to GameCard
+const AppCard = ({ app }: { app: AppInfo }) => {
     const { playSound } = useSound();
     const router = useRouter();
     const { toast } = useToast();
+    const { id, name, icon: Icon, href, description, onClick, posterUrl } = app;
 
-    const cardContent = (
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-center items-center p-6 aspect-video transform group-hover:scale-105 group-focus-within:scale-105">
-        <Icon className="h-16 w-16 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110" />
-        <h3 className="mt-4 text-xl font-bold text-card-foreground">{name}</h3>
-        <p className="mt-1 text-sm text-muted-foreground text-center">
-          {description}
-        </p>
-      </Card>
-    );
-
-    const commonProps = {
-        className:"block group w-full h-full rounded-lg focus:outline-none"
-    };
-    
     const handleLaunch = async () => {
         // Special case for Moonlight
         if (id === 'moonlight') {
@@ -81,8 +71,7 @@ const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) 
                 }
                 return;
             }
-
-            // For special protocols, we need to use window.location, not Next's Link.
+            
             if (isSpecialProtocol) {
                 playSound('launch');
                 window.location.href = href;
@@ -96,7 +85,29 @@ const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) 
         }
     };
     
-    // Internal Next.js links use the Link component for SPA transitions
+    const cardContent = (
+      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
+        {posterUrl ? (
+            <Image 
+              src={posterUrl} 
+              alt={name} 
+              fill 
+              className="object-cover group-hover:scale-105 group-focus-within:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <Icon className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
+                <h3 className="mt-4 text-xl font-bold text-card-foreground">{name}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+            </div>
+          )}
+      </Card>
+    );
+
+    const commonProps = {
+        className:"block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
+    };
+    
     if (href && !href.startsWith('http') && !href.startsWith('steam') && !href.startsWith('spotify')) {
         return (
              <Link 
@@ -109,7 +120,6 @@ const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) 
         );
     }
     
-    // Everything else (web apps, special protocols, custom functions) uses a button.
     return (
         <button onClick={handleLaunch} {...commonProps} type="button">
             {cardContent}
@@ -117,6 +127,11 @@ const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) 
     );
 };
 
+const AppCardSkeleton = () => (
+    <div className="flex flex-col space-y-3 aspect-[3/4]">
+      <Skeleton className="h-full w-full rounded-xl" />
+    </div>
+)
 
 export default function ApplicationsPage() {
   const { setHints } = useHints();
@@ -125,22 +140,10 @@ export default function ApplicationsPage() {
   useGridNavigation({ gridRef });
   useBackNavigation('/dashboard');
 
-  useEffect(() => {
-    setHints([
-      { key: '↕↔', action: 'Navigate' },
-      { key: 'A', action: 'Launch' },
-      { key: 'B', action: 'Back' },
-      { key: 'Q', action: 'Prev Tab' },
-      { key: 'E', action: 'Next Tab' },
-    ]);
-     // Focus the first element on mount for immediate navigation
-    const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
-    firstElement?.focus();
+  const [enrichedApps, setEnrichedApps] = useState<AppInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    return () => setHints([]);
-  }, [setHints]);
-
-  const permittedApps = React.useMemo(() => {
+  const permittedApps = useMemo(() => {
     if (!currentUser) return [];
 
     if (currentUser.name === 'Admin') {
@@ -153,6 +156,64 @@ export default function ApplicationsPage() {
     return ALL_APPS.filter(app => userAppIds.has(app.id));
   }, [currentUser]);
 
+  useEffect(() => {
+    const fetchAppMetadata = async () => {
+        setIsLoading(true);
+
+        const enriched = await Promise.all(
+          permittedApps.map(async (app) => {
+            if (app.id === 'settings' || app.id === 'plugins' || app.id === 'shutdown') {
+                return app; 
+            }
+            try {
+                const searchName = app.searchName || app.name;
+                const foundGame = await searchGame(searchName);
+                if (!foundGame) return app;
+
+                const grids = await getGrids(foundGame.id, ['600x900']);
+                
+                let posterUrl = grids.length > 0 ? grids[0].url : undefined;
+                if (app.id === 'moonlight' && grids.length > 1) {
+                    // This is a known good poster for Moonlight on SteamGridDB
+                    const specificGrid = grids.find(g => g.id === 20383); 
+                    if(specificGrid) posterUrl = specificGrid.url;
+                }
+
+                return { ...app, posterUrl };
+            } catch (error) {
+                console.error(`Failed to enrich metadata for app "${app.name}":`, error);
+                return app; // Return original app on error
+            }
+          })
+        );
+        
+        setEnrichedApps(enriched);
+        setIsLoading(false);
+    };
+
+    if (currentUser) {
+        fetchAppMetadata();
+    }
+  }, [currentUser, permittedApps]);
+
+
+  useEffect(() => {
+    setHints([
+      { key: '↕↔', action: 'Navigate' },
+      { key: 'A', action: 'Launch' },
+      { key: 'B', action: 'Back' },
+      { key: 'Q', action: 'Prev Tab' },
+      { key: 'E', action: 'Next Tab' },
+    ]);
+    
+    if (!isLoading) {
+      const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+      firstElement?.focus();
+    }
+
+    return () => setHints([]);
+  }, [setHints, isLoading]);
+
   if (!currentUser) {
     return null;
   }
@@ -162,7 +223,9 @@ export default function ApplicationsPage() {
       <div>
         <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Applications &amp; Actions</h2>
         <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {permittedApps.map((app) => <AppCard key={app.id} {...app} />)}
+            {isLoading 
+              ? Array.from({ length: permittedApps.length || 10 }).map((_, i) => <AppCardSkeleton key={i} />)
+              : enrichedApps.map((app) => <AppCard key={app.id} app={app} />)}
         </div>
       </div>
     </div>
