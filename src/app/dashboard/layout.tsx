@@ -1,9 +1,10 @@
+
 'use client';
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { UserNav } from "@/components/user-nav";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 import { Home, User, Settings, Gamepad2, LayoutGrid } from "lucide-react";
 import {
   Tooltip,
@@ -16,6 +17,7 @@ import { ControllerHints } from "@/components/controller-hints";
 import React from "react";
 import { SystemStatus } from "@/components/system-status";
 import { GameProvider } from "@/context/GameContext";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -32,10 +34,10 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        // Defensive check to prevent crash if e.key is undefined
         if (typeof e.key !== 'string') {
             return;
         }
@@ -64,6 +66,32 @@ export default function DashboardLayout({
         document.removeEventListener('keydown', handleKeyDown);
     };
   }, [pathname, router]);
+
+  React.useEffect(() => {
+    try {
+        const sessionJSON = localStorage.getItem('macro-active-session');
+        if (sessionJSON) {
+            const session = JSON.parse(sessionJSON);
+            const durationInSeconds = Math.round((Date.now() - session.startTime) / 1000);
+
+            const playtimeJSON = localStorage.getItem('macro-playtime') || '{}';
+            const allPlaytimes = JSON.parse(playtimeJSON);
+            allPlaytimes[session.gameId] = (allPlaytimes[session.gameId] || 0) + durationInSeconds;
+            localStorage.setItem('macro-playtime', JSON.stringify(allPlaytimes));
+
+            localStorage.removeItem('macro-active-session');
+
+            if (durationInSeconds > 60) {
+                 toast({
+                    title: "Play Session Ended",
+                    description: `You played for about ${formatDuration(durationInSeconds)}.`,
+                });
+            }
+        }
+    } catch (error) {
+        console.error("Failed to process playtime session:", error);
+    }
+  }, [pathname, toast]);
 
   return (
     <HintProvider>

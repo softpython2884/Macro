@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle, Download, Bed } from 'lucide-react';
 import { SiSteam } from '@icons-pack/react-simple-icons';
 import type { IconType } from '@icons-pack/react-simple-icons/types';
+import { getPluginApps } from './plugins';
 
 export type AppInfo = {
   id: string;
@@ -40,8 +41,7 @@ export type User = {
   };
 };
 
-// Use searchName for apps where the common name might not yield the best result on SteamGridDB
-export const ALL_APPS: AppInfo[] = [
+const CORE_APPS: AppInfo[] = [
   { id: 'xalaflix', name: 'Xalaflix', icon: Film, href: 'https://xalaflix.io', description: 'Movies & TV shows' },
   { id: 'netflix', name: 'Netflix', icon: Film, href: 'https://netflix.com', description: 'Stream movies & shows' },
   { id: 'youtube', name: 'YouTube', icon: Youtube, href: 'https://youtube.com', description: 'Watch & share videos' },
@@ -54,6 +54,9 @@ export const ALL_APPS: AppInfo[] = [
   { id: 'plugins', name: 'Plugins', icon: Puzzle, href: '/dashboard/plugins', description: 'Manage plugins & add-ons' },
   { id: 'sleep', name: 'Mettre en Veille', icon: Bed, description: 'Met le PC en veille' },
 ];
+
+// Combine core apps with apps from plugins
+export const ALL_APPS: AppInfo[] = [...CORE_APPS, ...getPluginApps()];
 
 
 // This simulates the result of scanning the filesystem for the first load.

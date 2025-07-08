@@ -4,16 +4,16 @@
 import { useGames } from "@/context/GameContext";
 import { useUser } from "@/context/UserContext";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Rocket, FileCode, ArrowLeft } from "lucide-react";
+import { Rocket, FileCode, ArrowLeft, Clock } from "lucide-react";
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { useHints } from "@/context/HintContext";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { launchGame } from "@/lib/game-launcher";
 import { useSound } from "@/context/SoundContext";
-import { hexToHsl } from "@/lib/utils";
+import { hexToHsl, formatDuration } from "@/lib/utils";
 
 export default function GameDetailPage() {
     const params = useParams();
@@ -23,12 +23,28 @@ export default function GameDetailPage() {
     const { setHints } = useHints();
     const { playSound } = useSound();
     const executableListRef = useRef<HTMLDivElement>(null);
+    const [playtime, setPlaytime] = useState<string | null>(null);
     
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
 
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
+
+    useEffect(() => {
+        try {
+            const playtimeJSON = localStorage.getItem('macro-playtime');
+            if (playtimeJSON) {
+                const allPlaytimes = JSON.parse(playtimeJSON);
+                const gamePlaytimeSeconds = allPlaytimes[gameId];
+                if (gamePlaytimeSeconds && gamePlaytimeSeconds > 0) {
+                    setPlaytime(formatDuration(gamePlaytimeSeconds));
+                }
+            }
+        } catch (error) {
+            console.error("Failed to read playtime from localStorage", error);
+        }
+    }, [gameId]);
 
     useEffect(() => {
       if (!game?.themeColors) return;
@@ -76,6 +92,8 @@ export default function GameDetailPage() {
 
     const handleLaunch = async (executable: string) => {
         playSound('launch');
+        // Start tracking playtime
+        localStorage.setItem('macro-active-session', JSON.stringify({ gameId: game.id, startTime: Date.now() }));
         await launchGame(game.path, executable);
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }
@@ -111,8 +129,14 @@ export default function GameDetailPage() {
                      <h1 className="text-6xl font-bold text-glow">{game.name}</h1>
                 )}
                
-                <div className="max-w-xl">
+                <div className="max-w-2xl flex items-center gap-4">
                     <p className="text-lg text-muted-foreground">Select an executable to launch the game.</p>
+                    {playtime && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground border-l border-white/20 pl-4">
+                            <Clock className="h-4 w-4" />
+                            <span>{playtime} played</span>
+                        </div>
+                    )}
                 </div>
                 <div ref={executableListRef} className="flex flex-col items-start gap-4">
                     {game.executables.map(exe => (

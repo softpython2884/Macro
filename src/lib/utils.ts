@@ -42,3 +42,25 @@ export function hexToHsl(hex: string): { h: number; s: number; l: number } | nul
     l: Math.round(l * 100)
   };
 }
+
+/**
+ * Formats a duration in seconds into a human-readable string (e.g., 2h 15m).
+ * @param totalSeconds The duration in seconds.
+ * @returns A formatted string.
+ */
+export function formatDuration(totalSeconds: number): string {
+  if (totalSeconds < 0) return "0m";
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  
+  if (minutes > 0) {
+      return `${minutes}m`;
+  }
+
+  return "< 1m";
+}
