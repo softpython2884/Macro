@@ -42,16 +42,16 @@ export default function DashboardLayout({
             return;
         }
 
-        if (e.key === 'F9') {
-          console.log("F9 key detected!");
+        if (e.key === 'Numpad5') {
+          console.log("Numpad5 key detected!");
           e.preventDefault();
           const settings = JSON.parse(localStorage.getItem('macro-settings') || '{}');
           const browser = settings.browser;
           if (browser) {
-            console.log(`F9 pressed. Killing ${browser} and relaunching Macro.`);
+            console.log(`Numpad5 pressed. Killing ${browser} and relaunching Macro.`);
             killBrowserAndRelaunch(browser);
           } else {
-            console.warn("F9 pressed, but no default browser is configured in Macro settings.");
+            console.warn("Numpad5 pressed, but no default browser is configured in Macro settings.");
           }
           return;
         }

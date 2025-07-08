@@ -169,7 +169,7 @@ export default function ApplicationsPage() {
             
             // Hardcode YouTube image to a specific user-requested one
             if (app.id === 'youtube') {
-              return { ...app, posterUrl: 'https://cdn.steamgriddb.com/grid/92257997181d2c6745f1715aab81e186.png' };
+              return { ...app, posterUrl: 'https://cdn2.steamgriddb.com/grid/c47f20e43d1a8689722a59c9ab64f260.png' };
             }
             
             try {
