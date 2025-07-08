@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useGames } from "@/context/GameContext";
@@ -39,13 +40,13 @@ export default function GameLaunchingPage() {
 
     return (
         <div className="relative h-full min-h-[calc(100vh-10rem)] flex flex-col justify-center items-center p-8 text-white space-y-8 animate-fade-in">
-            {game.posterUrl ? (
-                <div className="relative w-full max-w-xs aspect-[3/4] rounded-lg overflow-hidden shadow-2xl shadow-black/50">
+            {game.logoUrl ? (
+                <div className="relative w-full max-w-md h-48 drop-shadow-2xl">
                     <Image
-                        src={game.posterUrl}
-                        alt={`${game.name} Poster`}
+                        src={game.logoUrl}
+                        alt={`${game.name} Logo`}
                         fill
-                        className="object-cover"
+                        className="object-contain"
                     />
                 </div>
             ) : (

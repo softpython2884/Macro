@@ -83,46 +83,56 @@ export default function GameDetailPage() {
     }
 
     return (
-        <div className="relative h-full min-h-[calc(100vh-10rem)] flex flex-col justify-end p-8 md:p-12 text-white animate-fade-in">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10" />
+        <div className="relative h-full min-h-[calc(100vh-10rem)] flex items-center p-8 md:p-12 text-white animate-fade-in">
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-10" />
 
-            <div className="relative z-20 space-y-6">
-                <Button variant="outline" size="sm" onClick={() => router.back()} className="absolute top-0 left-0 m-4 bg-black/30 hover:bg-black/50 border-white/20">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
-                </Button>
-                
-                {game.logoUrl ? (
-                    <div className="relative w-1/2 max-w-md h-40">
-                        <Image
-                            src={game.logoUrl}
-                            alt={`${game.name} Logo`}
-                            fill
-                            className="object-contain"
-                        />
-                    </div>
-                ) : (
-                     <h1 className="text-6xl font-bold text-glow">{game.name}</h1>
-                )}
-               
-                <div className="max-w-2xl flex items-center gap-4">
-                    <p className="text-lg text-muted-foreground">Select an executable to launch the game.</p>
-                    {playtime && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground border-l border-white/20 pl-4">
-                            <Clock className="h-4 w-4" />
-                            <span>{playtime} played</span>
+            <Button variant="outline" size="sm" onClick={() => router.back()} className="absolute top-4 left-4 m-4 bg-black/30 hover:bg-black/50 border-white/20 z-20">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
+            </Button>
+
+            <div className="relative z-20 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 items-end">
+                {/* Poster Column */}
+                <div className="md:col-span-1 flex justify-center">
+                    {game.posterUrl ? (
+                        <div className="relative w-full max-w-sm aspect-[3/4] rounded-lg overflow-hidden shadow-2xl shadow-black/50">
+                            <Image
+                                src={game.posterUrl}
+                                alt={`${game.name} Poster`}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                    ) : (
+                         <div className="relative w-full max-w-sm aspect-[3/4] rounded-lg bg-card flex items-center justify-center">
+                            <h2 className="text-2xl font-bold text-center p-4">{game.name}</h2>
                         </div>
                     )}
                 </div>
-                <div ref={executableListRef} className="flex flex-col items-start gap-4">
-                    {game.executables.map(exe => (
-                         <Button key={exe} onClick={() => handleLaunch(exe)} size="lg">
-                            <Rocket className="mr-2 h-5 w-5" />
-                            Launch {game.name}
-                            <span className="ml-2 text-sm text-primary-foreground/70 flex items-center gap-1">
-                                (<FileCode className="h-3 w-3" /> {exe})
-                            </span>
-                        </Button>
-                    ))}
+
+                {/* Details Column */}
+                <div className="md:col-span-2 space-y-6">
+                    <h1 className="text-6xl font-bold text-glow">{game.name}</h1>
+                
+                    <div className="max-w-2xl flex items-center gap-4">
+                        <p className="text-lg text-muted-foreground">Select an executable to launch the game.</p>
+                        {playtime && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground border-l border-white/20 pl-4">
+                                <Clock className="h-4 w-4" />
+                                <span>{playtime} played</span>
+                            </div>
+                        )}
+                    </div>
+                    <div ref={executableListRef} className="flex flex-col items-start gap-4">
+                        {game.executables.map(exe => (
+                            <Button key={exe} onClick={() => handleLaunch(exe)} size="lg">
+                                <Rocket className="mr-2 h-5 w-5" />
+                                Launch {game.name}
+                                <span className="ml-2 text-sm text-primary-foreground/70 flex items-center gap-1">
+                                    (<FileCode className="h-3 w-3" /> {exe})
+                                </span>
+                            </Button>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
