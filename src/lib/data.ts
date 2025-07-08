@@ -23,6 +23,10 @@ export type Game = {
   posterUrl?: string;
   heroUrl?: string;
   logoUrl?: string;
+  themeColors?: {
+    primary: string;
+    accent: string;
+  };
 };
 
 export type User = {

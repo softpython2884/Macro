@@ -13,6 +13,7 @@ import { useHints } from "@/context/HintContext";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { launchGame } from "@/lib/game-launcher";
 import { useSound } from "@/context/SoundContext";
+import { hexToHsl } from "@/lib/utils";
 
 export default function GameDetailPage() {
     const params = useParams();
@@ -28,6 +29,33 @@ export default function GameDetailPage() {
 
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
+
+    useEffect(() => {
+      if (!game?.themeColors) return;
+
+      const root = document.documentElement;
+      const originalPrimary = root.style.getPropertyValue('--primary');
+      const originalAccent = root.style.getPropertyValue('--accent');
+
+      const primaryHsl = hexToHsl(game.themeColors.primary);
+      const accentHsl = hexToHsl(game.themeColors.accent);
+
+      if (primaryHsl) {
+        root.style.setProperty('--primary-dynamic', `${primaryHsl.h} ${primaryHsl.s}% ${primaryHsl.l}%`);
+        root.classList.add('dynamic-theme');
+      }
+      if (accentHsl) {
+        root.style.setProperty('--accent-dynamic', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
+        root.classList.add('dynamic-theme');
+      }
+  
+      return () => {
+        root.style.setProperty('--primary', originalPrimary);
+        root.style.setProperty('--accent', originalAccent);
+        root.classList.remove('dynamic-theme');
+      };
+    }, [game?.themeColors]);
+
 
     useEffect(() => {
         setHints([

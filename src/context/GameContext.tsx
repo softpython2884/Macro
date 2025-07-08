@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import type { Game } from '@/lib/data';
 import { searchGame, getGrids, getHeroes, getLogos } from '@/lib/steamgrid';
 import { scanForGames } from '@/lib/game-scanner';
+import { extractColorsFromImage } from '@/ai/flows/extract-colors-flow';
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -31,14 +32,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     hasFetched.current = true;
 
-    let initialGames: Omit<Game, 'posterUrl' | 'heroUrl' | 'logoUrl'>[] = [];
+    let initialGames: Omit<Game, 'posterUrl' | 'heroUrl' | 'logoUrl' | 'themeColors'>[] = [];
     try {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
             const gameDirs = settings.games?.map((g: { value: string }) => g.value).filter(Boolean) ?? [];
             
-            // Also include the localGamesPath if it's configured
             if (settings.localGamesPath) {
                 gameDirs.push(settings.localGamesPath);
             }
@@ -72,11 +72,26 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
                 getLogos(foundGame.id)
             ]);
 
+            const posterUrl = grids.length > 0 ? grids[0].url : undefined;
+            const heroUrl = heroes.length > 0 ? heroes[0].url : undefined;
+            const logoUrl = logos.length > 0 ? logos[0].url : undefined;
+            
+            let themeColors;
+            const imageUrlForTheme = heroUrl || posterUrl;
+            if (imageUrlForTheme) {
+              try {
+                themeColors = await extractColorsFromImage({ imageUrl: imageUrlForTheme });
+              } catch (e) {
+                console.error(`[Theme IA] Failed to extract colors for ${game.name}:`, e);
+              }
+            }
+
             return {
               ...game,
-              posterUrl: grids.length > 0 ? grids[0].url : undefined,
-              heroUrl: heroes.length > 0 ? heroes[0].url : undefined,
-              logoUrl: logos.length > 0 ? logos[0].url : undefined,
+              posterUrl,
+              heroUrl,
+              logoUrl,
+              themeColors,
             };
         } catch (error) {
             console.error(`Failed to enrich metadata for game "${game.name}":`, error);
@@ -94,7 +109,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       hasFetched.current = false;
       setGames([]);
       setAllScannedGames([]);
-      // Use a timeout to ensure state has been reset before fetching
       setTimeout(() => fetchGameMetadata(), 0);
     };
     window.addEventListener('settings-updated', handleSettingsUpdate);
