@@ -41,7 +41,7 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
         >
             <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary group-focus-within:border-primary h-full w-full aspect-video overflow-hidden relative">
                 {item.image ? (
-                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" data-ai-hint={item['data-ai-hint'] || 'gameplay screenshot'} />
+                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="w-full h-full bg-card flex flex-col items-center justify-center p-4">
                     {item.Icon && <item.Icon className="w-16 h-16 text-muted-foreground mb-4" />}
@@ -135,16 +135,23 @@ export default function DashboardPage() {
 
     useEffect(() => {
         const fetchDashboardContent = async () => {
+            const navItemImages: { [key: string]: string } = {
+                'nav-games': '/game.png',
+                'nav-apps': '/apps.png',
+                'nav-profiles': '/user.png',
+                'nav-settings': '/setting.png',
+            };
+
             if (!games.length || !currentUser) {
                  const staticNavItems = navItems.map(item => ({
                     ...item,
-                    image: `https://placehold.co/1920x1080.png`,
-                    'data-ai-hint': item.id.replace('nav-', ''),
+                    image: navItemImages[item.id] || null,
                 }));
                 setContent(staticNavItems);
                 setIsLoading(false);
                 return;
             };
+
             setIsLoading(true);
             const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
 
@@ -176,17 +183,9 @@ export default function DashboardPage() {
                     recentlyPlayed = enrichedGames.filter(Boolean) as ContentItem[];
                 }
                 
-                const navItemHints: { [key: string]: string } = {
-                    'nav-games': 'futuristic library',
-                    'nav-apps': 'application grid',
-                    'nav-profiles': 'user selection',
-                    'nav-settings': 'control panel',
-                };
-                
                 const staticNavItems = navItems.map(item => ({
                     ...item,
-                    image: `https://placehold.co/1280x720.png`,
-                    'data-ai-hint': navItemHints[item.id] || 'abstract',
+                    image: navItemImages[item.id] || null,
                 }));
 
                 setContent([...recentlyPlayed, ...staticNavItems]);
