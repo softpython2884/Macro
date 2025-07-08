@@ -43,6 +43,7 @@ export default function DashboardLayout({
         }
 
         if (e.key === 'F9') {
+          console.log("F9 key detected!");
           e.preventDefault();
           const settings = JSON.parse(localStorage.getItem('macro-settings') || '{}');
           const browser = settings.browser;

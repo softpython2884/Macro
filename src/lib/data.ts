@@ -1,7 +1,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle } from 'lucide-react';
-import { SiAmazonalexa, SiSteam } from '@icons-pack/react-simple-icons';
+import { SiSteam } from '@icons-pack/react-simple-icons';
 import type { IconType } from '@icons-pack/react-simple-icons/types';
 
 export type AppInfo = {
@@ -43,8 +43,6 @@ export const ALL_APPS: AppInfo[] = [
   { id: 'youtube', name: 'YouTube', icon: Youtube, href: 'https://youtube.com', description: 'Watch & share videos' },
   { id: 'twitch', name: 'Twitch', icon: Twitch, href: 'https://twitch.tv', description: 'Live streaming for gamers' },
   { id: 'moonlight', name: 'Moonlight', icon: Moon, searchName: 'Moonlight Game Streaming', description: 'Stream games from your PC' },
-  { id: 'brave', name: 'Brave', icon: Globe, searchName: 'Brave Browser', href: 'https://brave.com', description: 'Secure & private browser' },
-  { id: 'alexa', name: 'Alexa', icon: SiAmazonalexa, searchName: 'Amazon Alexa', href: 'https://alexa.amazon.com', description: 'Manage your assistant' },
   { id: 'steam', name: 'Steam', icon: SiSteam, href: 'steam://open/bigpicture', description: 'Access your game library' },
   { id: 'spotify', name: 'Spotify', icon: Music, href: 'spotify:', description: 'Open your music' },
   { id: 'settings', name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system' },

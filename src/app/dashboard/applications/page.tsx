@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -172,11 +173,16 @@ export default function ApplicationsPage() {
 
                 const grids = await getGrids(foundGame.id, ['600x900']);
                 
-                let posterUrl = grids.length > 0 ? grids[0].url : undefined;
-                if (app.id === 'moonlight' && grids.length > 1) {
-                    // This is a known good poster for Moonlight on SteamGridDB
-                    const specificGrid = grids.find(g => g.id === 20383); 
-                    if(specificGrid) posterUrl = specificGrid.url;
+                let posterUrl: string | undefined;
+
+                if (app.id === 'moonlight') {
+                    // User requested the second image for Moonlight
+                    posterUrl = grids.length > 1 ? grids[1].url : (grids.length > 0 ? grids[0].url : undefined);
+                } else if (app.id === 'youtube') {
+                    // User requested the fifth image for YouTube, fallback to first
+                    posterUrl = grids.length > 4 ? grids[4].url : (grids.length > 0 ? grids[0].url : undefined);
+                } else {
+                    posterUrl = grids.length > 0 ? grids[0].url : undefined;
                 }
 
                 return { ...app, posterUrl };
