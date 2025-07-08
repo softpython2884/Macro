@@ -21,6 +21,7 @@ export type Game = {
   name: string; // e.g., 'Cyberpunk 2077'
   path: string; // e.g., 'C:/Games/Cyberpunk 2077'
   executables: string[]; // e.g., ['Cyberpunk2077.exe', 'launcher.exe']
+  steamgridGameId?: number; // The ID from SteamGridDB
   posterUrl?: string;
   heroUrls?: string[];
   logoUrl?: string;

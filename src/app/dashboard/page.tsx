@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card } from "@/components/ui/card";
@@ -14,8 +15,8 @@ import Image from "next/image";
 import { Gamepad2, LayoutGrid, Settings, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useBackground } from "@/context/BackgroundContext";
 
-// Simplified type for content cards
 type ContentItem = {
     id: string;
     name: string;
@@ -23,16 +24,24 @@ type ContentItem = {
     href: string;
     type: 'game' | 'nav';
     Icon?: React.ElementType;
+    'data-ai-hint'?: string;
 };
 
 const ContentCard = ({ item }: { item: ContentItem }) => {
     const { playSound } = useSound();
+    const { setBackgroundImage } = useBackground();
     
     return (
-        <Link href={item.href} className="block group w-full h-full rounded-lg focus:outline-none" onClick={() => playSound('select')}>
+        <Link 
+            href={item.href} 
+            className="block group w-full h-full rounded-lg focus:outline-none" 
+            onClick={() => playSound('select')}
+            onFocus={() => setBackgroundImage(item.image)}
+            onBlur={() => setBackgroundImage(null)}
+        >
             <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary group-focus-within:border-primary h-full w-full aspect-video overflow-hidden relative">
                 {item.image ? (
-                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" data-ai-hint="gameplay screenshot" />
+                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" data-ai-hint={item['data-ai-hint'] || 'gameplay screenshot'} />
                 ) : (
                   <div className="w-full h-full bg-card flex flex-col items-center justify-center p-4">
                     {item.Icon && <item.Icon className="w-16 h-16 text-muted-foreground mb-4" />}
@@ -48,7 +57,7 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
     );
 };
 
-const navItems: Omit<ContentItem, 'image'>[] = [
+const navItems: Omit<ContentItem, 'image' | 'data-ai-hint'>[] = [
     { id: 'nav-games', name: 'My Library', href: '/dashboard/games', type: 'nav', Icon: Gamepad2 },
     { id: 'nav-apps', name: 'Applications', href: '/dashboard/applications', type: 'nav', Icon: LayoutGrid },
     { id: 'nav-profiles', name: 'Profiles', href: '/dashboard/profiles', type: 'nav', Icon: UserIcon },
@@ -77,7 +86,6 @@ export default function DashboardPage() {
             { key: 'E', action: 'Next Tab' },
         ]);
         
-        // When content is loaded, focus the carousel for keyboard/controller navigation
         if (!isLoading && content.length > 0) {
             carouselRef.current?.focus();
         }
@@ -96,7 +104,6 @@ export default function DashboardPage() {
     
         api.on("select", onSelect);
         
-        // Set initial mount to false after a short delay to prevent sound on load
         const timer = setTimeout(() => { isInitialMount.current = false; }, 500);
 
         return () => { 
@@ -107,7 +114,6 @@ export default function DashboardPage() {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Only handle Enter/Space if the carousel itself is focused
             if (document.activeElement !== carouselRef.current) return;
 
             if (e.key === 'Enter' || e.key === ' ') {
@@ -122,18 +128,19 @@ export default function DashboardPage() {
                 }
             }
         };
-        // Listen on the document to capture events even if the carousel is not the direct target
         document.addEventListener('keydown', handleKeyDown);
         return () => { document.removeEventListener('keydown', handleKeyDown); };
     }, [current, content, router, playSound]);
 
 
-    // Fetch Recently Played and construct the final content array
     useEffect(() => {
         const fetchDashboardContent = async () => {
             if (!games.length || !currentUser) {
-                // If no games, just show nav items
-                const staticNavItems = navItems.map(item => ({...item, image: `https://placehold.co/1920x1080.png` }));
+                 const staticNavItems = navItems.map(item => ({
+                    ...item,
+                    image: `https://placehold.co/1920x1080.png`,
+                    'data-ai-hint': item.id.replace('nav-', ''),
+                }));
                 setContent(staticNavItems);
                 setIsLoading(false);
                 return;
@@ -150,13 +157,13 @@ export default function DashboardPage() {
                     const playedGames = Object.entries(allPlaytimes)
                         .map(([gameId, data]: [string, any]) => ({ gameId, lastPlayed: data.lastPlayed, totalSeconds: data.totalSeconds }))
                         .sort((a, b) => b.lastPlayed - a.lastPlayed)
-                        .slice(0, 5); // Limit to 5 recent games
+                        .slice(0, 5); 
                     
                     const enrichedGames = await Promise.all(playedGames.map(async (playedGame) => {
                         const gameData = games.find(g => g.id === playedGame.gameId);
-                        if (!gameData) return null;
+                        if (!gameData || !gameData.steamgridGameId) return null;
 
-                        const heroImages = await getHeroes(gameData.id, nsfwEnabled ? 'any' : 'false', prioritizeNsfw);
+                        const heroImages = await getHeroes(gameData.steamgridGameId, nsfwEnabled ? 'any' : 'false', prioritizeNsfw);
                         
                         return {
                             id: gameData.id,
@@ -169,13 +176,23 @@ export default function DashboardPage() {
                     recentlyPlayed = enrichedGames.filter(Boolean) as ContentItem[];
                 }
                 
-                // Add placeholder images to nav items
-                const staticNavItems = navItems.map(item => ({...item, image: null }));
+                const navItemHints: { [key: string]: string } = {
+                    'nav-games': 'futuristic library',
+                    'nav-apps': 'application grid',
+                    'nav-profiles': 'user selection',
+                    'nav-settings': 'control panel',
+                };
+                
+                const staticNavItems = navItems.map(item => ({
+                    ...item,
+                    image: `https://placehold.co/1280x720.png`,
+                    'data-ai-hint': navItemHints[item.id] || 'abstract',
+                }));
+
                 setContent([...recentlyPlayed, ...staticNavItems]);
 
             } catch (e) {
                 console.error("Error constructing dashboard:", e);
-                // Fallback to only nav items on error
                 const staticNavItems = navItems.map(item => ({...item, image: null }));
                 setContent(staticNavItems);
             }
@@ -209,7 +226,7 @@ export default function DashboardPage() {
                 setApi={setApi}
                 opts={{ align: "center", loop: content.length > 1 }} 
                 className="w-full max-w-7xl focus:outline-none"
-                tabIndex={-1} // Make it programmatically focusable
+                tabIndex={-1}
             >
               <CarouselContent className="-ml-8 py-12">
                 {content.map((item, index) => (

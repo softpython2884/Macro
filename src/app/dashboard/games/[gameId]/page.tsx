@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Rocket, FileCode, ArrowLeft, Clock } from "lucide-react";
+import { Rocket, FileCode, ArrowLeft, Clock, Camera } from "lucide-react";
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { useHints } from "@/context/HintContext";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
@@ -15,6 +15,8 @@ import { launchGame } from "@/lib/game-launcher";
 import { useSound } from "@/context/SoundContext";
 import { formatDuration } from "@/lib/utils";
 import { useBackground } from "@/context/BackgroundContext";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { HeroImageSelector } from "@/components/hero-image-selector";
 
 export default function GameDetailPage() {
     const params = useParams();
@@ -25,8 +27,11 @@ export default function GameDetailPage() {
     const { playSound } = useSound();
     const executableListRef = useRef<HTMLDivElement>(null);
     const { setBackgroundImage } = useBackground();
-    const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
     
+    const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+    const [isHeroSelectorOpen, setIsHeroSelectorOpen] = useState(false);
+    const [effectiveHeroUrls, setEffectiveHeroUrls] = useState<string[]>([]);
+
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
     
@@ -34,27 +39,52 @@ export default function GameDetailPage() {
 
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
+    
+    // Effect to set the effective hero URLs, considering custom ones from localStorage
+    useEffect(() => {
+        if (!game) return;
+        
+        try {
+            const customHeroesJSON = localStorage.getItem('macro-custom-heroes');
+            const customHeroes = customHeroesJSON ? JSON.parse(customHeroesJSON) : {};
+            const customHero = customHeroes[game.id];
+            
+            let urls = [...(game.heroUrls || [])];
+            
+            if (customHero) {
+                // Remove the custom hero from its original position to avoid duplicates
+                urls = urls.filter(url => url !== customHero);
+                // Add it to the front of the array to be displayed first
+                urls.unshift(customHero);
+            }
+            setEffectiveHeroUrls(urls);
+        } catch(e) {
+            console.error("Failed to parse custom heroes", e);
+            setEffectiveHeroUrls(game.heroUrls || []);
+        }
+
+    }, [game]);
 
     // Effect to set the background image based on the current index
     useEffect(() => {
         if (game) {
-            const newImage = game.heroUrls?.[currentHeroIndex] || game.posterUrl;
+            const newImage = effectiveHeroUrls?.[currentHeroIndex] || game.posterUrl;
             setBackgroundImage(newImage || null);
         }
         // On component unmount, clear the background
         return () => setBackgroundImage(null);
-    }, [game, currentHeroIndex, setBackgroundImage]);
+    }, [game, currentHeroIndex, effectiveHeroUrls, setBackgroundImage]);
 
     // Effect to handle the timer for cycling hero images
     useEffect(() => {
-        if (!game?.heroUrls || game.heroUrls.length <= 1) return;
+        if (!effectiveHeroUrls || effectiveHeroUrls.length <= 1) return;
         
         const timer = setInterval(() => {
-            setCurrentHeroIndex(prevIndex => (prevIndex + 1) % game.heroUrls.length);
-        }, 8000); // Changed to 8 seconds as requested
+            setCurrentHeroIndex(prevIndex => (prevIndex + 1) % effectiveHeroUrls.length);
+        }, 8000); // 8 seconds
         
         return () => clearInterval(timer);
-    }, [game?.heroUrls]);
+    }, [effectiveHeroUrls]);
 
 
     useEffect(() => {
@@ -76,13 +106,25 @@ export default function GameDetailPage() {
         setHints([
             { key: 'A', action: 'Launch' },
             { key: 'B', action: 'Back' },
+            { key: 'Y', action: 'Change Art' },
         ]);
         
         const firstButton = executableListRef.current?.querySelector('button') as HTMLElement;
         firstButton?.focus();
 
-        return () => setHints([]);
-    }, [setHints]);
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key.toLowerCase() === 'y' && !isHeroSelectorOpen) {
+                setIsHeroSelectorOpen(true);
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            setHints([]);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [setHints, isHeroSelectorOpen]);
 
     const handleLaunch = async (executable: string) => {
         if (!game) return;
@@ -92,26 +134,55 @@ export default function GameDetailPage() {
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }
 
+    const handleSaveCustomHero = (url: string) => {
+        if (!game) return;
+        try {
+            const customHeroesJSON = localStorage.getItem('macro-custom-heroes');
+            const customHeroes = customHeroesJSON ? JSON.parse(customHeroesJSON) : {};
+            customHeroes[game.id] = url;
+            localStorage.setItem('macro-custom-heroes', JSON.stringify(customHeroes));
+
+            // Update state immediately for visual feedback
+            setEffectiveHeroUrls(prevUrls => {
+                const newUrls = prevUrls.filter(u => u !== url);
+                newUrls.unshift(url);
+                return newUrls;
+            });
+            setCurrentHeroIndex(0); // Reset to show the new image
+            setIsHeroSelectorOpen(false); // Close dialog
+            playSound('select');
+        } catch(e) {
+            console.error("Failed to save custom hero", e);
+        }
+    };
+
     if (!currentUser || !game) {
         return null; 
     }
 
     return (
         <div className="flex flex-col text-white animate-fade-in">
-            <Button variant="outline" size="sm" onClick={() => router.back()} className="absolute top-4 left-4 m-4 bg-black/30 hover:bg-black/50 border-white/20 z-20">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
-            </Button>
+            <div className="absolute top-4 left-4 m-4 z-20 flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => router.back()} >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setIsHeroSelectorOpen(true)}>
+                    <Camera className="h-4 w-4" />
+                </Button>
+            </div>
 
             <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden">
-                {game.heroUrls && game.heroUrls.length > 0 && (
+                {effectiveHeroUrls && effectiveHeroUrls.length > 0 ? (
                     <Image
-                        key={game.heroUrls[currentHeroIndex]}
-                        src={game.heroUrls[currentHeroIndex]}
+                        key={effectiveHeroUrls[currentHeroIndex]}
+                        src={effectiveHeroUrls[currentHeroIndex]}
                         alt={`${game.name} Hero Image`}
                         fill
                         className="object-cover object-center animate-fade-in"
                         priority={currentHeroIndex === 0}
                     />
+                ) : (
+                    <div className="w-full h-full bg-card" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
             </div>
@@ -170,6 +241,12 @@ export default function GameDetailPage() {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={isHeroSelectorOpen} onOpenChange={setIsHeroSelectorOpen}>
+                <DialogContent className="max-w-4xl">
+                   {game.steamgridGameId && <HeroImageSelector gameId={game.steamgridGameId} onSave={handleSaveCustomHero} onClose={() => setIsHeroSelectorOpen(false)} />}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

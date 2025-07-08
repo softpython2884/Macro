@@ -36,7 +36,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
     const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
 
-    let initialGames: Omit<Game, 'posterUrl' | 'heroUrls' | 'logoUrl'>[] = [];
+    let initialGames: Omit<Game, 'posterUrl' | 'heroUrls' | 'logoUrl' | 'steamgridGameId'>[] = [];
     try {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
@@ -82,6 +82,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             
             return {
               ...game,
+              steamgridGameId: foundGame.id,
               posterUrl,
               heroUrls,
               logoUrl,
