@@ -63,6 +63,9 @@ const LayoutWithBackground = ({ children }: { children: React.ReactNode }) => {
         
         const key = e.key.toLowerCase();
         if (key === 'q' || key === 'e') {
+            const isAnyDialogOpen = !!document.querySelector('[role="dialog"]');
+            if (isAnyDialogOpen) return;
+
             const currentIndex = navItems.findIndex(item => pathname.startsWith(item.href) && item.href !== '/dashboard' || item.href === pathname);
             if (currentIndex === -1) return;
 
@@ -95,9 +98,15 @@ const LayoutWithBackground = ({ children }: { children: React.ReactNode }) => {
 
             const playtimeJSON = localStorage.getItem('macro-playtime') || '{}';
             const allPlaytimes = JSON.parse(playtimeJSON);
-            allPlaytimes[session.gameId] = (allPlaytimes[session.gameId] || 0) + durationInSeconds;
-            localStorage.setItem('macro-playtime', JSON.stringify(allPlaytimes));
+            
+            const existingPlaytime = allPlaytimes[session.gameId] || { totalSeconds: 0 };
+            
+            allPlaytimes[session.gameId] = {
+                totalSeconds: (existingPlaytime.totalSeconds || 0) + durationInSeconds,
+                lastPlayed: Date.now(),
+            };
 
+            localStorage.setItem('macro-playtime', JSON.stringify(allPlaytimes));
             localStorage.removeItem('macro-active-session');
 
             if (durationInSeconds > 60) {

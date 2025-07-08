@@ -52,8 +52,8 @@ export const searchGame = async (name: string): Promise<SteamGridDbGame | null> 
     }
 };
 
-export const getGrids = async (gameId: number, dimensions: ('600x900' | '920x430')[]): Promise<SteamGridDbImage[]> => {
-    if (!checkApiKey()) return [];
+export const getGrids = async (gameId: number, dimensions: string[]): Promise<SteamGridDbImage[]> => {
+    if (!checkApiKey() || !gameId) return [];
     try {
         const response = await fetch(`${BASE_URL}/grids/game/${gameId}?dimensions=${dimensions.join(',')}`, options);
         if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
@@ -66,7 +66,7 @@ export const getGrids = async (gameId: number, dimensions: ('600x900' | '920x430
 }
 
 export const getHeroes = async (gameId: number): Promise<SteamGridDbImage[]> => {
-    if (!checkApiKey()) return [];
+    if (!checkApiKey() || !gameId) return [];
     try {
         const response = await fetch(`${BASE_URL}/heroes/game/${gameId}`, options);
         if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
@@ -79,7 +79,7 @@ export const getHeroes = async (gameId: number): Promise<SteamGridDbImage[]> => 
 };
 
 export const getLogos = async (gameId: number): Promise<SteamGridDbImage[]> => {
-    if (!checkApiKey()) return [];
+    if (!checkApiKey() || !gameId) return [];
     try {
         const response = await fetch(`${BASE_URL}/logos/game/${gameId}`, options);
         if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
