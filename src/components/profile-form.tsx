@@ -89,131 +89,134 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField control={form.control} name="name" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Profile Name</FormLabel>
-            <FormControl><Input placeholder="e.g., Galaxy Wanderer" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={form.control} name="avatar" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Avatar URL</FormLabel>
-            <FormControl><Input placeholder="https://example.com/avatar.png" {...field} /></FormControl>
-            <FormDescription>Leave blank to use the default avatar.</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={form.control} name="pin" render={({ field }) => (
-          <FormItem>
-            <FormLabel>4-Digit PIN</FormLabel>
-            <FormControl><Input type="password" maxLength={4} placeholder="e.g., 1234" {...field} /></FormControl>
-            <FormDescription>Leave blank for no PIN protection.</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )} />
-        
-        <div className="grid grid-cols-2 gap-6">
-            <FormField control={form.control} name="permissions.apps" render={() => (
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex flex-col h-full">
+        <ScrollArea className="pr-4 flex-grow -mr-4">
+            <div className="space-y-6">
+                <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
-                    <div className="mb-4">
-                        <FormLabel>App Permissions</FormLabel>
-                        <FormDescription>Select the apps this profile can access.</FormDescription>
-                    </div>
-                    <ScrollArea className="h-40 rounded-md border p-4">
-                    {ALL_APPS.map((app) => (
-                        <FormField key={app.id} control={form.control} name="permissions.apps" render={({ field }) => (
-                            <FormItem key={app.id} className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormLabel>Profile Name</FormLabel>
+                    <FormControl><Input placeholder="e.g., Galaxy Wanderer" {...field} /></FormControl>
+                    <FormMessage />
+                </FormItem>
+                )} />
+                <FormField control={form.control} name="avatar" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Avatar URL</FormLabel>
+                    <FormControl><Input placeholder="https://example.com/avatar.png" {...field} /></FormControl>
+                    <FormDescription>Leave blank to use the default avatar.</FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )} />
+                <FormField control={form.control} name="pin" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>4-Digit PIN</FormLabel>
+                    <FormControl><Input type="password" maxLength={4} placeholder="e.g., 1234" {...field} /></FormControl>
+                    <FormDescription>Leave blank for no PIN protection.</FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )} />
+                
+                <div className="grid grid-cols-2 gap-6">
+                    <FormField control={form.control} name="permissions.apps" render={() => (
+                        <FormItem>
+                            <div className="mb-4">
+                                <FormLabel>App Permissions</FormLabel>
+                                <FormDescription>Select the apps this profile can access.</FormDescription>
+                            </div>
+                            <ScrollArea className="h-40 rounded-md border p-4">
+                            {ALL_APPS.map((app) => (
+                                <FormField key={app.id} control={form.control} name="permissions.apps" render={({ field }) => (
+                                    <FormItem key={app.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value?.includes(app.id)}
+                                        onCheckedChange={(checked) => {
+                                            return checked
+                                            ? field.onChange([...field.value, app.id])
+                                            : field.onChange(field.value?.filter((value) => value !== app.id));
+                                        }}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">{app.name}</FormLabel>
+                                    </FormItem>
+                                )} />
+                            ))}
+                            </ScrollArea>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="permissions.games" render={() => (
+                        <FormItem>
+                            <div className="mb-4">
+                                <FormLabel>Game Permissions</FormLabel>
+                                <FormDescription>Select the games this profile can access.</FormDescription>
+                            </div>
+                            <ScrollArea className="h-40 rounded-md border p-4">
+                            {allScannedGames.length > 0 ? (
+                            allScannedGames.map((game) => (
+                                <FormField key={game.id} control={form.control} name="permissions.games" render={({ field }) => (
+                                    <FormItem key={game.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value?.includes(game.id)}
+                                        onCheckedChange={(checked) => {
+                                            return checked
+                                            ? field.onChange([...field.value, game.id])
+                                            : field.onChange(field.value?.filter((value) => value !== game.id));
+                                        }}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">{game.name}</FormLabel>
+                                    </FormItem>
+                                )} />
+                            ))
+                            ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No games found. Configure directories in settings.</p>
+                            )}
+                            </ScrollArea>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                </div>
+
+                <div className="space-y-4 pt-6 mt-6 border-t">
+                <h3 className="text-lg font-medium">Content Preferences</h3>
+                <FormField
+                    control={form.control}
+                    name="permissions.nsfwEnabled"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
+                            <div className="space-y-0.5">
+                                <FormLabel>Enable Adult Content (NSFW)</FormLabel>
+                                <FormDescription>Allow fetching images and content marked as not safe for work.</FormDescription>
+                            </div>
                             <FormControl>
-                                <Checkbox
-                                checked={field.value?.includes(app.id)}
-                                onCheckedChange={(checked) => {
-                                    return checked
-                                    ? field.onChange([...field.value, app.id])
-                                    : field.onChange(field.value?.filter((value) => value !== app.id));
-                                }}
-                                />
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
                             </FormControl>
-                            <FormLabel className="font-normal">{app.name}</FormLabel>
-                            </FormItem>
-                        )} />
-                    ))}
-                    </ScrollArea>
-                    <FormMessage />
-                </FormItem>
-            )} />
-
-             <FormField control={form.control} name="permissions.games" render={() => (
-                <FormItem>
-                    <div className="mb-4">
-                        <FormLabel>Game Permissions</FormLabel>
-                        <FormDescription>Select the games this profile can access.</FormDescription>
-                    </div>
-                    <ScrollArea className="h-40 rounded-md border p-4">
-                    {allScannedGames.length > 0 ? (
-                      allScannedGames.map((game) => (
-                          <FormField key={game.id} control={form.control} name="permissions.games" render={({ field }) => (
-                              <FormItem key={game.id} className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                  <Checkbox
-                                  checked={field.value?.includes(game.id)}
-                                  onCheckedChange={(checked) => {
-                                      return checked
-                                      ? field.onChange([...field.value, game.id])
-                                      : field.onChange(field.value?.filter((value) => value !== game.id));
-                                  }}
-                                  />
-                              </FormControl>
-                              <FormLabel className="font-normal">{game.name}</FormLabel>
-                              </FormItem>
-                          )} />
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">No games found. Configure directories in settings.</p>
+                        </FormItem>
                     )}
-                    </ScrollArea>
-                    <FormMessage />
-                </FormItem>
-            )} />
-        </div>
+                />
+                <FormField
+                    control={form.control}
+                    name="permissions.prioritizeNsfw"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
+                            <div className="space-y-0.5">
+                                <FormLabel>Prioritize NSFW Images</FormLabel>
+                                <FormDescription>If available, show NSFW images first.</FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+                </div>
+            </div>
+        </ScrollArea>
 
-        <div className="space-y-4 pt-6 mt-6 border-t">
-          <h3 className="text-lg font-medium">Content Preferences</h3>
-           <FormField
-              control={form.control}
-              name="permissions.nsfwEnabled"
-              render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
-                      <div className="space-y-0.5">
-                          <FormLabel>Enable Adult Content (NSFW)</FormLabel>
-                          <FormDescription>Allow fetching images and content marked as not safe for work.</FormDescription>
-                      </div>
-                      <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                  </FormItem>
-              )}
-          />
-           <FormField
-              control={form.control}
-              name="permissions.prioritizeNsfw"
-              render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
-                      <div className="space-y-0.5">
-                          <FormLabel>Prioritize NSFW Images</FormLabel>
-                          <FormDescription>If available, show NSFW images first. (This setting is not yet active.)</FormDescription>
-                      </div>
-                      <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                  </FormItem>
-              )}
-          />
-        </div>
-
-
-        <div className="flex justify-end gap-2 pt-4">
+        <div className="flex justify-end gap-2 pt-4 flex-shrink-0">
             <Button type="button" variant="ghost" onClick={handleCancel}>Cancel</Button>
             <Button type="submit">{userToEdit ? 'Save Changes' : 'Create Profile'}</Button>
         </div>

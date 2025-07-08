@@ -164,14 +164,16 @@ export default function ProfilesPage() {
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl bg-card/90 backdrop-blur-lg">
+        <DialogContent className="max-w-2xl bg-card/90 backdrop-blur-lg max-h-[90svh] flex flex-col">
             <DialogHeader>
                 <DialogTitle>{userToEdit ? 'Edit Profile' : 'Create New Profile'}</DialogTitle>
                 <DialogDescription>
                     {userToEdit ? 'Modify the details for this profile.' : 'Fill in the details for the new profile.'}
                 </DialogDescription>
             </DialogHeader>
-            <ProfileForm userToEdit={userToEdit} onFinished={() => setIsFormOpen(false)} />
+            <div className="flex-grow min-h-0">
+                <ProfileForm userToEdit={userToEdit} onFinished={() => setIsFormOpen(false)} />
+            </div>
         </DialogContent>
       </Dialog>
 

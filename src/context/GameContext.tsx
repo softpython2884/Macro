@@ -33,7 +33,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     hasFetched.current = true;
     
-    const nsfwEnabled = currentUser.permissions.nsfwEnabled;
+    const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
+    const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
 
     let initialGames: Omit<Game, 'posterUrl' | 'heroUrls' | 'logoUrl'>[] = [];
     try {
@@ -66,13 +67,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const enrichedGames = await Promise.all(
       initialGames.map(async (game) => {
         try {
-            const foundGame = await searchGame(game.name, nsfwEnabled);
+            const foundGame = await searchGame(game.name, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
             if (!foundGame) return game as Game;
 
             const [grids, heroes, logos] = await Promise.all([
-                getGrids(foundGame.id, ['600x900'], nsfwEnabled),
-                getHeroes(foundGame.id, nsfwEnabled),
-                getLogos(foundGame.id, nsfwEnabled)
+                getGrids(foundGame.id, ['600x900'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw),
+                getHeroes(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw),
+                getLogos(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw)
             ]);
 
             const posterUrl = grids.length > 0 ? grids[0].url : undefined;

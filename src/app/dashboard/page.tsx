@@ -121,7 +121,9 @@ export default function DashboardPage() {
         const fetchRecentlyPlayed = async () => {
             if (!games.length || !currentUser) return;
             setLoadingRecent(true);
-            const nsfwEnabled = currentUser.permissions.nsfwEnabled;
+            const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
+            const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
+
             try {
                 const playtimeJSON = localStorage.getItem('macro-playtime');
                 if (!playtimeJSON) {
@@ -139,7 +141,7 @@ export default function DashboardPage() {
                     const gameData = games.find(g => g.id === playedGame.gameId);
                     if (!gameData) return null;
 
-                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwEnabled);
+                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                     
                     return {
                         id: gameData.id,
@@ -164,7 +166,8 @@ export default function DashboardPage() {
         const fetchFavorites = async () => {
             if (!currentUser || !games) return;
             setLoadingFavorites(true);
-            const nsfwEnabled = currentUser.permissions.nsfwEnabled;
+            const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
+            const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
             try {
                 const favoritesKey = `macro-favorites-${currentUser.id}`;
                 const favoritesJSON = localStorage.getItem(favoritesKey);
@@ -180,7 +183,7 @@ export default function DashboardPage() {
                 const favGames = await Promise.all(favGameIds.map(async (id) => {
                     const gameData = games.find(g => g.id === id);
                     if (!gameData) return null;
-                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwEnabled);
+                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                     return { id, name: gameData.name, image: heroImages[0]?.url || gameData.posterUrl, href: `/dashboard/games/${id}`, type: 'game' } as ContentItem;
                 }));
 
@@ -189,9 +192,9 @@ export default function DashboardPage() {
                     if (!appData) return null;
                     let image = appData.posterUrl || null;
                     if (!image) {
-                       const foundGame = await searchGame(appData.searchName || appData.name, nsfwEnabled);
+                       const foundGame = await searchGame(appData.searchName || appData.name, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                        if (foundGame) {
-                         const heroes = await getGrids(foundGame.id, ['920x430', '460x215'], nsfwEnabled);
+                         const heroes = await getGrids(foundGame.id, ['920x430', '460x215'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                          image = heroes[0]?.url || null;
                        }
                     }
@@ -213,7 +216,9 @@ export default function DashboardPage() {
         const fetchRecommendations = async () => {
             if (!games.length || !currentUser) return;
             setLoadingRecs(true);
-            const nsfwEnabled = currentUser.permissions.nsfwEnabled;
+            const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
+            const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
+
             try {
                 const playtimeJSON = localStorage.getItem('macro-playtime');
                 if (!playtimeJSON) {
@@ -234,10 +239,10 @@ export default function DashboardPage() {
                 const result = await recommendGames({ playedGames: playedGameNames.slice(0, 10) });
                 
                 const enrichedRecs = await Promise.all(result.recommendations.map(async (recName) => {
-                    const foundGame = await searchGame(recName, nsfwEnabled);
+                    const foundGame = await searchGame(recName, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                     if (!foundGame) return null;
 
-                    const heroImages = await getGrids(foundGame.id, ['920x430', '460x215', '1920x620'], nsfwEnabled);
+                    const heroImages = await getGrids(foundGame.id, ['920x430', '460x215', '1920x620'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
 
                     return {
                         id: `rec-${foundGame.id}`,

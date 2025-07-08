@@ -240,7 +240,8 @@ export default function ApplicationsPage() {
         if (!currentUser) return;
         setIsLoading(true);
 
-        const nsfwEnabled = currentUser.permissions.nsfwEnabled;
+        const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
+        const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
 
         const enriched = await Promise.all(
           permittedApps.map(async (app) => {
@@ -250,10 +251,10 @@ export default function ApplicationsPage() {
             
             try {
                 const searchName = app.searchName || app.name;
-                const foundGame = await searchGame(searchName, nsfwEnabled);
+                const foundGame = await searchGame(searchName, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                 if (!foundGame) return app;
 
-                const grids = await getGrids(foundGame.id, ['600x900'], nsfwEnabled);
+                const grids = await getGrids(foundGame.id, ['600x900'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                 
                 let posterUrl: string | undefined;
 
