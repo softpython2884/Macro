@@ -8,50 +8,16 @@
 
 const API_KEY = process.env.STEAMGRIDDB_API_KEY;
 const BASE_URL = 'https://www.steamgriddb.com/api/v2';
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
+// Use Next.js's built-in fetch caching. Revalidate data every 24 hours.
 const options = {
   method: 'GET',
   headers: {
     accept: 'application/json',
     Authorization: `Bearer ${API_KEY}`
-  }
+  },
+  next: { revalidate: 86400 } // 24 hours in seconds
 };
-
-type CacheEntry<T> = {
-    timestamp: number;
-    data: T;
-};
-
-// --- Caching Layer ---
-function getFromCache<T>(key: string): T | null {
-    try {
-        const item = localStorage.getItem(key);
-        if (!item) return null;
-
-        const entry: CacheEntry<T> = JSON.parse(item);
-        if (Date.now() - entry.timestamp > CACHE_TTL) {
-            localStorage.removeItem(key);
-            return null;
-        }
-        return entry.data;
-    } catch (error) {
-        console.warn(`[CACHE] Could not read from cache for key "${key}":`, error);
-        return null;
-    }
-}
-
-function setInCache<T>(key: string, data: T) {
-    try {
-        const entry: CacheEntry<T> = {
-            timestamp: Date.now(),
-            data: data
-        };
-        localStorage.setItem(key, JSON.stringify(entry));
-    } catch (error) {
-        console.warn(`[CACHE] Could not write to cache for key "${key}":`, error);
-    }
-}
 
 const checkApiKey = () => {
     if (!API_KEY) {
@@ -77,22 +43,17 @@ export interface SteamGridDbImage {
     nsfw: boolean;
 }
 
-// --- API Functions with Caching ---
+// --- API Functions ---
 
 export const searchGame = async (name: string, nsfw: 'true' | 'false' | 'any' = 'false', prioritizeNsfw: boolean = false): Promise<SteamGridDbGame | null> => {
     if (!checkApiKey()) return null;
 
-    const cacheKey = `steamgrid_search_${name}_${nsfw}_${prioritizeNsfw}`;
-    const cachedData = getFromCache<SteamGridDbGame | null>(cacheKey);
-    if (cachedData !== null) return cachedData; // Return cached data (even if it's null)
-    
     try {
         const response = await fetch(`${BASE_URL}/search/autocomplete/${encodeURIComponent(name)}?nsfw=${nsfw}`, options);
         if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
         const result = await response.json();
         
         if (!result.success || result.data.length === 0) {
-            setInCache(cacheKey, null);
             return null;
         }
         
@@ -106,7 +67,6 @@ export const searchGame = async (name: string, nsfw: 'true' | 'false' | 'any' = 
         }
         
         const game = games[0];
-        setInCache(cacheKey, game);
         return game;
 
     } catch (error) {
@@ -115,19 +75,22 @@ export const searchGame = async (name: string, nsfw: 'true' | 'false' | 'any' = 
     }
 };
 
-async function fetchImages(url: string, cacheKey: string): Promise<SteamGridDbImage[]> {
-    const cachedData = getFromCache<SteamGridDbImage[]>(cacheKey);
-    if (cachedData) return cachedData;
-
-    const response = await fetch(url, options);
-    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
-    const result = await response.json();
-    
-    if (!result.success) return [];
-    
-    const images: SteamGridDbImage[] = result.data;
-    setInCache(cacheKey, images);
-    return images;
+async function fetchImages(url: string): Promise<SteamGridDbImage[]> {
+    try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            console.error(`SteamGridDB API Error for ${url}: ${response.status} ${response.statusText}`);
+            return [];
+        }
+        const result = await response.json();
+        
+        if (!result.success) return [];
+        
+        return result.data;
+    } catch (error) {
+        console.error(`Failed to fetch images from ${url}:`, error);
+        return [];
+    }
 }
 
 async function getImagesWithFallback(
@@ -138,16 +101,16 @@ async function getImagesWithFallback(
     params: string = ''
 ): Promise<SteamGridDbImage[]> {
     if (prioritizeNsfw && nsfw !== 'false') {
-        const nsfwCacheKey = `steamgrid_${type}_${gameId}_nsfw${params}`;
         const nsfwUrl = `${BASE_URL}/${type}/game/${gameId}?nsfw=true${params}`;
-        const nsfwImages = await fetchImages(nsfwUrl, nsfwCacheKey);
+        const nsfwImages = await fetchImages(nsfwUrl);
         
+        // Use NSFW if available
         if (nsfwImages.length > 0) return nsfwImages.filter(img => img.nsfw);
     }
     
-    const sfwCacheKey = `steamgrid_${type}_${gameId}_sfw${params}`;
+    // Fallback to SFW images
     const sfwUrl = `${BASE_URL}/${type}/game/${gameId}?nsfw=false${params}`;
-    const sfwImages = await fetchImages(sfwUrl, sfwCacheKey);
+    const sfwImages = await fetchImages(sfwUrl);
     return sfwImages.filter(img => !img.nsfw);
 }
 

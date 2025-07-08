@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Card } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useHints } from '@/context/HintContext';
 import { useSound } from '@/context/SoundContext';
 import { useUser } from "@/context/UserContext";
@@ -33,7 +32,7 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
         <Link href={item.href} className="block group w-full h-full rounded-lg focus:outline-none" onClick={() => playSound('select')}>
             <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary group-focus-within:border-primary h-full w-full aspect-video overflow-hidden relative">
                 {item.image ? (
-                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" data-ai-hint="gameplay screenshot" />
                 ) : (
                   <div className="w-full h-full bg-card flex flex-col items-center justify-center p-4">
                     {item.Icon && <item.Icon className="w-16 h-16 text-muted-foreground mb-4" />}
@@ -57,46 +56,64 @@ const navItems: Omit<ContentItem, 'image'>[] = [
 ];
 
 export default function DashboardPage() {
-    const { setHints, hints } = useHints();
+    const { setHints } = useHints();
     const { currentUser } = useUser();
     const { games } = useGames();
     const [api, setApi] = React.useState<CarouselApi>()
     const [current, setCurrent] = React.useState(0)
     const { playSound } = useSound();
     const router = useRouter();
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const isInitialMount = useRef(true);
 
     const [content, setContent] = useState<ContentItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
   
     useEffect(() => {
-        // Avoid re-setting hints if they are already correct, to prevent flicker
-        if (hints.length === 0) {
-            setHints([
-                { key: '↔', action: 'Navigate' },
-                { key: 'A', action: 'Select' },
-                { key: 'Q', action: 'Prev Tab' },
-                { key: 'E', action: 'Next Tab' },
-            ]);
+        setHints([
+            { key: '↔', action: 'Navigate' },
+            { key: 'A', action: 'Select' },
+            { key: 'Q', action: 'Prev Tab' },
+            { key: 'E', action: 'Next Tab' },
+        ]);
+        
+        // When content is loaded, focus the carousel for keyboard/controller navigation
+        if (!isLoading && content.length > 0) {
+            carouselRef.current?.focus();
         }
-    }, [setHints, hints]);
+
+    }, [setHints, isLoading, content]);
 
     useEffect(() => {
         if (!api) return;
         
         const onSelect = () => {
-          playSound('navigate');
+          if (!isInitialMount.current) {
+            playSound('navigate');
+          }
           setCurrent(api.selectedScrollSnap());
         };
     
         api.on("select", onSelect);
-        return () => { api.off("select", onSelect) };
+        
+        // Set initial mount to false after a short delay to prevent sound on load
+        const timer = setTimeout(() => { isInitialMount.current = false; }, 500);
+
+        return () => { 
+            api.off("select", onSelect);
+            clearTimeout(timer);
+        };
     }, [api, playSound]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Only handle Enter/Space if the carousel itself is focused
+            if (document.activeElement !== carouselRef.current) return;
+
             if (e.key === 'Enter' || e.key === ' ') {
                 const isDialogFocused = document.querySelector('[role="dialog"]');
                 if (isDialogFocused) return;
+                
                 e.preventDefault();
                 const currentItem = content[current];
                 if (currentItem) {
@@ -105,6 +122,7 @@ export default function DashboardPage() {
                 }
             }
         };
+        // Listen on the document to capture events even if the carousel is not the direct target
         document.addEventListener('keydown', handleKeyDown);
         return () => { document.removeEventListener('keydown', handleKeyDown); };
     }, [current, content, router, playSound]);
@@ -115,7 +133,7 @@ export default function DashboardPage() {
         const fetchDashboardContent = async () => {
             if (!games.length || !currentUser) {
                 // If no games, just show nav items
-                const staticNavItems = navItems.map(item => ({...item, image: `https://placehold.co/1920x1080.png?text=${item.name.replace(' ', '+')}` }));
+                const staticNavItems = navItems.map(item => ({...item, image: `https://placehold.co/1920x1080.png` }));
                 setContent(staticNavItems);
                 setIsLoading(false);
                 return;
@@ -187,16 +205,18 @@ export default function DashboardPage() {
     return (
         <div className="flex flex-1 items-center justify-center animate-fade-in w-full">
             <Carousel 
+                ref={carouselRef}
                 setApi={setApi}
                 opts={{ align: "center", loop: content.length > 1 }} 
                 className="w-full max-w-7xl focus:outline-none"
+                tabIndex={-1} // Make it programmatically focusable
             >
               <CarouselContent className="-ml-8 py-12">
                 {content.map((item, index) => (
                   <CarouselItem key={item.id} className="pl-8 md:basis-1/2 lg:basis-2/3">
                       <div className={cn(
                         "transition-all duration-300 ease-in-out transform",
-                        index === current ? 'scale-100 opacity-100' : 'scale-75 opacity-50'
+                        index === current ? 'scale-100 opacity-100 animate-levitate' : 'scale-75 opacity-50'
                       )}>
                         <ContentCard item={item} />
                       </div>
@@ -207,4 +227,3 @@ export default function DashboardPage() {
         </div>
     );
 }
-
