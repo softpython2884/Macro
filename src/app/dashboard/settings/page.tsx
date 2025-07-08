@@ -17,11 +17,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Download } from "lucide-react";
 import React from 'react';
 import { useHints } from '@/context/HintContext';
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { scanAndInstallGames } from "@/lib/installer";
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -43,6 +44,7 @@ type SettingsFormValues = z.infer<typeof formSchema>;
 export default function SettingsPage() {
   const { toast } = useToast();
   const { setHints } = useHints();
+  const [isScanning, setIsScanning] = React.useState(false);
   useBackNavigation('/dashboard');
   
   const form = useForm<SettingsFormValues>({
@@ -106,6 +108,45 @@ export default function SettingsPage() {
       });
     }
   }
+
+  const handleScan = async () => {
+    setIsScanning(true);
+    const values = form.getValues();
+    const { downloadsPath, localGamesPath } = values;
+
+    if (!downloadsPath || !localGamesPath) {
+        toast({
+            title: "Paths not configured",
+            description: "Please set both Downloads and Local Games directories before scanning.",
+            variant: "destructive",
+        });
+        setIsScanning(false);
+        return;
+    }
+
+    try {
+        const result = await scanAndInstallGames(downloadsPath, localGamesPath);
+        
+        toast({
+            title: result.success ? "Scan Complete" : "Scan Failed",
+            description: result.message,
+            variant: result.success ? "default" : "destructive",
+        });
+
+        if (result.success && result.gamesInstalled > 0) {
+            // Re-using this event is fine, as it triggers a game rescan in the context
+            window.dispatchEvent(new Event('settings-updated'));
+        }
+    } catch (error) {
+         toast({
+            title: "Error during scan",
+            description: "An unexpected error occurred. Check the server console for details.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsScanning(false);
+    }
+  };
 
   return (
     <div>
@@ -227,7 +268,7 @@ export default function SettingsPage() {
                         <Input placeholder="C:/Users/YourUser/Downloads" {...field} />
                       </FormControl>
                       <FormDescription>
-                        The folder to monitor for new game archives. (Feature in development)
+                        The folder to monitor for new game archives (.zip files).
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -244,7 +285,7 @@ export default function SettingsPage() {
                         <Input placeholder="C:/Games/Local" {...field} />
                       </FormControl>
                       <FormDescription>
-                        The folder where downloaded games will be extracted and scanned. Add this path to "Game Directories" to include them in your library.
+                        The folder where downloaded games will be extracted. Add this path to "Game Directories" to include them in your library.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -295,7 +336,18 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <Button type="submit">Save Configuration</Button>
+              <div className="flex items-center gap-4">
+                <Button type="submit">Save Configuration</Button>
+                <Button
+                    type="button"
+                    onClick={handleScan}
+                    disabled={isScanning}
+                    variant="outline"
+                >
+                    <Download className="mr-2 h-4 w-4" />
+                    {isScanning ? 'Scanning...' : 'Scan Downloads for New Games'}
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>
