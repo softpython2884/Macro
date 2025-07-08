@@ -35,26 +35,27 @@ export default function GameDetailPage() {
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
 
+    // Effect to set the background image based on the current index
     useEffect(() => {
         if (game) {
-            setBackgroundImage(game.heroUrls?.[0] || game.posterUrl || null);
+            const newImage = game.heroUrls?.[currentHeroIndex] || game.posterUrl;
+            setBackgroundImage(newImage || null);
         }
+        // On component unmount, clear the background
         return () => setBackgroundImage(null);
-    }, [game, setBackgroundImage]);
+    }, [game, currentHeroIndex, setBackgroundImage]);
 
+    // Effect to handle the timer for cycling hero images
     useEffect(() => {
         if (!game?.heroUrls || game.heroUrls.length <= 1) return;
+        
         const timer = setInterval(() => {
-            setCurrentHeroIndex(prevIndex => {
-                const newIndex = (prevIndex + 1) % game.heroUrls.length;
-                if (game.heroUrls[newIndex]) {
-                    setBackgroundImage(game.heroUrls[newIndex]);
-                }
-                return newIndex;
-            });
-        }, 8000);
+            setCurrentHeroIndex(prevIndex => (prevIndex + 1) % game.heroUrls.length);
+        }, 8000); // Changed to 8 seconds as requested
+        
         return () => clearInterval(timer);
-    }, [game, setBackgroundImage]);
+    }, [game?.heroUrls]);
+
 
     useEffect(() => {
         try {
