@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -20,6 +21,7 @@ import { PlusCircle, Trash2 } from "lucide-react";
 import React from 'react';
 import { useHints } from '@/context/HintContext';
 import { useBackNavigation } from "@/hooks/use-back-navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -30,6 +32,7 @@ const formSchema = z.object({
   media: z.string().optional(),
   apps: z.string().optional(),
   plugins: z.string().optional(),
+  browser: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
@@ -46,6 +49,7 @@ export default function SettingsPage() {
       media: "",
       apps: "",
       plugins: "",
+      browser: "chrome.exe"
     },
   });
 
@@ -157,6 +161,32 @@ export default function SettingsPage() {
                     render={() => <FormMessage className="mt-2" />}
                   />
               </div>
+
+               <FormField
+                control={form.control}
+                name="browser"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Default Browser</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a default browser for web apps" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="chrome.exe">Google Chrome</SelectItem>
+                          <SelectItem value="msedge.exe">Microsoft Edge</SelectItem>
+                          <SelectItem value="firefox.exe">Mozilla Firefox</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    <FormDescription>
+                      This browser will be used to open web apps, and will be the target of the F9 "kill process" command.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

@@ -39,8 +39,14 @@ const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) 
 
             if (isHttp) {
                 playSound('launch');
-                await launchWebApp(href);
-                router.push(`/dashboard/applications/${id}/launching`);
+                try {
+                    const settings = JSON.parse(localStorage.getItem('macro-settings') || '{}');
+                    const browser = settings.browser || 'chrome.exe'; // Default to chrome
+                    await launchWebApp(href, browser);
+                    router.push(`/dashboard/applications/${id}/launching`);
+                } catch (error) {
+                    console.error("Failed to launch web app:", error);
+                }
                 return;
             }
 

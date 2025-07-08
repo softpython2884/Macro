@@ -17,6 +17,7 @@ import { ControllerHints } from "@/components/controller-hints";
 import React from "react";
 import { SystemStatus } from "@/components/system-status";
 import { GameProvider } from "@/context/GameContext";
+import { killBrowserAndRelaunch } from "@/lib/process-manager";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -40,6 +41,20 @@ export default function DashboardLayout({
         if (typeof e.key !== 'string') {
             return;
         }
+
+        if (e.key === 'F9') {
+          e.preventDefault();
+          const settings = JSON.parse(localStorage.getItem('macro-settings') || '{}');
+          const browser = settings.browser;
+          if (browser) {
+            console.log(`F9 pressed. Killing ${browser} and relaunching Macro.`);
+            killBrowserAndRelaunch(browser);
+          } else {
+            console.warn("F9 pressed, but no default browser is configured in Macro settings.");
+          }
+          return;
+        }
+        
         const key = e.key.toLowerCase();
         if (key === 'q' || key === 'e') {
             const currentIndex = navItems.findIndex(item => pathname.startsWith(item.href) && item.href !== '/dashboard' || item.href === pathname);
