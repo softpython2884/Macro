@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body>
+      <body className="overflow-hidden">
         <UserProvider>
           <SoundProvider>
             <div className="relative z-10">

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, useMemo, useCallback, useEffect, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useCallback, useEffect, useState, useRef } from 'react';
 import * as Tone from 'tone';
 
 type SoundType = 'navigate' | 'select' | 'back' | 'launch' | 'error';
@@ -13,71 +13,79 @@ type SoundContextType = {
 
 const SoundContext = createContext<SoundContextType | undefined>(undefined);
 
-// Mapping of sound types to their audio file paths.
-// The user provided: intro.wav, move.wav, open.wav, close.wav, error.wav
 const soundMap: Record<SoundType, string> = {
   navigate: '/sounds/move.wav',
   select: '/sounds/open.wav',
   back: '/sounds/close.wav',
-  launch: '/sounds/open.wav', // Using 'open' for launch as well
+  launch: '/sounds/open.wav',
   error: '/sounds/error.wav',
 };
 
 export const SoundProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [areSoundsLoaded, setAreSoundsLoaded] = useState(false);
-  
-  const players = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    
-    const playerInstances = new Tone.Players(soundMap, () => {
-        setAreSoundsLoaded(true);
-        console.log('UI sounds loaded.');
-    }).toDestination();
+  const playersRef = useRef<Tone.Players | null>(null);
 
-    playerInstances.volume.value = -6; // Lower volume slightly for UI sounds
-    return playerInstances;
-  }, []);
-
+  // This effect handles the one-time user gesture requirement for audio.
   useEffect(() => {
-     if (typeof window === 'undefined' || isInitialized) return;
-
-    const initializeAudio = async () => {
-        if (Tone.context.state !== 'running') {
-            await Tone.start();
-            console.log('Audio context started');
-        }
-        setIsInitialized(true);
-        document.removeEventListener('keydown', initializeAudio);
-        document.removeEventListener('mousedown', initializeAudio);
+    const startAudio = async () => {
+      await Tone.start();
+      console.log('Audio context started.');
+      setIsInitialized(true);
     };
 
-    document.addEventListener('keydown', initializeAudio, { once: true });
-    document.addEventListener('mousedown', initializeAudio, { once: true });
-    
-    return () => {
-        document.removeEventListener('keydown', initializeAudio);
-        document.removeEventListener('mousedown', initializeAudio);
+    // Tone.start() must be called in response to a user gesture.
+    // We only need to do this once.
+    if (typeof window !== 'undefined' && Tone.context.state !== 'running') {
+      document.body.addEventListener('mousedown', startAudio, { once: true });
+      document.body.addEventListener('keydown', startAudio, { once: true });
+    } else {
+      setIsInitialized(true); // Already running, so we're initialized.
     }
+
+    return () => {
+      document.body.removeEventListener('mousedown', startAudio);
+      document.body.removeEventListener('keydown', startAudio);
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount.
+
+  // This effect loads the sound files once the audio context is initialized.
+  useEffect(() => {
+    if (isInitialized && !playersRef.current) {
+      playersRef.current = new Tone.Players(soundMap, () => {
+        console.log('UI sounds loaded.');
+      }).toDestination();
+      playersRef.current.volume.value = -6;
+    }
+
+    // On cleanup, dispose of the players to free up memory.
+    return () => {
+      if (playersRef.current) {
+        playersRef.current.dispose();
+        playersRef.current = null;
+      }
+    };
   }, [isInitialized]);
 
   const playSound = useCallback((sound: SoundType) => {
-    if (players && players.has(sound) && isInitialized && areSoundsLoaded) {
+    const players = playersRef.current;
+    if (players && players.loaded && players.has(sound)) {
       try {
-        if (players.player(sound).state === 'started') {
-            players.player(sound).stop();
+        const player = players.player(sound);
+        if (player.state === 'started') {
+          player.stop().start();
+        } else {
+          player.start();
         }
-        players.player(sound).start();
       } catch (e) {
         if (e instanceof Error && e.message.includes('buffer')) {
-             console.error(`Sound file for '${sound}' (${soundMap[sound]}) might be missing or failed to load.`);
+          console.error(`Sound file for '${sound}' (${soundMap[sound]}) might be missing or failed to load.`);
         } else {
             console.error(`Could not play sound: ${sound}`, e);
         }
       }
     }
-  }, [players, isInitialized, areSoundsLoaded]);
-  
+  }, []);
+
   const value = { playSound, isInitialized };
 
   return <SoundContext.Provider value={value}>{children}</SoundContext.Provider>;
