@@ -13,7 +13,7 @@ const ImageInputSchema = z.object({
   imageUrl: z.string().url().describe('The public URL of the image to analyze.'),
 });
 
-export const ColorOutputSchema = z.object({
+const ColorOutputSchema = z.object({
     primary: z.string().describe("The most dominant, rich color from the image as a hex code (e.g., '#483D8B'). This will be the main theme color."),
     accent: z.string().describe("A bright, vibrant, and complementary accent color from the image as a hex code (e.g., '#E0FFFF'). This will be used for highlights."),
 });
