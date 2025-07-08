@@ -37,6 +37,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
             const gameDirs = settings.games?.map((g: { value: string }) => g.value).filter(Boolean) ?? [];
+            
+            // Also include the localGamesPath if it's configured
+            if (settings.localGamesPath) {
+                gameDirs.push(settings.localGamesPath);
+            }
+
             if (gameDirs.length > 0) {
                 initialGames = await scanForGames(gameDirs);
                 setAllScannedGames(initialGames as Game[]);

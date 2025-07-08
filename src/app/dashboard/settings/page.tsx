@@ -29,8 +29,13 @@ const formSchema = z.object({
   games: z.array(z.object({
     value: z.string().min(1, "Directory path cannot be empty."),
   })).min(1, "At least one game directory is required."),
+  plugins: z.array(z.object({
+    value: z.string().min(1, "Directory path cannot be empty."),
+  })).optional(),
   browser: z.string().optional(),
   moonlightPath: z.string().optional(),
+  downloadsPath: z.string().optional(),
+  localGamesPath: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
@@ -44,8 +49,11 @@ export default function SettingsPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       games: [{ value: "" }],
+      plugins: [{ value: "" }],
       browser: "chrome.exe",
-      moonlightPath: ""
+      moonlightPath: "",
+      downloadsPath: "",
+      localGamesPath: ""
     },
   });
 
@@ -72,9 +80,14 @@ export default function SettingsPage() {
     return () => setHints([]);
   }, [setHints]);
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: gameFields, append: appendGame, remove: removeGame } = useFieldArray({
     control: form.control,
     name: "games"
+  });
+
+  const { fields: pluginFields, append: appendPlugin, remove: removePlugin } = useFieldArray({
+    control: form.control,
+    name: "plugins"
   });
 
   function onSubmit(values: SettingsFormValues) {
@@ -84,7 +97,6 @@ export default function SettingsPage() {
         title: "Settings saved!",
         description: "Your directory configurations have been updated.",
       });
-      // Optionally, trigger a refresh of game data context if needed
       window.dispatchEvent(new Event('settings-updated'));
     } catch (error) {
        toast({
@@ -101,105 +113,187 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Configuration</CardTitle>
           <CardDescription>
-            Configure the directories for your games, media, applications, and plugins. These paths are local to the machine running the server.
+            Configure the directories for your games and plugins. These paths are local to the machine running the server.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div>
-                <FormLabel>Game Directories</FormLabel>
-                <FormDescription className="mb-4">
-                  Add the folders where your games are installed. Macro will scan each folder for sub-directories, treating each as a separate game.
-                </FormDescription>
-                <div className="space-y-4">
-                  {fields.map((field, index) => (
-                    <FormField
-                      key={field.id}
+              <div className="space-y-8">
+                <div>
+                  <FormLabel>Game Directories</FormLabel>
+                  <FormDescription className="mb-4">
+                    Add the folders where your games are installed. Macro will scan each folder for sub-directories, treating each as a separate game.
+                  </FormDescription>
+                  <div className="space-y-4">
+                    {gameFields.map((field, index) => (
+                      <FormField
+                        key={field.id}
+                        control={form.control}
+                        name={`games.${index}.value`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-2">
+                              <FormControl>
+                                <Input placeholder="C:/Games" {...field} />
+                              </FormControl>
+                              {gameFields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => removeGame(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => appendGame({ value: "" })}
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Directory
+                  </Button>
+                  <FormField
                       control={form.control}
-                      name={`games.${index}.value`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center gap-2">
-                            <FormControl>
-                              <Input placeholder="C:/Games" {...field} />
-                            </FormControl>
-                            {fields.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                onClick={() => remove(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                           <FormMessage />
-                        </FormItem>
-                      )}
+                      name="games"
+                      render={() => <FormMessage className="mt-2" />}
                     />
-                  ))}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => append({ value: "" })}
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Directory
-                </Button>
-                 <FormField
-                    control={form.control}
-                    name="games"
-                    render={() => <FormMessage className="mt-2" />}
-                  />
+
+                <div>
+                  <FormLabel>Plugin Directories</FormLabel>
+                  <FormDescription className="mb-4">
+                    (Future) Add folders where custom plugins are stored.
+                  </FormDescription>
+                  <div className="space-y-4">
+                    {pluginFields.map((field, index) => (
+                      <FormField
+                        key={field.id}
+                        control={form.control}
+                        name={`plugins.${index}.value`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-2">
+                              <FormControl>
+                                <Input placeholder="C:/Macro/Plugins" {...field} />
+                              </FormControl>
+                              {pluginFields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => removePlugin(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => appendPlugin({ value: "" })}
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Directory
+                  </Button>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="downloadsPath"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Downloads Directory</FormLabel>
+                      <FormControl>
+                        <Input placeholder="C:/Users/YourUser/Downloads" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        The folder to monitor for new game archives. (Feature in development)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="localGamesPath"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Local Games Extraction Path</FormLabel>
+                      <FormControl>
+                        <Input placeholder="C:/Games/Local" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        The folder where downloaded games will be extracted and scanned. Add this path to "Game Directories" to include them in your library.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="browser"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default Browser</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a default browser for web apps" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="chrome.exe">Google Chrome</SelectItem>
+                            <SelectItem value="msedge.exe">Microsoft Edge</SelectItem>
+                            <SelectItem value="firefox.exe">Mozilla Firefox</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      <FormDescription>
+                        This browser will be used to open web apps from the dashboard.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="moonlightPath"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Moonlight Executable Path</FormLabel>
+                      <FormControl>
+                        <Input placeholder="C:/path/to/Moonlight.exe" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Provide the full path to the Moonlight executable if it's installed via a custom path.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-
-               <FormField
-                control={form.control}
-                name="browser"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Browser</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a default browser for web apps" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="chrome.exe">Google Chrome</SelectItem>
-                          <SelectItem value="msedge.exe">Microsoft Edge</SelectItem>
-                          <SelectItem value="firefox.exe">Mozilla Firefox</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    <FormDescription>
-                      This browser will be used to open web apps from the dashboard.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="moonlightPath"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Moonlight Executable Path</FormLabel>
-                    <FormControl>
-                      <Input placeholder="C:/path/to/Moonlight.exe" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Provide the full path to the Moonlight executable if it's installed via a custom path.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <Button type="submit">Save Configuration</Button>
             </form>

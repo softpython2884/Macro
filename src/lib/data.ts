@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle } from 'lucide-react';
+import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle, Download } from 'lucide-react';
 import { SiSteam } from '@icons-pack/react-simple-icons';
 import type { IconType } from '@icons-pack/react-simple-icons/types';
 
@@ -45,6 +45,7 @@ export const ALL_APPS: AppInfo[] = [
   { id: 'moonlight', name: 'Moonlight', icon: Moon, searchName: 'Moonlight Game Streaming', description: 'Stream games from your PC' },
   { id: 'steam', name: 'Steam', icon: SiSteam, href: 'steam://open/bigpicture', description: 'Access your game library' },
   { id: 'spotify', name: 'Spotify', icon: Music, href: 'spotify:', description: 'Open your music' },
+  { id: 'skidrow', name: 'Skidrow & Reloaded', icon: Download, href: 'https://www.skidrowreloaded.com/', description: 'Find new games' },
   { id: 'settings', name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system' },
   { id: 'plugins', name: 'Plugins', icon: Puzzle, href: '/dashboard/plugins', description: 'Manage plugins & add-ons' },
   { id: 'shutdown', name: 'Shutdown', icon: Power, onClick: () => console.log('Shutdown initiated'), description: 'Shutdown the PC' },
