@@ -183,7 +183,7 @@ export default function SettingsPage() {
                         </SelectContent>
                       </Select>
                     <FormDescription>
-                      This browser will be used to open web apps, and will be the target of the F9 "kill process" command.
+                      This browser will be used to open web apps from the dashboard.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -17,7 +16,6 @@ import { ControllerHints } from "@/components/controller-hints";
 import React from "react";
 import { SystemStatus } from "@/components/system-status";
 import { GameProvider } from "@/context/GameContext";
-import { killBrowserProcess } from "@/lib/process-manager";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -40,20 +38,6 @@ export default function DashboardLayout({
         // Defensive check to prevent crash if e.key is undefined
         if (typeof e.key !== 'string') {
             return;
-        }
-
-        if (e.key === 'Numpad5') {
-          console.log("Numpad5 key detected! Attempting to close browser.");
-          e.preventDefault();
-          const settings = JSON.parse(localStorage.getItem('macro-settings') || '{}');
-          const browser = settings.browser;
-          if (browser) {
-            console.log(`Numpad5 pressed. Sending command to kill ${browser}.`);
-            killBrowserProcess(browser);
-          } else {
-            console.warn("Numpad5 pressed, but no default browser is configured in Macro settings.");
-          }
-          return;
         }
         
         const key = e.key.toLowerCase();
