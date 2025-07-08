@@ -17,7 +17,7 @@ import { ControllerHints } from "@/components/controller-hints";
 import React from "react";
 import { SystemStatus } from "@/components/system-status";
 import { GameProvider } from "@/context/GameContext";
-import { killBrowserAndRelaunch } from "@/lib/process-manager";
+import { killBrowserProcess } from "@/lib/process-manager";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -43,13 +43,13 @@ export default function DashboardLayout({
         }
 
         if (e.key === 'Numpad5') {
-          console.log("Numpad5 key detected!");
+          console.log("Numpad5 key detected! Attempting to close browser.");
           e.preventDefault();
           const settings = JSON.parse(localStorage.getItem('macro-settings') || '{}');
           const browser = settings.browser;
           if (browser) {
-            console.log(`Numpad5 pressed. Killing ${browser} and relaunching Macro.`);
-            killBrowserAndRelaunch(browser);
+            console.log(`Numpad5 pressed. Sending command to kill ${browser}.`);
+            killBrowserProcess(browser);
           } else {
             console.warn("Numpad5 pressed, but no default browser is configured in Macro settings.");
           }

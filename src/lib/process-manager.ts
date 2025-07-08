@@ -2,7 +2,6 @@
 'use server';
 
 import { exec } from 'child_process';
-import { launchWebApp } from './webapp-launcher';
 
 /**
  * Promisified version of child_process.exec
@@ -22,18 +21,16 @@ function execPromise(command: string): Promise<{ stdout: string; stderr: string 
 }
 
 /**
- * Kills all instances of a given browser process and then relaunches the browser 
- * to the Macro application URL.
+ * Kills all instances of a given browser process.
  * @param browserProcessName The name of the browser executable (e.g., 'chrome.exe').
  */
-export async function killBrowserAndRelaunch(browserProcessName: string): Promise<{ success: boolean; error?: string }> {
+export async function killBrowserProcess(browserProcessName: string): Promise<{ success: boolean; error?: string }> {
     if (!browserProcessName) {
-        const errorMsg = "Browser process name not provided to killBrowserAndRelaunch.";
+        const errorMsg = "Browser process name not provided to killBrowserProcess.";
         console.error(errorMsg);
         return { success: false, error: errorMsg };
     }
     
-    // This command is specific to Windows.
     if (process.platform !== 'win32') {
         const errorMsg = "Process killing is only supported on Windows.";
         console.error(errorMsg);
@@ -52,22 +49,10 @@ export async function killBrowserAndRelaunch(browserProcessName: string): Promis
             console.log(`[PROCESS_MANAGER] Process ${browserProcessName} terminated or was not running.`);
         }
         
-        console.log(`[PROCESS_MANAGER] Relaunching Macro...`);
-
-        // Add a short delay to ensure the OS has time to free up resources
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Relaunch the browser to the Macro UI
-        const launchResult = await launchWebApp('http://localhost:9002', browserProcessName);
-        if (!launchResult.success) {
-            throw new Error(launchResult.error || "Relaunching web app failed.");
-        }
-
-        console.log(`[PROCESS_MANAGER] Relaunch command sent successfully.`);
         return { success: true };
 
     } catch (error: any) {
-        console.error(`[PROCESS_MANAGER] Failed during kill/relaunch for ${browserProcessName}:`, error);
+        console.error(`[PROCESS_MANAGER] Failed during kill for ${browserProcessName}:`, error);
         return { success: false, error: error.message };
     }
 }
