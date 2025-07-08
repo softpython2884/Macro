@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Rocket } from "lucide-react";
 import { useHints } from "@/context/HintContext";
+import { useBackNavigation } from "@/hooks/use-back-navigation";
 
 export default function GameLaunchingPage() {
     const params = useParams();
@@ -20,23 +21,20 @@ export default function GameLaunchingPage() {
     const executable = searchParams.get('exe');
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
 
+    useBackNavigation(`/dashboard/games/${gameId}`);
+
     useEffect(() => {
         setHints([
-            { key: 'B', action: 'Close Game' },
+            { key: 'B', action: 'Back to Details' },
         ]);
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' || e.key === 'Backspace') {
-                router.back();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
+        
         return () => {
             setHints([]);
-            document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [setHints, router]);
+    }, [setHints]);
 
     if (!game) {
+        // Optional: handle case where game is not found
         return null;
     }
 
@@ -62,7 +60,7 @@ export default function GameLaunchingPage() {
             </div>
 
             <Button variant="outline" onClick={() => router.back()} className="bg-black/30 hover:bg-black/50 border-white/20">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Return to Macro
+                <ArrowLeft className="mr-2 h-4 w-4" /> Return to Game Details
             </Button>
         </div>
     );

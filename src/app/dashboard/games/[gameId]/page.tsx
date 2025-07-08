@@ -69,7 +69,20 @@ export default function GameDetailPage() {
                 <Button variant="outline" size="sm" onClick={() => router.back()} className="absolute top-0 left-0 m-4 bg-black/30 hover:bg-black/50 border-white/20">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
                 </Button>
-                <h1 className="text-6xl font-bold text-glow">{game.name}</h1>
+                
+                {game.logoUrl ? (
+                    <div className="relative w-1/2 max-w-md h-40">
+                        <Image
+                            src={game.logoUrl}
+                            alt={`${game.name} Logo`}
+                            fill
+                            className="object-contain"
+                        />
+                    </div>
+                ) : (
+                     <h1 className="text-6xl font-bold text-glow">{game.name}</h1>
+                )}
+               
                 <div className="max-w-xl">
                     <p className="text-lg text-muted-foreground">Select an executable to launch the game.</p>
                 </div>

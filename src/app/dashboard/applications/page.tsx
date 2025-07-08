@@ -18,6 +18,7 @@ import { launchExecutable } from '@/lib/launch-executable';
 import { searchGame, getGrids } from '@/lib/steamgrid';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { putComputerToSleep } from '@/lib/system-commands';
 
 // New AppCard component, similar to GameCard
 const AppCard = ({ app }: { app: AppInfo }) => {
@@ -53,6 +54,22 @@ const AppCard = ({ app }: { app: AppInfo }) => {
                     variant: "destructive",
                 });
             }
+            return;
+        }
+        
+        // Special case for Sleep
+        if (id === 'sleep') {
+            playSound('select');
+            toast({ title: 'Putting computer to sleep...' });
+            putComputerToSleep().then(result => {
+                if (!result.success) {
+                    toast({
+                        title: 'Failed to sleep',
+                        description: result.error || 'Could not put the computer to sleep.',
+                        variant: 'destructive',
+                    });
+                }
+            });
             return;
         }
 
@@ -152,7 +169,7 @@ export default function ApplicationsPage() {
     }
     
     // Ensure settings is always available for other users
-    const requiredAppIds = ['settings'];
+    const requiredAppIds = ['settings', 'sleep'];
     const userAppIds = new Set([...currentUser.permissions.apps, ...requiredAppIds]);
     return ALL_APPS.filter(app => userAppIds.has(app.id));
   }, [currentUser]);
@@ -163,7 +180,7 @@ export default function ApplicationsPage() {
 
         const enriched = await Promise.all(
           permittedApps.map(async (app) => {
-            if (['settings', 'plugins', 'shutdown'].includes(app.id)) {
+            if (['settings', 'plugins', 'sleep'].includes(app.id)) {
                 return app; 
             }
             

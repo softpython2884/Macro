@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle, Download } from 'lucide-react';
+import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle, Download, Bed } from 'lucide-react';
 import { SiSteam } from '@icons-pack/react-simple-icons';
 import type { IconType } from '@icons-pack/react-simple-icons/types';
 
@@ -48,7 +48,7 @@ export const ALL_APPS: AppInfo[] = [
   { id: 'skidrow', name: 'Skidrow & Reloaded', icon: Download, href: 'https://www.skidrowreloaded.com/', description: 'Find new games' },
   { id: 'settings', name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system' },
   { id: 'plugins', name: 'Plugins', icon: Puzzle, href: '/dashboard/plugins', description: 'Manage plugins & add-ons' },
-  { id: 'shutdown', name: 'Shutdown', icon: Power, onClick: () => console.log('Shutdown initiated'), description: 'Shutdown the PC' },
+  { id: 'sleep', name: 'Mettre en Veille', icon: Bed, description: 'Met le PC en veille' },
 ];
 
 
