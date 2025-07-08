@@ -48,7 +48,7 @@ export default function GameDetailPage() {
 
         const timer = setInterval(() => {
             setCurrentHeroIndex(prevIndex => (prevIndex + 1) % game.heroUrls.length);
-        }, 15000); // Change image every 15 seconds
+        }, 8000); // Change image every 8 seconds
 
         return () => clearInterval(timer);
     }, [game]);
