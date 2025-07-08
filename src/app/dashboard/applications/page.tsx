@@ -12,9 +12,11 @@ import { ALL_APPS } from '@/lib/data';
 import type { AppInfo } from '@/lib/data';
 import { useSound } from '@/context/SoundContext';
 import { launchWebApp } from '@/lib/webapp-launcher';
+import { useRouter } from 'next/navigation';
 
-const AppCard = ({ name, icon: Icon, href, description, onClick }: AppInfo) => {
+const AppCard = ({ id, name, icon: Icon, href, description, onClick }: AppInfo) => {
     const { playSound } = useSound();
+    const router = useRouter();
 
     const cardContent = (
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:bg-primary/30 group-focus-within:bg-primary/30 group-hover:backdrop-blur-xl group-focus-within:backdrop-blur-xl group-hover:drop-shadow-glow group-focus-within:drop-shadow-glow transition-all duration-300 ease-in-out h-full w-full flex flex-col justify-center items-center p-6 aspect-video transform group-hover:scale-105 group-focus-within:scale-105">
@@ -38,6 +40,7 @@ const AppCard = ({ name, icon: Icon, href, description, onClick }: AppInfo) => {
             if (isHttp) {
                 playSound('launch');
                 await launchWebApp(href);
+                router.push(`/dashboard/applications/${id}/launching`);
                 return;
             }
 
