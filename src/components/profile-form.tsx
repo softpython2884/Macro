@@ -45,7 +45,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
           pin: '',
           permissions: {
             apps: ALL_APPS.map((app) => app.id),
-            games: allScannedGames.map((game) => game.id),
+            games: [],
           },
         },
   });
@@ -54,7 +54,9 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
   // if the list of scanned games finishes loading after the form has opened.
   React.useEffect(() => {
     if (!userToEdit) {
-      form.setValue('permissions.games', allScannedGames.map((game) => game.id));
+      // For existing users, their saved permissions are used.
+      // For new users, we start with an empty list.
+      form.setValue('permissions.games', userToEdit?.permissions.games || []);
     }
   }, [allScannedGames, userToEdit, form]);
 

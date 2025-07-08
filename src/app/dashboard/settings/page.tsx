@@ -29,9 +29,6 @@ const formSchema = z.object({
   games: z.array(z.object({
     value: z.string().min(1, "Directory path cannot be empty."),
   })).min(1, "At least one game directory is required."),
-  media: z.string().optional(),
-  apps: z.string().optional(),
-  plugins: z.string().optional(),
   browser: z.string().optional(),
   moonlightPath: z.string().optional(),
 });
@@ -47,9 +44,6 @@ export default function SettingsPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       games: [{ value: "" }],
-      media: "",
-      apps: "",
-      plugins: "",
       browser: "chrome.exe",
       moonlightPath: ""
     },
@@ -207,54 +201,6 @@ export default function SettingsPage() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="media"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Media Directory</FormLabel>
-                    <FormControl>
-                      <Input placeholder="/path/to/your/media" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      The folder where your movies and shows are stored. (Not yet implemented)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="apps"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Application Directory</FormLabel>
-                    <FormControl>
-                      <Input placeholder="/path/to/your/applications" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      The folder for other applications. (Not yet implemented)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="plugins"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Plugin Directory</FormLabel>
-                    <FormControl>
-                      <Input placeholder="/path/to/your/plugins" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      The folder for Macro plugins. (Not yet implemented)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <Button type="submit">Save Configuration</Button>
             </form>
           </Form>
