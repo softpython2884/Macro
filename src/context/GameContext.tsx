@@ -5,7 +5,6 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import type { Game } from '@/lib/data';
 import { searchGame, getGrids, getHeroes, getLogos } from '@/lib/steamgrid';
 import { scanForGames } from '@/lib/game-scanner';
-import { extractColorsFromImage } from '@/ai/flows/extract-colors-flow';
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -32,7 +31,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     hasFetched.current = true;
 
-    let initialGames: Omit<Game, 'posterUrl' | 'heroUrl' | 'logoUrl' | 'themeColors'>[] = [];
+    let initialGames: Omit<Game, 'posterUrl' | 'heroUrl' | 'logoUrl'>[] = [];
     try {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
@@ -76,22 +75,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             const heroUrl = heroes.length > 0 ? heroes[0].url : undefined;
             const logoUrl = logos.length > 0 ? logos[0].url : undefined;
             
-            let themeColors;
-            const imageUrlForTheme = heroUrl || posterUrl;
-            if (imageUrlForTheme) {
-              try {
-                themeColors = await extractColorsFromImage({ imageUrl: imageUrlForTheme });
-              } catch (e) {
-                console.error(`[Theme IA] Failed to extract colors for ${game.name}:`, e);
-              }
-            }
-
             return {
               ...game,
               posterUrl,
               heroUrl,
               logoUrl,
-              themeColors,
             };
         } catch (error) {
             console.error(`Failed to enrich metadata for game "${game.name}":`, error);
