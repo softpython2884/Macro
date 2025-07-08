@@ -167,11 +167,6 @@ export default function ApplicationsPage() {
                 return app; 
             }
             
-            // Hardcode YouTube image to a specific user-requested one
-            if (app.id === 'youtube') {
-              return { ...app, posterUrl: 'https://cdn2.steamgriddb.com/grid/c47f20e43d1a8689722a59c9ab64f260.png' };
-            }
-            
             try {
                 const searchName = app.searchName || app.name;
                 const foundGame = await searchGame(searchName);
