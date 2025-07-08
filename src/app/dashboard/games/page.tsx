@@ -16,9 +16,18 @@ import { useGames } from "@/context/GameContext";
 import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useBackground } from "@/context/BackgroundContext";
 
-const GameCard = ({ game }: { game: Game }) => (
-    <Link href={`/dashboard/games/${game.id}`} className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]">
+const GameCard = ({ game }: { game: Game }) => {
+  const { setBackgroundImage } = useBackground();
+  
+  return (
+    <Link 
+      href={`/dashboard/games/${game.id}`} 
+      className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
+      onFocus={() => setBackgroundImage(game.posterUrl || null)}
+      onBlur={() => setBackgroundImage(null)}
+    >
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
         {game.posterUrl ? (
             <Image 
@@ -34,7 +43,8 @@ const GameCard = ({ game }: { game: Game }) => (
           )}
       </Card>
     </Link>
-);
+  );
+};
 
 const GameCardSkeleton = () => (
     <div className="flex flex-col space-y-3">

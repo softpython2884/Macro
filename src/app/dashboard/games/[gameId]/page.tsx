@@ -14,6 +14,7 @@ import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { launchGame } from "@/lib/game-launcher";
 import { useSound } from "@/context/SoundContext";
 import { formatDuration } from "@/lib/utils";
+import { useBackground } from "@/context/BackgroundContext";
 
 export default function GameDetailPage() {
     const params = useParams();
@@ -24,12 +25,22 @@ export default function GameDetailPage() {
     const { playSound } = useSound();
     const executableListRef = useRef<HTMLDivElement>(null);
     const [playtime, setPlaytime] = useState<string | null>(null);
+    const { setBackgroundImage } = useBackground();
     
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
 
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
+
+    useEffect(() => {
+        if (game) {
+            // Use hero if available, otherwise fallback to poster for the background
+            setBackgroundImage(game.heroUrl || game.posterUrl || null);
+        }
+        // On component unmount, clear the background
+        return () => setBackgroundImage(null);
+    }, [game, setBackgroundImage]);
 
     useEffect(() => {
         try {
@@ -73,15 +84,6 @@ export default function GameDetailPage() {
 
     return (
         <div className="relative h-full min-h-[calc(100vh-10rem)] flex flex-col justify-end p-8 md:p-12 text-white animate-fade-in">
-             {game.heroUrl && (
-                <Image
-                    src={game.heroUrl}
-                    alt={game.name}
-                    fill
-                    className="object-cover object-center z-0 blur-xl scale-110"
-                    priority
-                />
-            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10" />
 
             <div className="relative z-20 space-y-6">

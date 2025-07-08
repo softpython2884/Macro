@@ -19,12 +19,14 @@ import { searchGame, getGrids } from '@/lib/steamgrid';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { putComputerToSleep } from '@/lib/system-commands';
+import { useBackground } from '@/context/BackgroundContext';
 
 // New AppCard component, similar to GameCard
 const AppCard = ({ app }: { app: AppInfo }) => {
     const { playSound } = useSound();
     const router = useRouter();
     const { toast } = useToast();
+    const { setBackgroundImage } = useBackground();
     const { id, name, icon: Icon, href, description, onClick, posterUrl } = app;
 
     const handleLaunch = async () => {
@@ -123,7 +125,9 @@ const AppCard = ({ app }: { app: AppInfo }) => {
     );
 
     const commonProps = {
-        className:"block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
+        className:"block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]",
+        onFocus: () => setBackgroundImage(posterUrl || null),
+        onBlur: () => setBackgroundImage(null),
     };
     
     if (href && !href.startsWith('http') && !href.startsWith('steam') && !href.startsWith('spotify')) {
