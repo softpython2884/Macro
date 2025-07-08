@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -16,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2, Download } from "lucide-react";
+import { PlusCircle, Trash2, Download, RefreshCw } from "lucide-react";
 import React from 'react';
 import { useHints } from '@/context/HintContext';
 import { useBackNavigation } from "@/hooks/use-back-navigation";
@@ -157,6 +158,14 @@ export default function SettingsPage() {
     }
   };
 
+  const handleRescanLibrary = () => {
+    toast({
+      title: "Library Scan Initiated",
+      description: "Your game directories are being scanned in the background.",
+    });
+    window.dispatchEvent(new Event('settings-updated'));
+  };
+
   return (
     <div>
       <Card>
@@ -211,16 +220,26 @@ export default function SettingsPage() {
                         />
                       ))}
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                      onClick={() => appendGame({ value: "" })}
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Directory
-                    </Button>
+                    <div className="flex items-center gap-2 mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => appendGame({ value: "" })}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Directory
+                      </Button>
+                      <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRescanLibrary}
+                      >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Rescan Library
+                      </Button>
+                    </div>
                     <FormField
                       control={form.control}
                       name="games"
