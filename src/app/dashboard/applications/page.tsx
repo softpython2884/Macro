@@ -237,7 +237,10 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     const fetchAppMetadata = async () => {
+        if (!currentUser) return;
         setIsLoading(true);
+
+        const nsfwEnabled = currentUser.permissions.nsfwEnabled;
 
         const enriched = await Promise.all(
           permittedApps.map(async (app) => {
@@ -247,10 +250,10 @@ export default function ApplicationsPage() {
             
             try {
                 const searchName = app.searchName || app.name;
-                const foundGame = await searchGame(searchName);
+                const foundGame = await searchGame(searchName, nsfwEnabled);
                 if (!foundGame) return app;
 
-                const grids = await getGrids(foundGame.id, ['600x900']);
+                const grids = await getGrids(foundGame.id, ['600x900'], nsfwEnabled);
                 
                 let posterUrl: string | undefined;
 

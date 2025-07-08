@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import type { Game } from '@/lib/data';
 import { searchGame, getGrids, getHeroes, getLogos } from '@/lib/steamgrid';
 import { scanForGames } from '@/lib/game-scanner';
+import { useUser } from './UserContext';
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -21,15 +22,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [games, setGames] = useState<Game[]>([]);
   const [allScannedGames, setAllScannedGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { currentUser } = useUser();
   const hasFetched = useRef(false);
 
   const fetchGameMetadata = useCallback(async () => {
-    if (hasFetched.current) {
+    if (hasFetched.current || !currentUser) {
         return;
     }
 
     setIsLoading(true);
     hasFetched.current = true;
+    
+    const nsfwEnabled = currentUser.permissions.nsfwEnabled;
 
     let initialGames: Omit<Game, 'posterUrl' | 'heroUrls' | 'logoUrl'>[] = [];
     try {
@@ -62,13 +66,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const enrichedGames = await Promise.all(
       initialGames.map(async (game) => {
         try {
-            const foundGame = await searchGame(game.name);
+            const foundGame = await searchGame(game.name, nsfwEnabled);
             if (!foundGame) return game as Game;
 
             const [grids, heroes, logos] = await Promise.all([
-                getGrids(foundGame.id, ['600x900']),
-                getHeroes(foundGame.id),
-                getLogos(foundGame.id)
+                getGrids(foundGame.id, ['600x900'], nsfwEnabled),
+                getHeroes(foundGame.id, nsfwEnabled),
+                getLogos(foundGame.id, nsfwEnabled)
             ]);
 
             const posterUrl = grids.length > 0 ? grids[0].url : undefined;
@@ -90,7 +94,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     setGames(enrichedGames);
     setIsLoading(false);
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     const handleSettingsUpdate = () => {

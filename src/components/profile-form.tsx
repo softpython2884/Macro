@@ -14,6 +14,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { useGames } from '@/context/GameContext';
 import React from 'react';
 import { useSound } from '@/context/SoundContext';
+import { Switch } from './ui/switch';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -22,6 +23,8 @@ const formSchema = z.object({
   permissions: z.object({
     apps: z.array(z.string()),
     games: z.array(z.string()),
+    nsfwEnabled: z.boolean().default(true),
+    prioritizeNsfw: z.boolean().default(false),
   }),
 });
 
@@ -46,6 +49,8 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
           permissions: {
             apps: ALL_APPS.map((app) => app.id),
             games: [], // Populated by useEffect below
+            nsfwEnabled: true,
+            prioritizeNsfw: false,
           },
         },
   });
@@ -61,7 +66,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const userData = {
+    const userData: Omit<User, 'id'> = {
         name: values.name,
         avatar: values.avatar || 'https://icon-library.com/images/netflix-icon-black/netflix-icon-black-19.jpg',
         pin: values.pin,
@@ -71,7 +76,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
     if (userToEdit) {
       updateUser({ ...userData, id: userToEdit.id });
     } else {
-      addUser(userData as Omit<User, 'id'>);
+      addUser(userData);
     }
     playSound('select');
     onFinished();
@@ -173,7 +178,42 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
             )} />
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="space-y-4 pt-6 mt-6 border-t">
+          <h3 className="text-lg font-medium">Content Preferences</h3>
+           <FormField
+              control={form.control}
+              name="permissions.nsfwEnabled"
+              render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
+                      <div className="space-y-0.5">
+                          <FormLabel>Enable Adult Content (NSFW)</FormLabel>
+                          <FormDescription>Allow fetching images and content marked as not safe for work.</FormDescription>
+                      </div>
+                      <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                  </FormItem>
+              )}
+          />
+           <FormField
+              control={form.control}
+              name="permissions.prioritizeNsfw"
+              render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
+                      <div className="space-y-0.5">
+                          <FormLabel>Prioritize NSFW Images</FormLabel>
+                          <FormDescription>If available, show NSFW images first. (This setting is not yet active.)</FormDescription>
+                      </div>
+                      <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                  </FormItem>
+              )}
+          />
+        </div>
+
+
+        <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="ghost" onClick={handleCancel}>Cancel</Button>
             <Button type="submit">{userToEdit ? 'Save Changes' : 'Create Profile'}</Button>
         </div>

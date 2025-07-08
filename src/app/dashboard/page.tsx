@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import Image from "next/image";
 import { Globe } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Simplified type for content cards
 type ContentItem = {
@@ -118,8 +119,9 @@ export default function DashboardPage() {
     // Fetch Recently Played
     useEffect(() => {
         const fetchRecentlyPlayed = async () => {
-            if (!games.length) return;
+            if (!games.length || !currentUser) return;
             setLoadingRecent(true);
+            const nsfwEnabled = currentUser.permissions.nsfwEnabled;
             try {
                 const playtimeJSON = localStorage.getItem('macro-playtime');
                 if (!playtimeJSON) {
@@ -137,7 +139,7 @@ export default function DashboardPage() {
                     const gameData = games.find(g => g.id === playedGame.gameId);
                     if (!gameData) return null;
 
-                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620']);
+                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwEnabled);
                     
                     return {
                         id: gameData.id,
@@ -155,13 +157,14 @@ export default function DashboardPage() {
             setLoadingRecent(false);
         };
         fetchRecentlyPlayed();
-    }, [games]);
+    }, [games, currentUser]);
 
     // Fetch Favorites
     useEffect(() => {
         const fetchFavorites = async () => {
             if (!currentUser || !games) return;
             setLoadingFavorites(true);
+            const nsfwEnabled = currentUser.permissions.nsfwEnabled;
             try {
                 const favoritesKey = `macro-favorites-${currentUser.id}`;
                 const favoritesJSON = localStorage.getItem(favoritesKey);
@@ -177,7 +180,7 @@ export default function DashboardPage() {
                 const favGames = await Promise.all(favGameIds.map(async (id) => {
                     const gameData = games.find(g => g.id === id);
                     if (!gameData) return null;
-                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620']);
+                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwEnabled);
                     return { id, name: gameData.name, image: heroImages[0]?.url || gameData.posterUrl, href: `/dashboard/games/${id}`, type: 'game' } as ContentItem;
                 }));
 
@@ -186,9 +189,9 @@ export default function DashboardPage() {
                     if (!appData) return null;
                     let image = appData.posterUrl || null;
                     if (!image) {
-                       const foundGame = await searchGame(appData.searchName || appData.name);
+                       const foundGame = await searchGame(appData.searchName || appData.name, nsfwEnabled);
                        if (foundGame) {
-                         const heroes = await getGrids(foundGame.id, ['920x430', '460x215']);
+                         const heroes = await getGrids(foundGame.id, ['920x430', '460x215'], nsfwEnabled);
                          image = heroes[0]?.url || null;
                        }
                     }
@@ -208,8 +211,9 @@ export default function DashboardPage() {
     // Fetch AI Recommendations
     useEffect(() => {
         const fetchRecommendations = async () => {
-            if (!games.length) return;
+            if (!games.length || !currentUser) return;
             setLoadingRecs(true);
+            const nsfwEnabled = currentUser.permissions.nsfwEnabled;
             try {
                 const playtimeJSON = localStorage.getItem('macro-playtime');
                 if (!playtimeJSON) {
@@ -230,10 +234,10 @@ export default function DashboardPage() {
                 const result = await recommendGames({ playedGames: playedGameNames.slice(0, 10) });
                 
                 const enrichedRecs = await Promise.all(result.recommendations.map(async (recName) => {
-                    const foundGame = await searchGame(recName);
+                    const foundGame = await searchGame(recName, nsfwEnabled);
                     if (!foundGame) return null;
 
-                    const heroImages = await getGrids(foundGame.id, ['920x430', '460x215', '1920x620']);
+                    const heroImages = await getGrids(foundGame.id, ['920x430', '460x215', '1920x620'], nsfwEnabled);
 
                     return {
                         id: `rec-${foundGame.id}`,
@@ -251,7 +255,7 @@ export default function DashboardPage() {
             setLoadingRecs(false);
         };
         fetchRecommendations();
-    }, [games]);
+    }, [games, currentUser]);
 
     return (
         <div className="flex flex-col flex-1 space-y-8 animate-fade-in w-full">

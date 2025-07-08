@@ -13,7 +13,7 @@ type UserContextType = {
   currentUser: User | null;
   login: (user: User, pin?: string) => boolean;
   logout: () => void;
-  addUser: (user: Omit<User, 'id' | 'avatar'> & { avatar?: string }) => void;
+  addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (user: User) => void;
   deleteUser: (userId: string) => void;
 };
@@ -63,11 +63,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
-  const addUser = (newUser: Omit<User, 'id' | 'avatar'> & { avatar?: string }) => {
-    const userWithId = { 
-        ...newUser, 
-        id: `user-${Date.now()}`,
-        avatar: newUser.avatar || 'https://icon-library.com/images/netflix-icon-black/netflix-icon-black-19.jpg',
+  const addUser = (newUser: Omit<User, 'id'>) => {
+    const userWithId = {
+      ...newUser,
+      id: `user-${Date.now()}`,
+      avatar: newUser.avatar || 'https://icon-library.com/images/netflix-icon-black/netflix-icon-black-19.jpg',
     };
     saveUsers([...users, userWithId]);
   };
