@@ -62,6 +62,7 @@ export default function GamesPage() {
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Launch' },
       { key: 'B', action: 'Back' },
+      { key: 'Y', action: 'Search' },
       { key: 'Q', action: 'Prev Tab' },
       { key: 'E', action: 'Next Tab' },
     ]);
@@ -71,6 +72,20 @@ export default function GamesPage() {
 
     return () => setHints([]);
   }, [setHints, isLoading]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        const isAnyDialogOpen = !!document.querySelector('[role="dialog"]');
+        if (e.key.toLowerCase() === 'y' && !isAnyDialogOpen) {
+            e.preventDefault();
+            setIsKeyboardOpen(true);
+        }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const permittedGames = React.useMemo(() => {
     if (!currentUser) return [];
