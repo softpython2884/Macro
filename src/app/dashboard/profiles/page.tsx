@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,10 +12,10 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2, Edit, LogIn, KeyRound, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ProfileForm } from "@/components/profile-form";
 import { PinInputPad } from "@/components/pin-input";
 import { useRouter } from "next/navigation";
 import { useSound } from "@/context/SoundContext";
+import Link from "next/link";
 
 export default function ProfilesPage() {
   const { setHints } = useHints();
@@ -24,9 +23,6 @@ export default function ProfilesPage() {
   const router = useRouter();
   const { users, currentUser, login, logout, deleteUser } = useUser();
   const { playSound } = useSound();
-  
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<User | null>(null);
 
   const [userToSwitch, setUserToSwitch] = useState<User | null>(null);
   const [showPinPad, setShowPinPad] = useState(false);
@@ -46,18 +42,6 @@ export default function ProfilesPage() {
     
     return () => setHints([]);
   }, [setHints]);
-
-  const handleAddNew = () => {
-    playSound('select');
-    setUserToEdit(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEdit = (user: User) => {
-    playSound('select');
-    setUserToEdit(user);
-    setIsFormOpen(true);
-  };
 
   const handleSwitchProfile = (user: User) => {
     playSound('select');
@@ -106,8 +90,10 @@ export default function ProfilesPage() {
             <Button onClick={() => { playSound('select'); logout(); }} variant="outline">
                 <LogOut className="mr-2 h-4 w-4" /> Change User
             </Button>
-            <Button onClick={handleAddNew}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Profile
+            <Button asChild>
+                <Link href="/dashboard/profiles/new" onClick={() => playSound('select')}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Profile
+                </Link>
             </Button>
         </div>
       </div>
@@ -132,8 +118,10 @@ export default function ProfilesPage() {
               </CardHeader>
               <CardContent className="flex-grow flex items-end justify-between">
                 <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={() => handleEdit(user)} aria-label={`Edit ${user.name}`}>
-                        <Edit className="h-4 w-4" />
+                    <Button asChild variant="outline" size="icon" aria-label={`Edit ${user.name}`}>
+                      <Link href={`/dashboard/profiles/${user.id}/edit`} onClick={() => playSound('select')}>
+                          <Edit className="h-4 w-4" />
+                      </Link>
                     </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -162,20 +150,6 @@ export default function ProfilesPage() {
             </Card>
         ))}
       </div>
-
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl bg-card/90 backdrop-blur-lg max-h-[90svh] flex flex-col">
-            <DialogHeader>
-                <DialogTitle>{userToEdit ? 'Edit Profile' : 'Create New Profile'}</DialogTitle>
-                <DialogDescription>
-                    {userToEdit ? 'Modify the details for this profile.' : 'Fill in the details for the new profile.'}
-                </DialogDescription>
-            </DialogHeader>
-            <div className="flex-grow min-h-0">
-                <ProfileForm userToEdit={userToEdit} onFinished={() => setIsFormOpen(false)} />
-            </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showPinPad} onOpenChange={(isOpen) => { if(!isOpen) handleCancelPin(); }}>
         <DialogContent className="bg-card/90 backdrop-blur-lg max-w-sm">
