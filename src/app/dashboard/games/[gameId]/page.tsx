@@ -7,13 +7,13 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Rocket, FileCode, ArrowLeft, Clock, Star } from "lucide-react";
+import { Rocket, FileCode, ArrowLeft, Clock } from "lucide-react";
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { useHints } from "@/context/HintContext";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { launchGame } from "@/lib/game-launcher";
 import { useSound } from "@/context/SoundContext";
-import { formatDuration, cn } from "@/lib/utils";
+import { formatDuration } from "@/lib/utils";
 import { useBackground } from "@/context/BackgroundContext";
 
 export default function GameDetailPage() {
@@ -31,8 +31,6 @@ export default function GameDetailPage() {
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
     
     const [playtime, setPlaytime] = useState<string | null>(null);
-    const [isFavorite, setIsFavorite] = useState(false);
-    const favoritesKey = currentUser ? `macro-favorites-${currentUser.id}` : null;
 
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
@@ -74,24 +72,8 @@ export default function GameDetailPage() {
     }, [gameId]);
 
     useEffect(() => {
-        if (!favoritesKey) return;
-        try {
-            const favoritesJSON = localStorage.getItem(favoritesKey);
-            if (favoritesJSON) {
-                const favorites = JSON.parse(favoritesJSON);
-                setIsFavorite(favorites.games?.includes(gameId));
-            } else {
-                setIsFavorite(false);
-            }
-        } catch (e) {
-            console.error("Failed to read game favorites", e);
-        }
-    }, [gameId, favoritesKey]);
-
-    useEffect(() => {
         setHints([
             { key: 'A', action: 'Launch' },
-            { key: 'Y', action: 'Favorite' },
             { key: 'B', action: 'Back' },
         ]);
         
@@ -102,47 +84,12 @@ export default function GameDetailPage() {
     }, [setHints]);
 
     const handleLaunch = async (executable: string) => {
+        if (!game) return;
         playSound('launch');
         localStorage.setItem('macro-active-session', JSON.stringify({ gameId: game.id, startTime: Date.now() }));
         await launchGame(game.path, executable);
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }
-
-    const toggleFavorite = () => {
-        if (!favoritesKey) return;
-        const newFavStatus = !isFavorite;
-        setIsFavorite(newFavStatus);
-        try {
-            const favoritesJSON = localStorage.getItem(favoritesKey) || '{}';
-            const favorites = JSON.parse(favoritesJSON);
-            const gameFavorites = new Set(favorites.games || []);
-
-            if (newFavStatus) {
-                gameFavorites.add(gameId);
-            } else {
-                gameFavorites.delete(gameId);
-            }
-            
-            const newFavorites = {
-                ...favorites,
-                games: Array.from(gameFavorites),
-            };
-            localStorage.setItem(favoritesKey, JSON.stringify(newFavorites));
-            playSound(newFavStatus ? 'select' : 'back');
-        } catch (e) {
-            console.error("Failed to update game favorites", e);
-        }
-    };
-    
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key.toLowerCase() === 'y') {
-                toggleFavorite();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [toggleFavorite]);
 
     if (!currentUser || !game) {
         return null; 
@@ -219,9 +166,6 @@ export default function GameDetailPage() {
                                 </span>
                             </Button>
                         ))}
-                        <Button onClick={toggleFavorite} variant="outline" size="icon" aria-label="Toggle Favorite" className="h-11 w-11">
-                            <Star className={cn("h-5 w-5", isFavorite ? "fill-yellow-400 text-yellow-400" : "text-foreground")} />
-                        </Button>
                     </div>
                 </div>
             </div>

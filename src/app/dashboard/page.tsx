@@ -8,15 +8,11 @@ import { useHints } from '@/context/HintContext';
 import { useSound } from '@/context/SoundContext';
 import { useUser } from "@/context/UserContext";
 import { useGames } from "@/context/GameContext";
-import { ALL_APPS, AppInfo } from "@/lib/data";
-import { Game } from "@/lib/data";
-import { recommendGames } from "@/ai/flows/recommend-games-flow";
-import { searchGame, getGrids } from "@/lib/steamgrid";
+import { getHeroes } from "@/lib/steamgrid";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import Image from "next/image";
 import { Globe } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 // Simplified type for content cards
 type ContentItem = {
@@ -24,7 +20,7 @@ type ContentItem = {
     name: string;
     image: string | null;
     href: string;
-    type: 'game' | 'app' | 'recommendation';
+    type: 'game';
 };
 
 const ContentCard = ({ item }: { item: ContentItem }) => {
@@ -46,14 +42,6 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
           </div>
       </Card>
     );
-
-    if (item.type === 'recommendation') {
-      return (
-        <a href={item.href} target="_blank" rel="noopener noreferrer" className="block group w-full h-full rounded-lg focus:outline-none focus:animate-levitate" onClick={() => playSound('launch')}>
-          {cardContent}
-        </a>
-      );
-    }
 
     return (
         <Link href={item.href} className="block group w-full h-full rounded-lg focus:outline-none focus:animate-levitate" onClick={() => playSound('select')}>
@@ -99,12 +87,7 @@ export default function DashboardPage() {
     const { games } = useGames();
 
     const [recentlyPlayed, setRecentlyPlayed] = useState<ContentItem[]>([]);
-    const [favorites, setFavorites] = useState<ContentItem[]>([]);
-    const [recommendations, setRecommendations] = useState<ContentItem[]>([]);
-    
     const [loadingRecent, setLoadingRecent] = useState(true);
-    const [loadingFavorites, setLoadingFavorites] = useState(true);
-    const [loadingRecs, setLoadingRecs] = useState(true);
   
     useEffect(() => {
         setHints([
@@ -141,7 +124,7 @@ export default function DashboardPage() {
                     const gameData = games.find(g => g.id === playedGame.gameId);
                     if (!gameData) return null;
 
-                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
+                    const heroImages = await getHeroes(gameData.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
                     
                     return {
                         id: gameData.id,
@@ -161,112 +144,9 @@ export default function DashboardPage() {
         fetchRecentlyPlayed();
     }, [games, currentUser]);
 
-    // Fetch Favorites
-    useEffect(() => {
-        const fetchFavorites = async () => {
-            if (!currentUser || !games) return;
-            setLoadingFavorites(true);
-            const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
-            const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
-            try {
-                const favoritesKey = `macro-favorites-${currentUser.id}`;
-                const favoritesJSON = localStorage.getItem(favoritesKey);
-                if (!favoritesJSON) {
-                    setLoadingFavorites(false);
-                    return;
-                }
-
-                const favs = JSON.parse(favoritesJSON);
-                const favGameIds: string[] = favs.games || [];
-                const favAppIds: string[] = favs.apps || [];
-                
-                const favGames = await Promise.all(favGameIds.map(async (id) => {
-                    const gameData = games.find(g => g.id === id);
-                    if (!gameData) return null;
-                    const heroImages = await getGrids(gameData.id, ['920x430', '460x215', '1920x620'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
-                    return { id, name: gameData.name, image: heroImages[0]?.url || gameData.posterUrl, href: `/dashboard/games/${id}`, type: 'game' } as ContentItem;
-                }));
-
-                const favApps = await Promise.all(favAppIds.map(async (id) => {
-                    const appData = ALL_APPS.find(a => a.id === id);
-                    if (!appData) return null;
-                    let image = appData.posterUrl || null;
-                    if (!image) {
-                       const foundGame = await searchGame(appData.searchName || appData.name, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
-                       if (foundGame) {
-                         const heroes = await getGrids(foundGame.id, ['920x430', '460x215'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
-                         image = heroes[0]?.url || null;
-                       }
-                    }
-                    return { id, name: appData.name, image, href: appData.href || '#', type: 'app' } as ContentItem;
-                }));
-                
-                setFavorites([...favGames.filter(Boolean), ...favApps.filter(Boolean)] as ContentItem[]);
-
-            } catch (e) {
-                console.error("Error fetching favorites:", e);
-            }
-            setLoadingFavorites(false);
-        }
-        fetchFavorites();
-    }, [currentUser, games]);
-    
-    // Fetch AI Recommendations
-    useEffect(() => {
-        const fetchRecommendations = async () => {
-            if (!games.length || !currentUser) return;
-            setLoadingRecs(true);
-            const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
-            const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
-
-            try {
-                const playtimeJSON = localStorage.getItem('macro-playtime');
-                if (!playtimeJSON) {
-                    setLoadingRecs(false);
-                    return;
-                };
-                const allPlaytimes = JSON.parse(playtimeJSON);
-
-                const playedGameNames = Object.keys(allPlaytimes).map(gameId => {
-                    return games.find(g => g.id === gameId)?.name;
-                }).filter(Boolean) as string[];
-
-                if (playedGameNames.length === 0) {
-                  setLoadingRecs(false);
-                  return;
-                }
-
-                const result = await recommendGames({ playedGames: playedGameNames.slice(0, 10) });
-                
-                const enrichedRecs = await Promise.all(result.recommendations.map(async (recName) => {
-                    const foundGame = await searchGame(recName, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
-                    if (!foundGame) return null;
-
-                    const heroImages = await getGrids(foundGame.id, ['920x430', '460x215', '1920x620'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
-
-                    return {
-                        id: `rec-${foundGame.id}`,
-                        name: recName,
-                        image: heroImages[0]?.url || null,
-                        href: `https://www.skidrowreloaded.com/?s=${encodeURIComponent(recName)}`,
-                        type: 'recommendation',
-                    } as ContentItem;
-                }));
-
-                setRecommendations(enrichedRecs.filter(Boolean) as ContentItem[]);
-            } catch (e) {
-                console.error("Error fetching recommendations:", e);
-            }
-            setLoadingRecs(false);
-        };
-        fetchRecommendations();
-    }, [games, currentUser]);
-
     return (
         <div className="flex flex-col flex-1 space-y-8 animate-fade-in w-full">
             <ContentCarousel title="Recently Played" items={recentlyPlayed} isLoading={loadingRecent} />
-            <ContentCarousel title="My Favorites" items={favorites} isLoading={loadingFavorites} />
-            <ContentCarousel title="Recommended For You" items={recommendations} isLoading={loadingRecs} />
         </div>
     );
 }

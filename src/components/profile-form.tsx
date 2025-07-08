@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -88,8 +89,8 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex flex-col h-full">
-        <div className="space-y-6 max-h-[65vh] overflow-y-auto pr-4 -mr-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col" style={{ height: 'calc(100vh - 22rem)' }}>
+        <ScrollArea className="flex-grow pr-6 -mr-6">
           <div className="space-y-6">
               <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
@@ -213,9 +214,8 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
               />
               </div>
           </div>
-        </div>
-
-        <div className="flex justify-end gap-2 pt-4 flex-shrink-0">
+        </ScrollArea>
+        <div className="flex justify-end gap-2 pt-4 flex-shrink-0 border-t mt-auto">
             <Button type="button" variant="ghost" onClick={handleCancel}>Cancel</Button>
             <Button type="submit">{userToEdit ? 'Save Changes' : 'Create Profile'}</Button>
         </div>

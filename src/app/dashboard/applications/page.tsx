@@ -20,8 +20,6 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { putComputerToSleep } from '@/lib/system-commands';
 import { useBackground } from '@/context/BackgroundContext';
-import { Star } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // New AppCard component, similar to GameCard
 const AppCard = ({ app }: { app: AppInfo }) => {
@@ -31,49 +29,6 @@ const AppCard = ({ app }: { app: AppInfo }) => {
     const { setBackgroundImage } = useBackground();
     const { currentUser } = useUser();
     const { id, name, icon: Icon, href, description, onClick, posterUrl } = app;
-    
-    const favoritesKey = currentUser ? `macro-favorites-${currentUser.id}` : null;
-    const [isFavorite, setIsFavorite] = useState(false);
-
-    useEffect(() => {
-        if (!favoritesKey) return;
-        try {
-            const favoritesJSON = localStorage.getItem(favoritesKey);
-            if (favoritesJSON) {
-                const favorites = JSON.parse(favoritesJSON);
-                setIsFavorite(favorites.apps?.includes(id));
-            }
-        } catch (e) {
-            console.error("Failed to read app favorites", e);
-        }
-    }, [id, favoritesKey]);
-
-    const toggleFavorite = () => {
-        if (!favoritesKey) return;
-        const newFavStatus = !isFavorite;
-        setIsFavorite(newFavStatus);
-        try {
-            const favoritesJSON = localStorage.getItem(favoritesKey) || '{}';
-            const favorites = JSON.parse(favoritesJSON);
-            const appFavorites = new Set(favorites.apps || []);
-
-            if (newFavStatus) {
-                appFavorites.add(id);
-            } else {
-                appFavorites.delete(id);
-            }
-            
-            const newFavorites = {
-                ...favorites,
-                apps: Array.from(appFavorites),
-            };
-            localStorage.setItem(favoritesKey, JSON.stringify(newFavorites));
-            playSound(newFavStatus ? 'select' : 'back');
-        } catch (e) {
-            console.error("Failed to update app favorites", e);
-        }
-    };
-
 
     const handleLaunch = async () => {
         // Special case for Moonlight
@@ -153,17 +108,6 @@ const AppCard = ({ app }: { app: AppInfo }) => {
     
     const cardContent = (
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
-        <button 
-            onClick={(e) => {
-                e.preventDefault(); // Stop the card's main action
-                e.stopPropagation(); // Stop bubbling
-                toggleFavorite();
-            }}
-            className="absolute top-2 right-2 z-20 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/80 transition-opacity opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100"
-            aria-label="Toggle Favorite"
-        >
-            <Star className={cn("h-4 w-4", isFavorite ? "fill-yellow-400 text-yellow-400" : "text-white/80")} />
-        </button>
         {posterUrl ? (
             <Image 
               src={posterUrl} 
