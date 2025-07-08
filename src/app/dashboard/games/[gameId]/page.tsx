@@ -83,18 +83,33 @@ export default function GameDetailPage() {
     }
 
     return (
-        <div className="relative h-full min-h-[calc(100vh-10rem)] flex items-center p-8 md:p-12 text-white animate-fade-in">
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-10" />
-
+        <div className="flex flex-col text-white animate-fade-in">
+            {/* Back button, absolutely positioned */}
             <Button variant="outline" size="sm" onClick={() => router.back()} className="absolute top-4 left-4 m-4 bg-black/30 hover:bg-black/50 border-white/20 z-20">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
             </Button>
 
-            <div className="relative z-20 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 items-end">
-                {/* Poster Column */}
-                <div className="md:col-span-1 flex justify-center">
-                    {game.posterUrl ? (
-                        <div className="relative w-full max-w-sm aspect-[3/4] rounded-lg overflow-hidden shadow-2xl shadow-black/50">
+            {/* Hero Banner Section */}
+            <div className="relative w-full h-72 md:h-[450px]">
+                {game.heroUrl && (
+                    <Image
+                        src={game.heroUrl}
+                        alt={`${game.name} Hero Image`}
+                        fill
+                        className="object-cover object-center"
+                        priority
+                    />
+                )}
+                {/* Gradient overlay to blend with the content below */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+            </div>
+
+            {/* Details Section */}
+            <div className="relative z-10 -mt-24 md:-mt-48 px-8 md:px-12 pb-8 flex flex-col md:flex-row items-center md:items-end gap-8">
+                {/* Poster Image */}
+                <div className="flex-shrink-0">
+                     {game.posterUrl ? (
+                        <div className="relative w-48 md:w-64 aspect-[3/4] rounded-lg overflow-hidden shadow-2xl shadow-black/50 border-2 border-white/10">
                             <Image
                                 src={game.posterUrl}
                                 alt={`${game.name} Poster`}
@@ -103,26 +118,37 @@ export default function GameDetailPage() {
                             />
                         </div>
                     ) : (
-                         <div className="relative w-full max-w-sm aspect-[3/4] rounded-lg bg-card flex items-center justify-center">
+                         <div className="relative w-48 md:w-64 aspect-[3/4] rounded-lg bg-card flex items-center justify-center">
                             <h2 className="text-2xl font-bold text-center p-4">{game.name}</h2>
                         </div>
                     )}
                 </div>
 
-                {/* Details Column */}
-                <div className="md:col-span-2 space-y-6">
-                    <h1 className="text-6xl font-bold text-glow">{game.name}</h1>
-                
-                    <div className="max-w-2xl flex items-center gap-4">
-                        <p className="text-lg text-muted-foreground">Select an executable to launch the game.</p>
-                        {playtime && (
+                {/* Text Details & Launch Actions */}
+                <div className="flex-grow space-y-4 pt-8 text-center md:text-left">
+                    {game.logoUrl ? (
+                         <div className="relative w-full max-w-sm h-24 mb-4 drop-shadow-2xl mx-auto md:mx-0">
+                            <Image
+                                src={game.logoUrl}
+                                alt={`${game.name} Logo`}
+                                fill
+                                className="object-contain"
+                            />
+                        </div>
+                    ) : (
+                        <h1 className="text-5xl md:text-6xl font-bold text-glow">{game.name}</h1>
+                    )}
+
+                    <div className="max-w-2xl flex items-center justify-center md:justify-start gap-4 mx-auto md:mx-0">
+                        <p className="text-lg text-muted-foreground">Select an executable to launch.</p>
+                         {playtime && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground border-l border-white/20 pl-4">
                                 <Clock className="h-4 w-4" />
                                 <span>{playtime} played</span>
                             </div>
                         )}
                     </div>
-                    <div ref={executableListRef} className="flex flex-col items-start gap-4">
+                    <div ref={executableListRef} className="flex flex-col items-center md:items-start gap-4 pt-2">
                         {game.executables.map(exe => (
                             <Button key={exe} onClick={() => handleLaunch(exe)} size="lg">
                                 <Rocket className="mr-2 h-5 w-5" />
