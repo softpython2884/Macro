@@ -48,14 +48,14 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
 
     if (item.type === 'recommendation') {
       return (
-        <a href={item.href} target="_blank" rel="noopener noreferrer" className="block group w-full h-full rounded-lg focus:outline-none" onClick={() => playSound('launch')}>
+        <a href={item.href} target="_blank" rel="noopener noreferrer" className="block group w-full h-full rounded-lg focus:outline-none focus:animate-levitate" onClick={() => playSound('launch')}>
           {cardContent}
         </a>
       );
     }
 
     return (
-        <Link href={item.href} className="block group w-full h-full rounded-lg focus:outline-none" onClick={() => playSound('select')}>
+        <Link href={item.href} className="block group w-full h-full rounded-lg focus:outline-none focus:animate-levitate" onClick={() => playSound('select')}>
             {cardContent}
         </Link>
     );
