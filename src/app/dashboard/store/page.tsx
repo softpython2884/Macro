@@ -22,9 +22,9 @@ const StoreResultCard = ({ result }: { result: SkidrowSearchResult }) => {
     return (
         <Link 
           href={`/dashboard/store/details?url=${encodeURIComponent(result.url)}&title=${encodeURIComponent(result.title)}`}
-          className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
+          className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4] transition-transform duration-300 ease-in-out hover:scale-105 focus:scale-105"
         >
-            <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden relative transform hover:scale-105 focus-within:scale-105">
+            <Card className="bg-black/20 backdrop-blur-lg border-2 border-transparent group-focus:border-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden relative">
                 {result.posterUrl ? (
                     <Image src={result.posterUrl} alt={result.title} fill className="object-cover"/>
                 ) : (
@@ -106,11 +106,11 @@ export default function StorePage() {
     return (
         <div className="space-y-8 animate-fade-in">
             <div className="flex justify-between items-center">
-                <h2 className="text-4xl font-bold tracking-tight text-glow">Game Store</h2>
+                <h2 className="text-4xl font-bold tracking-tight text-glow">App Store</h2>
                 <div className="relative w-1/3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
-                    placeholder="Search for a game..."
+                    placeholder="Search for new apps & games..."
                     className="pl-10 focus-visible:ring-primary focus-visible:ring-2"
                     value={searchQuery}
                     onFocus={() => setIsKeyboardOpen(true)}
@@ -135,7 +135,7 @@ export default function StorePage() {
             )}
             {!isLoading && !hasSearched && (
                  <div className="text-center py-16">
-                    <p className="text-lg text-muted-foreground">Use the search bar to find new games.</p>
+                    <p className="text-lg text-muted-foreground">Use the search bar to find new apps and games.</p>
                 </div>
             )}
 
@@ -143,7 +143,7 @@ export default function StorePage() {
                 <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-4xl flex justify-center" onInteractOutside={(e) => e.preventDefault()}>
                     <DialogHeader className="sr-only">
                     <DialogTitle>On-Screen Keyboard</DialogTitle>
-                    <DialogDescription>Search for a new game.</DialogDescription>
+                    <DialogDescription>Search for a new app or game.</DialogDescription>
                     </DialogHeader>
                     <OnScreenKeyboard
                         onInput={(char) => setSearchQuery(q => q + char)}

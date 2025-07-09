@@ -48,7 +48,7 @@ const CORE_APPS: AppInfo[] = [
   { id: 'moonlight', name: 'Moonlight', icon: Moon, searchName: 'Moonlight Game Streaming', description: 'Stream games from your PC' },
   { id: 'steam', name: 'Steam', icon: SiSteam, href: 'steam://open/bigpicture', description: 'Access your game library' },
   { id: 'spotify', name: 'Spotify', icon: Music, href: 'spotify:', description: 'Open your music' },
-  { id: 'store', name: 'Store', icon: Download, href: '/dashboard/store', description: 'Find new games', posterUrl: 'https://cdn2.steamgriddb.com/thumb/548ac132d1da8285bfd71130da4ee0fa.jpg' },
+  { id: 'store', name: 'App Store', icon: Download, href: '/dashboard/store', description: 'Find new apps & games', posterUrl: 'https://cdn2.steamgriddb.com/thumb/548ac132d1da8285bfd71130da4ee0fa.jpg' },
   { id: 'settings', name: 'Settings', icon: Settings, href: '/dashboard/settings', description: 'Configure your system' },
   { id: 'plugins', name: 'Plugins', icon: Puzzle, href: '/dashboard/plugins', description: 'Manage plugins & add-ons' },
   { id: 'sleep', name: 'Mettre en Veille', icon: Bed, description: 'Met le PC en veille' },

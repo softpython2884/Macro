@@ -47,15 +47,16 @@ export default function StoreDetailsPage() {
     useEffect(() => {
         const handleKeys = (e: KeyboardEvent) => {
             const viewport = scrollViewportRef.current;
-            if (!viewport) return;
+            if (!viewport || !['+', '-'].includes(e.key)) return;
 
             let scrollAmount = 0;
             const scrollSpeed = 150;
-
-            if (e.key === 'ArrowDown' || e.key === '+') {
-                scrollAmount = scrollSpeed;
-            } else if (e.key === 'ArrowUp' || e.key === '-') {
-                scrollAmount = -scrollSpeed;
+            
+            // Invert scroll direction for +/- keys for more intuitive feel
+            if (e.key === '+') {
+                scrollAmount = -scrollSpeed; // Scroll Up
+            } else if (e.key === '-') {
+                scrollAmount = scrollSpeed; // Scroll Down
             }
 
             if (scrollAmount !== 0) {
@@ -71,10 +72,10 @@ export default function StoreDetailsPage() {
 
     useEffect(() => {
         setHints([
-            { key: 'A', action: isInstalling ? 'Installing...' : 'Install/Download' },
+            { key: 'A', action: isInstalling ? 'Installing...' : 'Download' },
             { key: 'B', action: 'Back' },
-            { key: '↑↓ or +/-', action: 'Scroll' },
-            { key: '↔', action: 'Navigate Links' },
+            { key: '+/-', action: 'Scroll' },
+            { key: '↕↔', action: 'Navigate Links' },
         ]);
         return () => setHints([]);
     }, [setHints, isInstalling]);
@@ -181,7 +182,7 @@ export default function StoreDetailsPage() {
          <div className="flex flex-col h-full animate-fade-in">
              <div className="absolute top-0 left-0 p-4 z-20">
                 <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/store')} disabled={isInstalling}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Store
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to App Store
                 </Button>
             </div>
             
