@@ -205,12 +205,23 @@ export default function GameDetailPage() {
     const handleLaunch = async (executable: string) => {
         if (!game) return;
         playSound('launch');
+
+        let socialUserId: number | undefined;
+        try {
+            const socialUserJson = localStorage.getItem('macro-social-user');
+            if (socialUserJson) {
+                socialUserId = JSON.parse(socialUserJson).id;
+            }
+        } catch (e) {
+            console.error("Could not parse social user from localStorage", e);
+        }
+
         localStorage.setItem('macro-active-session', JSON.stringify({ 
             gameId: game.id,
             gameName: game.name,
             startTime: Date.now() 
         }));
-        await launchGame(game.path, executable);
+        await launchGame(game.path, executable, game.name, socialUserId);
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }
 

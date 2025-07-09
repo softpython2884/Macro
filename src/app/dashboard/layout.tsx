@@ -20,6 +20,7 @@ import { GameProvider } from "@/context/GameContext";
 import { useToast } from "@/hooks/use-toast";
 import { BackgroundProvider, useBackground } from "@/context/BackgroundContext";
 import Image from "next/image";
+import { updateUserActivity } from "@/lib/social-service";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -91,35 +92,46 @@ const LayoutWithBackground = ({ children }: { children: React.ReactNode }) => {
   }, [pathname, router]);
 
   React.useEffect(() => {
-    try {
-        const sessionJSON = localStorage.getItem('macro-active-session');
-        if (sessionJSON) {
-            const session = JSON.parse(sessionJSON);
-            const durationInSeconds = Math.round((Date.now() - session.startTime) / 1000);
+    const processSession = async () => {
+        try {
+            const sessionJSON = localStorage.getItem('macro-active-session');
+            if (sessionJSON) {
+                const session = JSON.parse(sessionJSON);
+                const durationInSeconds = Math.round((Date.now() - session.startTime) / 1000);
 
-            const playtimeJSON = localStorage.getItem('macro-playtime') || '{}';
-            const allPlaytimes = JSON.parse(playtimeJSON);
-            
-            const existingPlaytime = allPlaytimes[session.gameId] || { totalSeconds: 0 };
-            
-            allPlaytimes[session.gameId] = {
-                totalSeconds: (existingPlaytime.totalSeconds || 0) + durationInSeconds,
-                lastPlayed: Date.now(),
-            };
+                const playtimeJSON = localStorage.getItem('macro-playtime') || '{}';
+                const allPlaytimes = JSON.parse(playtimeJSON);
+                
+                const existingPlaytime = allPlaytimes[session.gameId] || { totalSeconds: 0 };
+                
+                allPlaytimes[session.gameId] = {
+                    totalSeconds: (existingPlaytime.totalSeconds || 0) + durationInSeconds,
+                    lastPlayed: Date.now(),
+                };
 
-            localStorage.setItem('macro-playtime', JSON.stringify(allPlaytimes));
-            localStorage.removeItem('macro-active-session');
+                localStorage.setItem('macro-playtime', JSON.stringify(allPlaytimes));
+                localStorage.removeItem('macro-active-session');
 
-            if (durationInSeconds > 60) {
-                 toast({
-                    title: "Play Session Ended",
-                    description: `You played for about ${formatDuration(durationInSeconds)}.`,
-                });
+                // Clear social activity
+                const socialUserJson = localStorage.getItem('macro-social-user');
+                if (socialUserJson) {
+                    const socialUserId = JSON.parse(socialUserJson).id;
+                    await updateUserActivity(socialUserId, 'online', null);
+                    console.log(`[SOCIAL] Cleared activity for user ${socialUserId}`);
+                }
+
+                if (durationInSeconds > 60) {
+                     toast({
+                        title: "Play Session Ended",
+                        description: `You played for about ${formatDuration(durationInSeconds)}.`,
+                    });
+                }
             }
+        } catch (error) {
+            console.error("Failed to process playtime session:", error);
         }
-    } catch (error) {
-        console.error("Failed to process playtime session:", error);
     }
+    processSession();
   }, [pathname, toast]);
   
   return (

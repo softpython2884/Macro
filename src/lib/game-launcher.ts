@@ -3,8 +3,9 @@
 
 import { spawn } from 'child_process';
 import path from 'path';
+import { updateUserActivity } from './social-service';
 
-export async function launchGame(gamePath: string, executable: string): Promise<{ success: boolean; error?: string }> {
+export async function launchGame(gamePath: string, executable: string, gameName: string, socialUserId?: number): Promise<{ success: boolean; error?: string }> {
     if (!gamePath || !executable) {
         return { success: false, error: 'Game path or executable is missing.' };
     }
@@ -29,6 +30,11 @@ export async function launchGame(gamePath: string, executable: string): Promise<
         child.on('error', (err) => {
             console.error(`Failed to start subprocess: ${err.message}`);
         });
+
+        if (socialUserId) {
+            console.log(`[SOCIAL] Updating activity for user ${socialUserId} to 'Playing ${gameName}'`);
+            await updateUserActivity(socialUserId, 'playing', gameName);
+        }
 
         console.log(`Successfully launched process for: ${fullPath}`);
         return { success: true };

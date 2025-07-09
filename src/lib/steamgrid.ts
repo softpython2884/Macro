@@ -1,27 +1,30 @@
 
 'use server';
 
-// IMPORTANT: To use this service, you need to get an API key from https://www.steamgriddb.com/profile/api
-// Once you have your key, create a file named .env.local in the root of your project
-// and add the following line:
-// STEAMGRIDDB_API_KEY=YOUR_API_KEY_HERE
+// IMPORTANT: The API key is now hardcoded and Base64 encoded here.
+// No need for .env files.
 
-const API_KEY = process.env.STEAMGRIDDB_API_KEY;
+const API_KEY_ENCODED = 'ZTBiZGExN2Y1NzEzZGE1ODExN2RiYjE3MjQ3MmZjMGU=';
+
+// Decode the key at runtime
+const getApiKey = () => Buffer.from(API_KEY_ENCODED, 'base64').toString('utf-8');
+
 const BASE_URL = 'https://www.steamgriddb.com/api/v2';
 
 // Use Next.js's built-in fetch caching. Revalidate data every 24 hours.
-const options = {
+const getOptions = () => ({
   method: 'GET',
   headers: {
     accept: 'application/json',
-    Authorization: `Bearer ${API_KEY}`
+    Authorization: `Bearer ${getApiKey()}`
   },
   next: { revalidate: 86400 } // 24 hours in seconds
-};
+});
 
 const checkApiKey = () => {
-    if (!API_KEY) {
-        console.error("SteamGridDB API Key is missing. Make sure it's set in a .env.local file as STEAMGRIDDB_API_KEY=YOUR_KEY_HERE (no NEXT_PUBLIC_ prefix).");
+    const key = getApiKey();
+    if (!key) {
+        console.error("SteamGridDB API Key is missing or invalid.");
         return false;
     }
     return true;
@@ -49,7 +52,7 @@ export const searchGame = async (name: string, nsfw: 'true' | 'false' | 'any' = 
     if (!checkApiKey()) return null;
 
     try {
-        const response = await fetch(`${BASE_URL}/search/autocomplete/${encodeURIComponent(name)}?nsfw=${nsfw}`, options);
+        const response = await fetch(`${BASE_URL}/search/autocomplete/${encodeURIComponent(name)}?nsfw=${nsfw}`, getOptions());
         if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
         const result = await response.json();
         
@@ -77,7 +80,7 @@ export const searchGame = async (name: string, nsfw: 'true' | 'false' | 'any' = 
 
 async function fetchImages(url: string): Promise<SteamGridDbImage[]> {
     try {
-        const response = await fetch(url, options);
+        const response = await fetch(url, getOptions());
         if (!response.ok) {
             console.error(`SteamGridDB API Error for ${url}: ${response.status} ${response.statusText}`);
             return [];
