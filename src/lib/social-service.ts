@@ -1,3 +1,4 @@
+
 'use server';
 
 import pool from './db';
@@ -25,12 +26,49 @@ CREATE TABLE `social_activities` (
   PRIMARY KEY (`user_id`),
   CONSTRAINT `social_activities_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE
 );
+
+-- New required tables for achievements
+
+CREATE TABLE `achievements` (
+  `id` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `icon` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
+INSERT INTO `achievements` (`id`, `name`, `description`, `icon`) VALUES
+('PIONEER', 'Pioneer', 'Joined the Macro community.', 'Rocket'),
+('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
+('COLLECTOR_2', 'Adept Collector', 'Have at least 10 games in your library.', 'Library'),
+('SOCIALITE', 'Socialite', 'Created a local user profile for someone else.', 'Users');
+
+
+CREATE TABLE `user_achievements` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `achievement_id` varchar(255) NOT NULL,
+  `unlocked_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_achievement_unique` (`user_id`,`achievement_id`),
+  KEY `achievement_id` (`achievement_id`),
+  CONSTRAINT `user_achievements_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user_achievements_ibfk_2` FOREIGN KEY (`achievement_id`) REFERENCES `achievements` (`id`) ON DELETE CASCADE
+);
 */
 
 type AuthResult = {
   success: boolean;
   message: string;
   user?: { id: number; username: string; email: string };
+};
+
+export type Achievement = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // lucide-react icon name
+  unlocked_at: string;
 };
 
 export async function registerUser({ username, email, password }: Record<string, string>): Promise<AuthResult> {
@@ -58,10 +96,16 @@ export async function registerUser({ username, email, password }: Record<string,
     );
 
     if (result.insertId) {
+       const userId = result.insertId;
        // Initialize activity for new user
       await connection.execute(
         'INSERT INTO social_activities (user_id, activity_status) VALUES (?, ?)',
-        [result.insertId, 'online']
+        [userId, 'online']
+      );
+      // Grant "Pioneer" achievement
+      await connection.execute(
+        'INSERT IGNORE INTO user_achievements (user_id, achievement_id) VALUES (?, ?)',
+        [userId, 'PIONEER']
       );
       return { success: true, message: 'Registration successful!' };
     } else {
@@ -176,6 +220,7 @@ export type SocialProfile = {
     created_at: string;
     activity_status: string | null;
     activity_details: string | null;
+    achievements: Achievement[];
 };
 
 export async function getSocialProfile(userId: number): Promise<SocialProfile | null> {
@@ -183,7 +228,7 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
     let connection;
     try {
         connection = await pool.getConnection();
-        const [rows]: any = await connection.execute(`
+        const [profileRows]: any = await connection.execute(`
             SELECT
                 u.username,
                 u.created_at,
@@ -194,8 +239,25 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
             WHERE u.id = ?
         `, [userId]);
         
-        if (rows.length === 0) return null;
-        return rows[0];
+        if (profileRows.length === 0) return null;
+
+        const [achievementRows]: any = await connection.execute(`
+            SELECT
+                a.id,
+                a.name,
+                a.description,
+                a.icon,
+                ua.unlocked_at
+            FROM user_achievements ua
+            JOIN achievements a ON ua.achievement_id = a.id
+            WHERE ua.user_id = ?
+            ORDER BY ua.unlocked_at DESC
+        `, [userId]);
+
+        return {
+            ...profileRows[0],
+            achievements: achievementRows,
+        };
 
     } catch (error) {
         console.error(`[SOCIAL-DB] Error fetching profile for user ${userId}:`, error);
@@ -204,3 +266,5 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
         if (connection) connection.release();
     }
 }
+
+    

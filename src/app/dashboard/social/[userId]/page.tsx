@@ -8,7 +8,20 @@ import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Gamepad2, Award, Tv, Loader2 } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, type LucideIcon } from 'lucide-react';
+
+const iconMap: Record<string, LucideIcon> = {
+    Rocket,
+    Album,
+    Library,
+    Users,
+    Award, // Fallback
+};
+
+const AchievementIcon = ({ name, className }: { name: string, className?: string }) => {
+    const Icon = iconMap[name] || Award;
+    return <Icon className={className} />;
+};
 
 export default function SocialProfilePage() {
     const params = useParams();
@@ -101,13 +114,32 @@ export default function SocialProfilePage() {
                  <div className="lg:col-span-2">
                      <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Award className="h-6 w-6" /> Achievements</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Award className="h-6 w-6" /> Achievements ({profile.achievements.length})
+                            </CardTitle>
                             <CardDescription>A collection of this user's accomplishments across Macro.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center justify-center h-32 text-muted-foreground">
-                                <p>Achievements feature coming soon!</p>
-                            </div>
+                            {profile.achievements.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {profile.achievements.map((ach) => (
+                                        <div key={ach.id} className="flex items-start gap-4 p-4 rounded-lg bg-background/50">
+                                            <AchievementIcon name={ach.icon} className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
+                                            <div>
+                                                <p className="font-bold">{ach.name}</p>
+                                                <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                                <p className="text-xs text-muted-foreground/70 mt-1">
+                                                    Unlocked on {new Date(ach.unlocked_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                                    <p>No achievements unlocked yet.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -115,3 +147,5 @@ export default function SocialProfilePage() {
         </div>
     );
 }
+
+    
