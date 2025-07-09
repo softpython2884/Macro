@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { OnScreenKeyboard } from '@/components/on-screen-keyboard';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const iconMap: Record<string, LucideIcon> = {
     Rocket,
@@ -68,6 +69,8 @@ export default function SocialProfilePage() {
     const params = useParams();
     const router = useRouter();
     const pageRef = useRef<HTMLDivElement>(null);
+    const achievementsGridRef = useRef<HTMLDivElement>(null);
+    const friendsGridRef = useRef<HTMLDivElement>(null);
     const userId = typeof params.userId === 'string' ? Number(params.userId) : null;
     
     const [profile, setProfile] = useState<SocialProfile | null>(null);
@@ -81,7 +84,8 @@ export default function SocialProfilePage() {
 
     const { toast } = useToast();
     useBackNavigation('/dashboard/social');
-    useGridNavigation({ gridRef: pageRef });
+    useGridNavigation({ gridRef: achievementsGridRef });
+    useGridNavigation({ gridRef: friendsGridRef });
     const { setHints } = useHints();
     const { playSound } = useSound();
 
@@ -92,7 +96,7 @@ export default function SocialProfilePage() {
             { key: 'B', action: 'Back' },
         ]);
         if (!isLoading) {
-             pageRef.current?.querySelector('button')?.focus();
+             pageRef.current?.querySelector('[role="tab"]')?.focus();
         }
     }, [setHints, isLoading]);
 
@@ -266,24 +270,33 @@ export default function SocialProfilePage() {
                                 </CardHeader>
                                 <CardContent>
                                     {profile.achievements.length > 0 ? (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {profile.achievements.map((ach) => (
-                                                <div key={ach.id} className={cn("flex items-start gap-4 p-4 rounded-lg bg-background/50 transition-all", !ach.unlocked_at && "opacity-40 grayscale")}>
-                                                    <AchievementIcon name={ach.icon} className={cn("h-8 w-8 text-primary mt-1 flex-shrink-0", !ach.unlocked_at && "text-muted-foreground")} />
-                                                    <div>
-                                                        <p className="font-bold">{ach.name}</p>
-                                                        <p className="text-sm text-muted-foreground">{ach.description}</p>
-                                                        {ach.unlocked_at ? (
-                                                            <p className="text-xs text-muted-foreground/70 mt-1">
-                                                                Unlocked on {new Date(ach.unlocked_at).toLocaleDateString()}
-                                                            </p>
-                                                        ) : (
-                                                            <p className="text-xs text-muted-foreground/70 mt-1">Locked</p>
+                                        <ScrollArea className="h-[450px]">
+                                            <div ref={achievementsGridRef} className="grid grid-cols-1 sm:grid-cols-2 gap-4 pr-4">
+                                                {profile.achievements.map((ach) => (
+                                                    <div 
+                                                        key={ach.id} 
+                                                        tabIndex={0}
+                                                        className={cn(
+                                                            "flex items-start gap-4 p-4 rounded-lg bg-background/50 transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ring-offset-background",
+                                                            !ach.unlocked_at && "opacity-40 grayscale"
                                                         )}
+                                                    >
+                                                        <AchievementIcon name={ach.icon} className={cn("h-8 w-8 text-primary mt-1 flex-shrink-0", !ach.unlocked_at && "text-muted-foreground")} />
+                                                        <div>
+                                                            <p className="font-bold">{ach.name}</p>
+                                                            <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                                            {ach.unlocked_at ? (
+                                                                <p className="text-xs text-muted-foreground/70 mt-1">
+                                                                    Unlocked on {new Date(ach.unlocked_at).toLocaleDateString()}
+                                                                </p>
+                                                            ) : (
+                                                                <p className="text-xs text-muted-foreground/70 mt-1">Locked</p>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
                                     ) : (
                                         <div className="flex items-center justify-center h-32 text-muted-foreground">
                                             <p>No achievements defined yet.</p>
@@ -300,7 +313,7 @@ export default function SocialProfilePage() {
                                 </CardHeader>
                                 <CardContent>
                                      {profile.friends.length > 0 ? (
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div ref={friendsGridRef} className="grid grid-cols-2 gap-4">
                                             {profile.friends.map((friend) => (
                                                 <Button key={friend.id} variant="outline" asChild className="justify-start">
                                                     <Link href={`/dashboard/social/${friend.id}`}>
