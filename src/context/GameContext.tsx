@@ -45,10 +45,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             const settings = JSON.parse(savedSettings);
             const gameDirsRaw = settings.games?.map((g: { value: string }) => g.value).filter(Boolean) ?? [];
             
-            if (settings.localGamesPath) {
-                gameDirsRaw.push(settings.localGamesPath);
-            }
-
             // Deduplicate the array to prevent issues from corrupted localStorage data
             const gameDirs = [...new Set(gameDirsRaw)];
 
