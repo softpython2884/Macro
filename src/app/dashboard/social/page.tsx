@@ -37,6 +37,7 @@ import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
 type SocialUser = {
   id: number;
   username: string;
+  avatar_url: string | null;
 };
 
 const FriendRequests = ({ userId, onAction, gridRef }: { userId: number, onAction: () => void, gridRef: React.RefObject<HTMLDivElement> }) => {
@@ -87,7 +88,7 @@ const FriendRequests = ({ userId, onAction, gridRef }: { userId: number, onActio
                     <div key={req.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
                         <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
-                                <AvatarImage />
+                                <AvatarImage src={req.avatar_url || ''} />
                                 <AvatarFallback>{req.username.substring(0, 1).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <span>{req.username}</span>
@@ -187,7 +188,7 @@ const FindFriends = ({ currentUser, onFriendRequestSent, gridRef }: { currentUse
                                  <div key={user.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage />
+                                            <AvatarImage src={user.avatar_url || ''} />
                                             <AvatarFallback>{user.username.substring(0, 1).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <span>{user.username}</span>
@@ -273,7 +274,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
                 <Card className="text-center">
                     <CardHeader>
                         <Avatar className="w-20 h-20 mx-auto mb-2">
-                            <AvatarImage />
+                            <AvatarImage src={user.avatar_url || ''} />
                             <AvatarFallback className="text-3xl">{user.username.substring(0,1).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <CardTitle>{user.username}</CardTitle>
@@ -303,7 +304,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
                                     <Link key={friend.id} href={`/dashboard/social/${friend.id}`} className="block p-2 rounded-md transition-colors hover:bg-white/5 focus:bg-white/10 focus:outline-none">
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-8 w-8">
-                                                <AvatarImage />
+                                                <AvatarImage src={friend.avatar_url || ''} />
                                                 <AvatarFallback>{friend.username.substring(0,1).toUpperCase()}</AvatarFallback>
                                             </Avatar>
                                             <div className="overflow-hidden">
@@ -389,7 +390,7 @@ export default function SocialPage() {
       variant: result.success ? "default" : "destructive",
     });
     if (result.success && result.user) {
-      const userToStore = { id: result.user.id, username: result.user.username };
+      const userToStore = { id: result.user.id, username: result.user.username, avatar_url: result.user.avatar_url };
       setSocialUser(userToStore);
       localStorage.setItem('macro-social-user', JSON.stringify(userToStore));
     }

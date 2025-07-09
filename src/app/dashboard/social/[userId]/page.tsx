@@ -3,12 +3,12 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { getSocialProfile, type SocialProfile, sendFriendRequest, getFriendshipStatus, type FriendshipStatus, checkAndAwardAchievements, type Achievement } from '@/lib/social-service';
+import { getSocialProfile, type SocialProfile, sendFriendRequest, getFriendshipStatus, type FriendshipStatus, checkAndAwardAchievements, type Achievement, updateSocialAvatar, respondToFriendRequest } from '@/lib/social-service';
 import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, UserPlus, type LucideIcon, UserCheck, Clock, UserX, Download, LayoutGrid, Hourglass, Timer, Trophy } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, UserPlus, type LucideIcon, UserCheck, Clock, UserX, Download, LayoutGrid, Hourglass, Timer, Trophy, Camera } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -16,6 +16,9 @@ import { useSound } from '@/context/SoundContext';
 import { useHints } from '@/context/HintContext';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
+import { OnScreenKeyboard } from '@/components/on-screen-keyboard';
 
 const iconMap: Record<string, LucideIcon> = {
     Rocket,
@@ -71,6 +74,10 @@ export default function SocialProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentSocialUserId, setCurrentSocialUserId] = useState<number | null>(null);
     const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus | null>(null);
+
+    const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+    const [newAvatarUrl, setNewAvatarUrl] = useState('');
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
     const { toast } = useToast();
     useBackNavigation('/dashboard/social');
@@ -151,6 +158,28 @@ export default function SocialProfilePage() {
             }
         }
     };
+
+    const handleSaveAvatar = async () => {
+        if (!currentSocialUserId || !newAvatarUrl) return;
+        const result = await updateSocialAvatar(currentSocialUserId, newAvatarUrl);
+        toast({
+            title: result.success ? "Success" : "Error",
+            description: result.message,
+            variant: result.success ? "default" : "destructive",
+        });
+        if (result.success) {
+            setIsAvatarDialogOpen(false);
+            setNewAvatarUrl('');
+            fetchProfileData(); // Re-fetch profile data
+        }
+    };
+    
+    const handleKeyboardClose = () => {
+        setIsKeyboardOpen(false);
+        // Do not auto-save, let user click the save button
+    };
+
+    const isOwnProfile = currentSocialUserId === userId;
     
     const renderStatus = () => {
         if (!profile) return null;
@@ -202,10 +231,17 @@ export default function SocialProfilePage() {
                 <div className="lg:col-span-1">
                     <Card>
                         <CardHeader className="items-center text-center">
-                            <Avatar className="w-24 h-24 mb-4">
-                                <AvatarImage />
-                                <AvatarFallback className="text-4xl">{profile.username.substring(0, 1).toUpperCase()}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                                <Avatar className="w-24 h-24 mb-4">
+                                    <AvatarImage src={profile.avatar_url || ''} />
+                                    <AvatarFallback className="text-4xl">{profile.username.substring(0, 1).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                {isOwnProfile && (
+                                    <Button size="icon" variant="secondary" className="absolute bottom-2 -right-1 rounded-full h-8 w-8" onClick={() => setIsAvatarDialogOpen(true)}>
+                                        <Camera className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
                             <CardTitle className="text-3xl">{profile.username}</CardTitle>
                             <CardDescription>Member since {new Date(profile.created_at).toLocaleDateString()}</CardDescription>
                         </CardHeader>
@@ -269,7 +305,7 @@ export default function SocialProfilePage() {
                                                 <Button key={friend.id} variant="outline" asChild className="justify-start">
                                                     <Link href={`/dashboard/social/${friend.id}`}>
                                                         <Avatar className="w-6 h-6 mr-3">
-                                                            <AvatarImage />
+                                                            <AvatarImage src={friend.avatar_url || ''} />
                                                             <AvatarFallback>{friend.username.substring(0,1).toUpperCase()}</AvatarFallback>
                                                         </Avatar>
                                                         {friend.username}
@@ -288,6 +324,43 @@ export default function SocialProfilePage() {
                     </Tabs>
                 </div>
             </div>
+
+            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                    <DialogTitle>Change Avatar</DialogTitle>
+                    <DialogDescription>Enter a new image URL for your profile avatar.</DialogDescription>
+                    </DialogHeader>
+                    <Input
+                        value={newAvatarUrl}
+                        placeholder="https://example.com/image.png"
+                        readOnly
+                        onFocus={() => setIsKeyboardOpen(true)}
+                        onClick={() => setIsKeyboardOpen(true)}
+                    />
+                    <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsAvatarDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSaveAvatar}>Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isKeyboardOpen} onOpenChange={handleKeyboardClose}>
+                <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-4xl flex justify-center" onInteractOutside={(e) => e.preventDefault()}>
+                    <DialogHeader className="sr-only">
+                    <DialogTitle>On-Screen Keyboard</DialogTitle>
+                    <DialogDescription>
+                        Enter the image URL.
+                    </DialogDescription>
+                    </DialogHeader>
+                    <OnScreenKeyboard
+                        onInput={(char) => setNewAvatarUrl(q => q + char)}
+                        onDelete={() => setNewAvatarUrl(q => q.slice(0, -1))}
+                        onEnter={handleKeyboardClose}
+                        onClose={handleKeyboardClose}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

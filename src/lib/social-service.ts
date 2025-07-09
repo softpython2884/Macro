@@ -23,6 +23,7 @@ async function initializeDatabase() {
               \`username\` varchar(255) NOT NULL,
               \`email\` varchar(255) NOT NULL,
               \`password\` varchar(255) NOT NULL,
+              \`avatar_url\` TEXT DEFAULT NULL,
               \`created_at\` timestamp NOT NULL DEFAULT current_timestamp(),
               PRIMARY KEY (\`id\`),
               UNIQUE KEY \`username\` (\`username\`),
@@ -111,7 +112,7 @@ async function initializeDatabase() {
 type AuthResult = {
   success: boolean;
   message: string;
-  user?: { id: number; username: string; email: string };
+  user?: { id: number; username: string; email: string; avatar_url: string | null };
 };
 
 export type Achievement = {
@@ -125,11 +126,13 @@ export type Achievement = {
 export type SocialFriend = {
     id: number;
     username: string;
+    avatar_url: string | null;
 };
 
 export type SocialFriendWithActivity = {
     id: number;
     username: string;
+    avatar_url: string | null;
     activity_status: string | null;
     activity_details: string | null;
 };
@@ -137,6 +140,7 @@ export type SocialFriendWithActivity = {
 export type PendingRequest = {
     id: number;
     username: string;
+    avatar_url: string | null;
 };
 
 export type FriendshipStatus = 'not_friends' | 'pending_sent' | 'pending_received' | 'friends' | 'self';
@@ -144,6 +148,7 @@ export type FriendshipStatus = 'not_friends' | 'pending_sent' | 'pending_receive
 export type SearchedUser = {
     id: number;
     username: string;
+    avatar_url: string | null;
     friendshipStatus: FriendshipStatus;
 };
 
@@ -161,6 +166,8 @@ export async function registerUser({ username, email, password }: Record<string,
   if (!username || !email || !password) {
     return { success: false, message: 'All fields are required.' };
   }
+  
+  const defaultAvatar = 'https://static.wikia.nocookie.net/925fa2de-087e-47f4-8aed-4f5487f0a78c/scale-to-width/755';
 
   let connection;
   try {
@@ -180,8 +187,8 @@ export async function registerUser({ username, email, password }: Record<string,
     }
 
     const [result]: any = await connection.execute(
-      'INSERT INTO social_users (username, email, password) VALUES (?, ?, ?)',
-      [username, email, password]
+      'INSERT INTO social_users (username, email, password, avatar_url) VALUES (?, ?, ?, ?)',
+      [username, email, password, defaultAvatar]
     );
 
     if (result.insertId) {
@@ -218,7 +225,7 @@ export async function loginUser({ email, password }: Record<string, string>): Pr
         connection = await pool.getConnection();
 
         const [rows]: any = await connection.execute(
-            'SELECT id, username, email, password FROM social_users WHERE email = ?',
+            'SELECT id, username, email, password, avatar_url FROM social_users WHERE email = ?',
             [email]
         );
 
@@ -239,7 +246,7 @@ export async function loginUser({ email, password }: Record<string, string>): Pr
         return {
             success: true,
             message: `Welcome back, ${user.username}!`,
-            user: { id: user.id, username: user.username, email: user.email },
+            user: { id: user.id, username: user.username, email: user.email, avatar_url: user.avatar_url },
         };
     } catch (error: any) {
         console.error('[SOCIAL-DB] Login Error:', error);
@@ -306,6 +313,7 @@ export async function getSocialActivities(): Promise<SocialActivity[]> {
 
 export type SocialProfile = {
     username: string;
+    avatar_url: string | null;
     created_at: string;
     activity_status: string | null;
     activity_details: string | null;
@@ -322,6 +330,7 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
         const [profileRows]: any = await connection.execute(`
             SELECT
                 u.username,
+                u.avatar_url,
                 u.created_at,
                 a.activity_status,
                 a.activity_details
@@ -544,7 +553,7 @@ export async function getPendingRequests(userId: number): Promise<PendingRequest
     try {
         connection = await pool.getConnection();
         const [rows]: any = await connection.execute(`
-            SELECT u.id, u.username 
+            SELECT u.id, u.username, u.avatar_url 
             FROM friends f
             JOIN social_users u ON u.id = f.action_user_id
             WHERE (f.user_one_id = ? OR f.user_two_id = ?) 
@@ -568,6 +577,7 @@ export async function getFriends(userId: number, existingConnection?: PoolConnec
             SELECT 
                 u.id, 
                 u.username,
+                u.avatar_url,
                 sa.activity_status,
                 sa.activity_details
             FROM social_users u
@@ -595,17 +605,18 @@ export async function searchUsers(query: string, currentUserId: number): Promise
     try {
         connection = await pool.getConnection();
         const [users]: any = await connection.execute(
-            `SELECT id, username FROM social_users WHERE username LIKE ? AND id != ? LIMIT 10`,
+            `SELECT id, username, avatar_url FROM social_users WHERE username LIKE ? AND id != ? LIMIT 10`,
             [`%${query}%`, currentUserId]
         );
 
         if (users.length === 0) return [];
         
-        const usersWithStatus = await Promise.all(users.map(async (user: { id: number; username: string; }) => {
+        const usersWithStatus = await Promise.all(users.map(async (user: { id: number; username: string; avatar_url: string | null; }) => {
             const status = await getFriendshipStatus(currentUserId, user.id);
             return {
                 id: user.id,
                 username: user.username,
+                avatar_url: user.avatar_url,
                 friendshipStatus: status
             };
         }));
@@ -617,4 +628,22 @@ export async function searchUsers(query: string, currentUserId: number): Promise
     } finally {
         if (connection) connection.release();
     }
+}
+
+export async function updateSocialAvatar(userId: number, avatarUrl: string): Promise<{ success: boolean; message: string }> {
+  await initializeDatabase();
+  if (!avatarUrl) {
+    return { success: false, message: 'Avatar URL cannot be empty.' };
+  }
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.execute('UPDATE social_users SET avatar_url = ? WHERE id = ?', [avatarUrl, userId]);
+    return { success: true, message: "Avatar updated successfully." };
+  } catch (error) {
+    console.error(`[SOCIAL-DB] Error updating avatar for user ${userId}:`, error);
+    return { success: false, message: "A database error occurred." };
+  } finally {
+    if (connection) connection.release();
+  }
 }
