@@ -2,8 +2,8 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gamepad2, LogOut, Search, User as UserIcon, UserCheck, UserX, UserPlus, Clock, Loader2 } from "lucide-react";
-import React, { useState, useEffect, useCallback } from 'react';
+import { Gamepad2, LogOut, Search, User as UserIcon, UserCheck, UserX, UserPlus, Clock, Loader2, Award } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -28,13 +28,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
+import { useGridNavigation } from "@/hooks/use-grid-navigation";
+import { useHints } from "@/context/HintContext";
+import { useBackNavigation } from "@/hooks/use-back-navigation";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
 
 type SocialUser = {
   id: number;
   username: string;
 };
 
-const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => void }) => {
+const FriendRequests = ({ userId, onAction, gridRef }: { userId: number, onAction: () => void, gridRef: React.RefObject<HTMLDivElement> }) => {
     const [requests, setRequests] = useState<PendingRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
@@ -58,6 +63,13 @@ const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => 
             variant: result.success ? "default" : "destructive",
         });
         if (result.success) {
+            if (result.newAchievements && result.newAchievements.length > 0) {
+                 toast({
+                    title: "Achievement Unlocked!",
+                    description: `You've earned: ${result.newAchievements.join(', ')}`,
+                    action: <Award className="h-6 w-6 text-yellow-400" />,
+                });
+            }
             onAction(); 
         }
     };
@@ -70,7 +82,7 @@ const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => 
             <CardHeader>
                 <CardTitle>Friend Requests</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent ref={gridRef} className="space-y-2">
                 {requests.map(req => (
                     <div key={req.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
                         <div className="flex items-center gap-3">
@@ -95,11 +107,12 @@ const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => 
     );
 };
 
-const FindFriends = ({ currentUser, onFriendRequestSent }: { currentUser: SocialUser, onFriendRequestSent: () => void }) => {
+const FindFriends = ({ currentUser, onFriendRequestSent, gridRef }: { currentUser: SocialUser, onFriendRequestSent: () => void, gridRef: React.RefObject<HTMLDivElement> }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
     const handleSearch = async (e?: React.FormEvent) => {
         if(e) e.preventDefault();
@@ -136,44 +149,71 @@ const FindFriends = ({ currentUser, onFriendRequestSent }: { currentUser: Social
         }
     };
 
+    const handleKeyboardClose = () => {
+        setIsKeyboardOpen(false);
+        handleSearch();
+    };
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Find Friends</CardTitle>
-                <CardDescription>Search for other users on Macro to connect with.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
-                    <Input 
-                        placeholder="Search by username..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <Button type="submit" disabled={isLoading}>
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                        Search
-                    </Button>
-                </form>
-                <ScrollArea className="h-40">
-                    <div className="space-y-2 pr-4">
-                        {isLoading && <Skeleton className="h-10 w-full" />}
-                        {!isLoading && searchResults.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">Enter a username to search.</p>}
-                        {!isLoading && searchResults.map(user => (
-                             <div key={user.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage />
-                                        <AvatarFallback>{user.username.substring(0, 1).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <span>{user.username}</span>
-                                </div>
-                                {getButtonForStatus(user)}
-                            </div>
-                        ))}
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Find Friends</CardTitle>
+                    <CardDescription>Search for other users on Macro to connect with.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="relative w-full">
+                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                           <Input 
+                                placeholder="Search by username..."
+                                value={searchQuery}
+                                className="pl-10"
+                                readOnly
+                                onClick={() => setIsKeyboardOpen(true)}
+                                onFocus={() => setIsKeyboardOpen(true)}
+                           />
+                        </div>
+                        <Button onClick={() => handleSearch()} disabled={isLoading}>
+                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                            <span className="sr-only">Search</span>
+                        </Button>
                     </div>
-                </ScrollArea>
-            </CardContent>
-        </Card>
+                    <ScrollArea className="h-40">
+                        <div ref={gridRef} className="space-y-2 pr-4">
+                            {isLoading && <Skeleton className="h-10 w-full" />}
+                            {!isLoading && searchResults.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">Enter a username to search.</p>}
+                            {!isLoading && searchResults.map(user => (
+                                 <div key={user.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage />
+                                            <AvatarFallback>{user.username.substring(0, 1).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{user.username}</span>
+                                    </div>
+                                    {getButtonForStatus(user)}
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+            <Dialog open={isKeyboardOpen} onOpenChange={(isOpen) => !isOpen && handleKeyboardClose()}>
+                <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-4xl flex justify-center" onInteractOutside={(e) => e.preventDefault()}>
+                    <DialogHeader className="sr-only">
+                    <DialogTitle>On-Screen Keyboard</DialogTitle>
+                    <DialogDescription>Search for a new user.</DialogDescription>
+                    </DialogHeader>
+                    <OnScreenKeyboard
+                        onInput={(char) => setSearchQuery(q => q + char)}
+                        onDelete={() => setSearchQuery(q => q.slice(0, -1))}
+                        onEnter={handleKeyboardClose}
+                        onClose={() => setIsKeyboardOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
 
@@ -182,6 +222,12 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
     const [isLoading, setIsLoading] = useState(true);
     const { playSound } = useSound();
     const router = useRouter();
+
+    const pageRef = useRef<HTMLDivElement>(null);
+    const friendListRef = useRef<HTMLDivElement>(null);
+    const friendRequestsRef = useRef<HTMLDivElement>(null);
+    const findFriendsRef = useRef<HTMLDivElement>(null);
+    useGridNavigation({ gridRef: pageRef });
 
     const fetchProfileData = useCallback(async () => {
         setIsLoading(true);
@@ -215,7 +261,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
     }
 
     return (
-        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
+        <div ref={pageRef} className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
             <aside className="lg:col-span-1 space-y-6">
                 <Card className="text-center">
                     <CardHeader>
@@ -245,7 +291,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
                     </CardHeader>
                     <CardContent>
                         <ScrollArea className="h-64">
-                            <div className="space-y-1 pr-2">
+                            <div ref={friendListRef} className="space-y-1 pr-2">
                                 {profile.friends.length > 0 ? profile.friends.map(friend => (
                                     <Link key={friend.id} href={`/dashboard/social/${friend.id}`} className="block p-2 rounded-md transition-colors hover:bg-white/5 focus:bg-white/10 focus:outline-none">
                                         <div className="flex items-center gap-3">
@@ -267,8 +313,8 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
             </aside>
 
             <main className="lg:col-span-3 space-y-6">
-                <FriendRequests userId={user.id} onAction={fetchProfileData} />
-                <FindFriends currentUser={user} onFriendRequestSent={fetchProfileData} />
+                <FriendRequests gridRef={friendRequestsRef} userId={user.id} onAction={fetchProfileData} />
+                <FindFriends gridRef={findFriendsRef} currentUser={user} onFriendRequestSent={fetchProfileData} />
             </main>
         </div>
     );
@@ -288,6 +334,19 @@ export default function SocialPage() {
   const [signInPassword, setSignInPassword] = useState('');
 
   const { toast } = useToast();
+  const pageRef = useRef<HTMLDivElement>(null);
+  const { setHints } = useHints();
+  useBackNavigation('/dashboard');
+  useGridNavigation({ gridRef: pageRef });
+
+  useEffect(() => {
+    setHints([{ key: '↕↔', action: 'Navigate' }, { key: 'A', action: 'Select' }, { key: 'B', action: 'Back' }]);
+    if (!socialUser) {
+        pageRef.current?.querySelector('button[role="tab"]')?.focus()
+    } else {
+        pageRef.current?.querySelector('button, a')?.focus()
+    }
+  }, [setHints, socialUser]);
 
   useEffect(() => {
     try {
@@ -344,7 +403,7 @@ export default function SocialPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center animate-fade-in">
+    <div ref={pageRef} className="flex flex-1 items-center justify-center animate-fade-in">
       <Tabs defaultValue="sign-in" className="w-[400px]">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sign-in">Sign In</TabsTrigger>

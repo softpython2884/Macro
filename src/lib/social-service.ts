@@ -57,7 +57,10 @@ async function initializeDatabase() {
             ('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
             ('COLLECTOR_2', 'Adept Collector', 'Have at least 10 games in your library.', 'Library'),
             ('SOCIALITE', 'Socialite', 'Created a local user profile for someone else.', 'Users'),
-            ('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download');
+            ('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download'),
+            ('FIRST_CONTACT', 'First Contact', 'Add your first friend.', 'UserPlus'),
+            ('NETWORKER', 'Networker', 'Build a network of 5 friends.', 'Users'),
+            ('APP_CONNOISSEUR', 'App Connoisseur', 'Launch 5 different applications.', 'LayoutGrid');
         `);
 
         await connection.query(`
@@ -111,7 +114,7 @@ export type Achievement = {
   name: string;
   description: string;
   icon: string; // lucide-react icon name
-  unlocked_at: string;
+  unlocked_at: string | null;
 };
 
 export type SocialFriend = {
@@ -331,10 +334,9 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
                 a.description,
                 a.icon,
                 ua.unlocked_at
-            FROM user_achievements ua
-            JOIN achievements a ON ua.achievement_id = a.id
-            WHERE ua.user_id = ?
-            ORDER BY ua.unlocked_at DESC
+            FROM achievements a
+            LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ?
+            ORDER BY ua.unlocked_at IS NULL, ua.unlocked_at DESC, a.name ASC
         `, [userId]);
 
         const friends = await getFriends(userId, connection);
@@ -354,7 +356,7 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
 }
 
 
-export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number, storeHistoryCount?: number }): Promise<string[]> {
+export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number; storeHistoryCount?: number; friendCount?: number; launchedAppCount?: number; }): Promise<string[]> {
     await initializeDatabase();
     if (!userId) return [];
 
@@ -373,31 +375,32 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
 
         if (criteria.gameCount !== undefined) {
             if (criteria.gameCount >= 10 && !existingIds.has('COLLECTOR_2')) {
-                if (await grantAchievement(userId, 'COLLECTOR_2', connection)) {
-                    newlyAwarded.push('Adept Collector');
-                }
+                if (await grantAchievement(userId, 'COLLECTOR_2', connection)) newlyAwarded.push('Adept Collector');
             }
             if (criteria.gameCount >= 5 && !existingIds.has('COLLECTOR_1')) {
-                if (await grantAchievement(userId, 'COLLECTOR_1', connection)) {
-                    newlyAwarded.push('Novice Collector');
-                }
+                if (await grantAchievement(userId, 'COLLECTOR_1', connection)) newlyAwarded.push('Novice Collector');
             }
         }
 
-        if (criteria.profileCount !== undefined) {
-            if (criteria.profileCount > 1 && !existingIds.has('SOCIALITE')) {
-                 if (await grantAchievement(userId, 'SOCIALITE', connection)) {
-                    newlyAwarded.push('Socialite');
-                }
-            }
+        if (criteria.profileCount !== undefined && criteria.profileCount > 1 && !existingIds.has('SOCIALITE')) {
+            if (await grantAchievement(userId, 'SOCIALITE', connection)) newlyAwarded.push('Socialite');
         }
 
-        if (criteria.storeHistoryCount !== undefined) {
-            if (criteria.storeHistoryCount >= 10 && !existingIds.has('APP_STORE_EXPLORER')) {
-                 if (await grantAchievement(userId, 'APP_STORE_EXPLORER', connection)) {
-                    newlyAwarded.push('App Store Explorer');
-                }
+        if (criteria.storeHistoryCount !== undefined && criteria.storeHistoryCount >= 10 && !existingIds.has('APP_STORE_EXPLORER')) {
+            if (await grantAchievement(userId, 'APP_STORE_EXPLORER', connection)) newlyAwarded.push('App Store Explorer');
+        }
+        
+        if (criteria.friendCount !== undefined) {
+             if (criteria.friendCount >= 5 && !existingIds.has('NETWORKER')) {
+                if (await grantAchievement(userId, 'NETWORKER', connection)) newlyAwarded.push('Networker');
             }
+            if (criteria.friendCount >= 1 && !existingIds.has('FIRST_CONTACT')) {
+                if (await grantAchievement(userId, 'FIRST_CONTACT', connection)) newlyAwarded.push('First Contact');
+            }
+        }
+        
+        if (criteria.launchedAppCount !== undefined && criteria.launchedAppCount >= 5 && !existingIds.has('APP_CONNOISSEUR')) {
+            if (await grantAchievement(userId, 'APP_CONNOISSEUR', connection)) newlyAwarded.push('App Connoisseur');
         }
         
         await connection.commit();
@@ -437,26 +440,42 @@ export async function sendFriendRequest(requesterId: number, addresseeId: number
     }
 }
 
-export async function respondToFriendRequest(userId: number, requesterId: number, action: 'accept' | 'decline'): Promise<{ success: boolean; message: string }> {
+export async function respondToFriendRequest(userId: number, requesterId: number, action: 'accept' | 'decline'): Promise<{ success: boolean; message: string; newAchievements?: string[] }> {
     await initializeDatabase();
     const [userOneId, userTwoId] = [userId, requesterId].sort((a, b) => a - b);
     let connection;
+    let newAchievements: string[] = [];
+    
     try {
         connection = await pool.getConnection();
+        await connection.beginTransaction();
+
         if (action === 'accept') {
             await connection.execute(
                 'UPDATE friends SET status = ?, action_user_id = ? WHERE user_one_id = ? AND user_two_id = ? AND status = "pending"',
                 ['accepted', userId, userOneId, userTwoId]
             );
-            return { success: true, message: 'Friend request accepted.' };
+
+            // Check achievements for both users
+            const [user1Friends]: any = await connection.execute('SELECT COUNT(*) as count FROM friends WHERE (user_one_id = ? OR user_two_id = ?) AND status = "accepted"', [userId, userId]);
+            const [user2Friends]: any = await connection.execute('SELECT COUNT(*) as count FROM friends WHERE (user_one_id = ? OR user_two_id = ?) AND status = "accepted"', [requesterId, requesterId]);
+
+            const user1Achievements = await checkAndAwardAchievements(userId, { friendCount: user1Friends[0].count });
+            const user2Achievements = await checkAndAwardAchievements(requesterId, { friendCount: user2Friends[0].count });
+            newAchievements = [...user1Achievements, ...user2Achievements];
+
+            await connection.commit();
+            return { success: true, message: 'Friend request accepted.', newAchievements };
         } else {
             await connection.execute(
                 'DELETE FROM friends WHERE user_one_id = ? AND user_two_id = ?',
                 [userOneId, userTwoId]
             );
+            await connection.commit();
             return { success: true, message: 'Friend request declined.' };
         }
     } catch (error: any) {
+        if (connection) await connection.rollback();
         console.error('[SOCIAL-DB] Respond to Friend Request Error:', error);
         return { success: false, message: 'A database error occurred.' };
     } finally {

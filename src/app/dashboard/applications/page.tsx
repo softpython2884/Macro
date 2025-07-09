@@ -24,6 +24,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { checkAndAwardAchievements } from '@/lib/social-service';
+import { Award } from 'lucide-react';
 
 // --- AppPosterSelector Component ---
 const AppPosterSelector = ({ app, onSave, onRevert, onClose }: { app: AppInfo, onSave: (url: string) => void, onRevert: () => void, onClose: () => void }) => {
@@ -103,7 +105,36 @@ const AppCard = ({ app, onFocus }: { app: AppInfo; onFocus: () => void }) => {
     const { setBackgroundImage } = useBackground();
     const { id, name, icon: Icon, href, description, onClick, posterUrl } = app;
 
+    const handleAppLaunchAchievement = async (appId: string) => {
+        try {
+            const socialUserJson = localStorage.getItem('macro-social-user');
+            if (!socialUserJson) return;
+            const socialUserId = JSON.parse(socialUserJson).id;
+
+            const launchedAppsKey = `macro-launched-apps-${socialUserId}`;
+            const launchedApps = new Set(JSON.parse(localStorage.getItem(launchedAppsKey) || '[]'));
+
+            if (!launchedApps.has(appId)) {
+                launchedApps.add(appId);
+                localStorage.setItem(launchedAppsKey, JSON.stringify(Array.from(launchedApps)));
+                const newAchievements = await checkAndAwardAchievements(socialUserId, { launchedAppCount: launchedApps.size });
+                
+                if (newAchievements.length > 0) {
+                    toast({
+                        title: "Achievement Unlocked!",
+                        description: `You've earned: ${newAchievements.join(', ')}`,
+                        action: <Award className="h-6 w-6 text-yellow-400" />,
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Failed to check for app launch achievements:", e);
+        }
+    };
+
     const handleLaunch = async () => {
+        handleAppLaunchAchievement(id);
+
         if (id === 'moonlight') {
             playSound('launch');
             try {
