@@ -121,13 +121,18 @@ export async function registerUser({ username, email, password }: Record<string,
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    const [existingUsers]: any = await connection.execute(
-      'SELECT id FROM social_users WHERE username = ? OR email = ?',
-      [username, email]
-    );
-    if (existingUsers.length > 0) {
-      await connection.rollback();
-      return { success: false, message: 'Username or email already exists.' };
+    // Check for existing username
+    const [existingUsername]: any = await connection.execute('SELECT id FROM social_users WHERE username = ?', [username]);
+    if (existingUsername.length > 0) {
+        await connection.rollback();
+        return { success: false, message: 'This username is already taken.' };
+    }
+
+    // Check for existing email
+    const [existingEmail]: any = await connection.execute('SELECT id FROM social_users WHERE email = ?', [email]);
+    if (existingEmail.length > 0) {
+        await connection.rollback();
+        return { success: false, message: 'This email is already in use.' };
     }
 
     const [result]: any = await connection.execute(
@@ -490,5 +495,3 @@ export async function getFriends(userId: number, existingConnection?: PoolConnec
         if (!existingConnection && connection) (connection as PoolConnection).release();
     }
 }
-
-    
