@@ -221,8 +221,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
     const [profile, setProfile] = useState<SocialProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { playSound } = useSound();
-    const router = useRouter();
-
+    
     const pageRef = useRef<HTMLDivElement>(null);
     const friendListRef = useRef<HTMLDivElement>(null);
     const friendRequestsRef = useRef<HTMLDivElement>(null);
@@ -239,6 +238,14 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
     useEffect(() => {
         fetchProfileData();
     }, [fetchProfileData]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            // Focus the first interactive element in the hub when it's ready.
+            const firstElement = pageRef.current?.querySelector('button, a[href]') as HTMLElement;
+            firstElement?.focus();
+        }
+    }, [isLoading]);
     
     const renderStatus = (activity: SocialFriendWithActivity) => {
         if (activity.activity_status === 'playing' && activity.activity_details) {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { UserNav } from "@/components/user-nav";
 import { cn, formatDuration } from "@/lib/utils";
-import { Home, Settings, Gamepad2, LayoutGrid, Users, UserCog } from "lucide-react";
+import { Home, Settings, Gamepad2, LayoutGrid, Users, UserCog, Award } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -20,7 +20,7 @@ import { GameProvider } from "@/context/GameContext";
 import { useToast } from "@/hooks/use-toast";
 import { BackgroundProvider, useBackground } from "@/context/BackgroundContext";
 import Image from "next/image";
-import { updateUserActivity } from "@/lib/social-service";
+import { updateUserActivity, checkAndAwardAchievements } from "@/lib/social-service";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -111,11 +111,30 @@ const LayoutWithBackground = ({ children }: { children: React.ReactNode }) => {
 
                 localStorage.setItem('macro-playtime', JSON.stringify(allPlaytimes));
                 localStorage.removeItem('macro-active-session');
-
-                // Clear social activity
+                
                 const socialUserJson = localStorage.getItem('macro-social-user');
                 if (socialUserJson) {
                     const socialUserId = JSON.parse(socialUserJson).id;
+
+                    // Calculate total playtime for achievements
+                    const totalPlaytimeSeconds = Object.values(allPlaytimes).reduce((total: number, game: any) => total + (game.totalSeconds || 0), 0);
+                    const totalPlaytimeHours = totalPlaytimeSeconds / 3600;
+                    const lastSessionHours = durationInSeconds / 3600;
+
+                    const newAchievements = await checkAndAwardAchievements(socialUserId, {
+                        totalPlaytimeHours,
+                        lastSessionHours,
+                    });
+
+                    if (newAchievements.length > 0) {
+                        toast({
+                            title: "Achievement Unlocked!",
+                            description: `You've earned: ${newAchievements.join(', ')}`,
+                            action: <Award className="h-6 w-6 text-yellow-400" />,
+                        });
+                    }
+
+                    // Clear social activity
                     await updateUserActivity(socialUserId, 'online', null);
                     console.log(`[SOCIAL] Cleared activity for user ${socialUserId}`);
                 }

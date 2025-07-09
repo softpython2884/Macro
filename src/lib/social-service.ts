@@ -60,7 +60,12 @@ async function initializeDatabase() {
             ('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download'),
             ('FIRST_CONTACT', 'First Contact', 'Add your first friend.', 'UserPlus'),
             ('NETWORKER', 'Networker', 'Build a network of 5 friends.', 'Users'),
-            ('APP_CONNOISSEUR', 'App Connoisseur', 'Launch 5 different applications.', 'LayoutGrid');
+            ('APP_CONNOISSEUR', 'App Connoisseur', 'Launch 5 different applications.', 'LayoutGrid'),
+            ('PLAYTIME_1', 'Apprentice Gamer', 'Accumulate 1 hour of total playtime across all games.', 'Hourglass'),
+            ('PLAYTIME_2', 'Dedicated Gamer', 'Accumulate 10 hours of total playtime across all games.', 'Clock'),
+            ('PLAYTIME_3', 'Hardcore Gamer', 'Accumulate 50 hours of total playtime across all games.', 'Timer'),
+            ('SESSION_1', 'Focused Player', 'Complete a single play session of at least 2 hours.', 'Gamepad2'),
+            ('SESSION_2', 'Marathon Runner', 'Complete a single play session of at least 4 hours.', 'Trophy');
         `);
 
         await connection.query(`
@@ -356,7 +361,7 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
 }
 
 
-export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number; storeHistoryCount?: number; friendCount?: number; launchedAppCount?: number; }): Promise<string[]> {
+export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number; storeHistoryCount?: number; friendCount?: number; launchedAppCount?: number; totalPlaytimeHours?: number; lastSessionHours?: number; }): Promise<string[]> {
     await initializeDatabase();
     if (!userId) return [];
 
@@ -401,6 +406,27 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
         
         if (criteria.launchedAppCount !== undefined && criteria.launchedAppCount >= 5 && !existingIds.has('APP_CONNOISSEUR')) {
             if (await grantAchievement(userId, 'APP_CONNOISSEUR', connection)) newlyAwarded.push('App Connoisseur');
+        }
+
+        if (criteria.totalPlaytimeHours !== undefined) {
+            if (criteria.totalPlaytimeHours >= 50 && !existingIds.has('PLAYTIME_3')) {
+                if (await grantAchievement(userId, 'PLAYTIME_3', connection)) newlyAwarded.push('Hardcore Gamer');
+            }
+            if (criteria.totalPlaytimeHours >= 10 && !existingIds.has('PLAYTIME_2')) {
+                if (await grantAchievement(userId, 'PLAYTIME_2', connection)) newlyAwarded.push('Dedicated Gamer');
+            }
+            if (criteria.totalPlaytimeHours >= 1 && !existingIds.has('PLAYTIME_1')) {
+                if (await grantAchievement(userId, 'PLAYTIME_1', connection)) newlyAwarded.push('Apprentice Gamer');
+            }
+        }
+
+        if (criteria.lastSessionHours !== undefined) {
+            if (criteria.lastSessionHours >= 4 && !existingIds.has('SESSION_2')) {
+                if (await grantAchievement(userId, 'SESSION_2', connection)) newlyAwarded.push('Marathon Runner');
+            }
+            if (criteria.lastSessionHours >= 2 && !existingIds.has('SESSION_1')) {
+                if (await grantAchievement(userId, 'SESSION_1', connection)) newlyAwarded.push('Focused Player');
+            }
         }
         
         await connection.commit();
