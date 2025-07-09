@@ -5,6 +5,7 @@ import { useSound } from '@/context/SoundContext';
 
 interface GridNavigationOptions {
   gridRef: React.RefObject<HTMLElement>;
+  disabledKeys?: string[];
 }
 
 // Function to calculate distance between the centers of two rectangles
@@ -29,12 +30,16 @@ const FOCUSABLE_SELECTOR = [
     '[role="tab"]',
 ].join(', ');
 
-export function useGridNavigation({ gridRef }: GridNavigationOptions) {
+export function useGridNavigation({ gridRef, disabledKeys = [] }: GridNavigationOptions) {
   const { playSound } = useSound();
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const grid = gridRef.current;
     if (!grid) return;
+
+    if (disabledKeys.includes(e.key)) {
+        return;
+    }
 
     if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) {
       return;
@@ -104,7 +109,7 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
       playSound('navigate');
       bestCandidate.focus();
     }
-  }, [gridRef, playSound]);
+  }, [gridRef, playSound, disabledKeys]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);

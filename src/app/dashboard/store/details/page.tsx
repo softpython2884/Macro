@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -42,26 +41,29 @@ export default function StoreDetailsPage() {
     const scrollViewportRef = useRef<HTMLDivElement>(null);
 
     useBackNavigation('/dashboard/store');
-    useGridNavigation({ gridRef: linksRef });
+    useGridNavigation({ gridRef: linksRef, disabledKeys: ['ArrowUp', 'ArrowDown'] });
 
     useEffect(() => {
         const handleKeys = (e: KeyboardEvent) => {
             const viewport = scrollViewportRef.current;
-            if (!viewport || !['+', '-'].includes(e.key)) return;
+            if (!viewport || !['+', '-', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
 
+            const activeElTag = document.activeElement?.tagName.toLowerCase();
+            if (activeElTag === 'input' || activeElTag === 'textarea') return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            
             let scrollAmount = 0;
             const scrollSpeed = 150;
             
-            // Invert scroll direction for +/- keys for more intuitive feel
-            if (e.key === '+') {
-                scrollAmount = -scrollSpeed; // Scroll Up
-            } else if (e.key === '-') {
-                scrollAmount = scrollSpeed; // Scroll Down
+            if (e.key === '+' || e.key === 'ArrowDown') {
+                scrollAmount = scrollSpeed;
+            } else if (e.key === '-' || e.key === 'ArrowUp') {
+                scrollAmount = -scrollSpeed;
             }
 
             if (scrollAmount !== 0) {
-                e.preventDefault();
-                e.stopPropagation();
                 viewport.scrollBy({ top: scrollAmount, behavior: 'smooth' });
             }
         };
@@ -74,11 +76,30 @@ export default function StoreDetailsPage() {
         setHints([
             { key: 'A', action: isInstalling ? 'Installing...' : 'Download' },
             { key: 'B', action: 'Back' },
-            { key: '+/-', action: 'Scroll' },
-            { key: '↕↔', action: 'Navigate Links' },
+            { key: '↕/+-', action: 'Scroll' },
+            { key: '↔', action: 'Navigate Links' },
         ]);
         return () => setHints([]);
     }, [setHints, isInstalling]);
+    
+    useEffect(() => {
+        if (!isLoading) {
+            setTimeout(() => {
+                const backButton = document.getElementById('back-to-store-button');
+                const directInstallButton = document.getElementById('direct-install-button');
+                const firstLink = linksRef.current?.querySelector('button');
+                
+                if (directInstallButton) {
+                    directInstallButton.focus();
+                } else if (firstLink) {
+                    firstLink.focus();
+                } else if (backButton) {
+                    (backButton as HTMLElement).focus();
+                }
+            }, 100);
+        }
+    }, [isLoading]);
+
 
     useEffect(() => {
         if (!url || !title || !currentUser) {
@@ -181,12 +202,12 @@ export default function StoreDetailsPage() {
     return (
          <div className="flex flex-col h-full animate-fade-in">
              <div className="absolute top-0 left-0 p-4 z-20">
-                <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/store')} disabled={isInstalling}>
+                <Button id="back-to-store-button" variant="outline" size="sm" onClick={() => router.push('/dashboard/store')} disabled={isInstalling}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to App Store
                 </Button>
             </div>
             
-            <ScrollArea className="h-full w-full" viewportRef={scrollViewportRef}>
+            <ScrollArea className="w-full flex-1" viewportRef={scrollViewportRef}>
                 <div className="flex flex-col text-white pb-8 pr-4">
                     <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden bg-card">
                         {heroUrl && (
@@ -218,7 +239,7 @@ export default function StoreDetailsPage() {
                                 <p className="text-primary-foreground/80 max-w-2xl">
                                     This game can be downloaded and installed automatically by Macro. Click the button below to start the process.
                                 </p>
-                                <Button size="lg" onClick={() => handleDirectInstall(details.pixeldrainApi!, title)} disabled={isInstalling}>
+                                <Button id="direct-install-button" size="lg" onClick={() => handleDirectInstall(details.pixeldrainApi!, title)} disabled={isInstalling}>
                                     <Download className="mr-2 h-5 w-5" />
                                     {isInstalling ? 'Installing... Please Wait' : 'Install Game Directly'}
                                 </Button>
@@ -243,12 +264,12 @@ export default function StoreDetailsPage() {
                                 </div>
                             )}
                             <div ref={linksRef} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                {Object.entries(details.allLinks).map(([host, link]) => (
+                                {Object.keys(details.allLinks).length > 0 ? Object.entries(details.allLinks).map(([host, link]) => (
                                     <Button key={host} variant="outline" onClick={() => handleManualDownload(link)} disabled={isInstalling}>
                                         <Download className="mr-2 h-4 w-4" />
                                         {host}
                                     </Button>
-                                ))}
+                                )) : <p className="text-muted-foreground col-span-full">No download links found.</p>}
                             </div>
                         </div>
                     </div>

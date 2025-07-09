@@ -22,9 +22,9 @@ const StoreResultCard = ({ result }: { result: SkidrowSearchResult }) => {
     return (
         <Link 
           href={`/dashboard/store/details?url=${encodeURIComponent(result.url)}&title=${encodeURIComponent(result.title)}`}
-          className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4] transition-transform duration-300 ease-in-out hover:scale-105 focus:scale-105"
+          className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4] transition-transform duration-300 ease-in-out hover:scale-105 focus-within:scale-105"
         >
-            <Card className="bg-black/20 backdrop-blur-lg border-2 border-transparent group-focus:border-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden relative">
+            <Card className="bg-black/20 backdrop-blur-lg border-2 border-transparent group-focus-within:border-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden relative">
                 {result.posterUrl ? (
                     <Image src={result.posterUrl} alt={result.title} fill className="object-cover"/>
                 ) : (
