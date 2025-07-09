@@ -8,7 +8,7 @@ import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, UserPlus, type LucideIcon, UserCheck, Clock, UserX } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, UserPlus, type LucideIcon, UserCheck, Clock, UserX, Download } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -247,5 +247,3 @@ export default function SocialProfilePage() {
         </div>
     );
 }
-
-    
