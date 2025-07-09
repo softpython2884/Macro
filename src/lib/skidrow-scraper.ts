@@ -110,26 +110,41 @@ export async function getSkidrowGameDetails(url: string): Promise<Omit<SkidrowGa
             "PIXELDRAIN", "MEGA", "1FICHIER", "GOFILE", "MEDIAFIRE", "RANOZ", "DROPAPK", "BOWFILE",
             "SENDCM", "FREEDLINK", "MIXDROP", "CHOMIKUJ", "VIKINGFILE", "DOWNMEDIALOAD", "HEXLOAD",
             "1CLOUDFILE", "USERSDRIVE", "FILEFACTORY", "MEGAUP", "CLICKNUPLOAD", "DAILYUPLOAD",
-            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "FTP LINK"
+            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "ONE FTP LINK", "FTP LINK"
         ];
-
+        
+        // Find all span tags that contain a known host name
         $("span").each((i, el) => {
             const spanText = $(el).text().trim().toUpperCase();
-            const host = knownHosts.find(h => spanText.includes(h));
+            let host = knownHosts.find(h => spanText.includes(h));
 
             if (host) {
-                const linkTag = $(el).next("a");
-                const link = linkTag.attr("href");
+                // Find the 'a' tag. It might be in the same <p> or the next one.
+                let linkTag = $(el).closest('p').find('a');
+                if (!linkTag.length) {
+                    linkTag = $(el).closest('p').next('p').find('a');
+                }
+                
+                const link = linkTag.attr('href');
+
                 if (link) {
-                    allLinks[host] = link;
-                    if (host === "PIXELDRAIN") {
-                        const match = link.match(/\/u\/([a-zA-Z0-9]+)/);
-                        if (match) {
-                            pixeldrainApi = `https://pixeldrain.com/api/file/${match[1]}`;
-                            if (!priorityLink) priorityLink = link;
+                    // Standardize host name
+                    if (host === "ONE FTP LINK") host = "FTP";
+                    if (host === "FTP LINK") host = "FTP";
+                    if (host === "CHOMIKUJ") host = "CHOMIKUJ.PL";
+
+                    if (!allLinks[host]) { // Avoid duplicates from nested spans
+                        allLinks[host] = link;
+                        
+                        if (host === "PIXELDRAIN") {
+                            const match = link.match(/\/u\/([a-zA-Z0-9]+)/);
+                            if (match) {
+                                pixeldrainApi = `https://pixeldrain.com/api/file/${match[1]}`;
+                                if (!priorityLink) priorityLink = link;
+                            }
+                        } else if (host === "MEGA" && !priorityLink) {
+                            priorityLink = link;
                         }
-                    } else if (host === "MEGA" && !priorityLink) {
-                        priorityLink = link;
                     }
                 }
             }
