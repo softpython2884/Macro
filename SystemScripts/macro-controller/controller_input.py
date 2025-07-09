@@ -2,13 +2,12 @@
 import sys
 import pyautogui
 
-key = sys.argv[1].upper()
+key = sys.argv[1]
 
 special = {
-    "ESPACE": " ",
+    "ESPACE": "space",
     "TAB": "tab",
     "ENTRÉE": "enter",
-    "MAJ": "shift",
     "SUPPR": "delete",
     "←": "backspace"
 }
@@ -16,4 +15,4 @@ special = {
 if key in special:
     pyautogui.press(special[key])
 else:
-    pyautogui.write(key.lower())
+    pyautogui.write(key)

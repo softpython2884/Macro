@@ -8,6 +8,7 @@ const layout = [
 ];
 
 let selectedRow = 0, selectedCol = 0;
+let capsLock = false; // State for Caps Lock
 const keyboard = document.getElementById("keyboard");
 const keySound = document.getElementById("keySound");
 
@@ -16,8 +17,20 @@ function render() {
   layout.forEach((row, r) => {
     row.forEach((key, c) => {
       const div = document.createElement("div");
-      div.className = "key" + (r === selectedRow && c === selectedCol ? " selected" : "");
-      div.innerText = key;
+      const isSelected = r === selectedRow && c === selectedCol;
+      const isLetter = key.length === 1 && key.match(/[a-zçéèà]/i);
+      
+      let displayKey = key;
+      if (isLetter) {
+        displayKey = capsLock ? key.toUpperCase() : key.toLowerCase();
+      }
+      
+      let keyClass = "key";
+      if (isSelected) keyClass += " selected";
+      if (key === 'MAJ' && capsLock) keyClass += " active";
+
+      div.className = keyClass;
+      div.innerText = displayKey;
       keyboard.appendChild(div);
     });
   });
@@ -31,10 +44,23 @@ function pressKey() {
   const key = getSelectedKey();
   keySound.currentTime = 0;
   keySound.play();
+
+  if (key === 'MAJ') {
+    capsLock = !capsLock;
+    render(); // Re-render to show case change
+    return;
+  }
+
+  const isLetter = key.length === 1 && key.match(/[a-zçéèà]/i);
+  let keyToSend = key;
+  if (isLetter) {
+    keyToSend = capsLock ? key.toUpperCase() : key.toLowerCase();
+  }
+  
   fetch("http://localhost:3000/key", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key })
+    body: JSON.stringify({ key: keyToSend })
   });
 }
 

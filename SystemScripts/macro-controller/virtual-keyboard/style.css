@@ -35,3 +35,7 @@ body {
   background: rgba(0, 255, 204, 0.25);
   transform: scale(1.05);
 }
+
+.key.active {
+  background: rgba(0, 255, 204, 0.4);
+}
