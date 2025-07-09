@@ -110,39 +110,36 @@ export async function getSkidrowGameDetails(url: string): Promise<Omit<SkidrowGa
             "PIXELDRAIN", "MEGA", "1FICHIER", "GOFILE", "MEDIAFIRE", "RANOZ", "DROPAPK", "BOWFILE",
             "SENDCM", "FREEDLINK", "MIXDROP", "CHOMIKUJ", "VIKINGFILE", "DOWNMEDIALOAD", "HEXLOAD",
             "1CLOUDFILE", "USERSDRIVE", "FILEFACTORY", "MEGAUP", "CLICKNUPLOAD", "DAILYUPLOAD",
-            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "ONE FTP LINK", "FTP LINK"
+            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "MULTI LINKS", "ONE FTP LINK", "FTP LINK"
         ];
         
-        // Find all span tags that contain a known host name
         $("span").each((i, el) => {
-            const spanText = $(el).text().trim().toUpperCase();
+            const spanEl = $(el);
+            const spanText = spanEl.text().trim().toUpperCase();
+            
             let host = knownHosts.find(h => spanText.includes(h));
 
             if (host) {
-                // Find the 'a' tag. It might be in the same <p> or the next one.
-                let linkTag = $(el).closest('p').find('a');
-                if (!linkTag.length) {
-                    linkTag = $(el).closest('p').next('p').find('a');
-                }
-                
+                // Based on the provided HTML, the <a> tag is inside the same <p> as the <span>
+                const linkTag = spanEl.closest('p').find('a');
                 const link = linkTag.attr('href');
 
                 if (link) {
-                    // Standardize host name
-                    if (host === "ONE FTP LINK") host = "FTP";
-                    if (host === "FTP LINK") host = "FTP";
-                    if (host === "CHOMIKUJ") host = "CHOMIKUJ.PL";
-
-                    if (!allLinks[host]) { // Avoid duplicates from nested spans
-                        allLinks[host] = link;
+                    let standardizedHost = host;
+                    if (["ONE FTP LINK", "FTP LINK"].includes(host)) standardizedHost = "FTP";
+                    if (host === "MULTI LINKS") standardizedHost = "MULTIUP";
+                    if (host === "CHOMIKUJ") standardizedHost = "CHOMIKUJ.PL";
+                    
+                    if (!allLinks[standardizedHost]) {
+                        allLinks[standardizedHost] = link;
                         
-                        if (host === "PIXELDRAIN") {
+                        if (standardizedHost === "PIXELDRAIN") {
                             const match = link.match(/\/u\/([a-zA-Z0-9]+)/);
                             if (match) {
                                 pixeldrainApi = `https://pixeldrain.com/api/file/${match[1]}`;
                                 if (!priorityLink) priorityLink = link;
                             }
-                        } else if (host === "MEGA" && !priorityLink) {
+                        } else if (standardizedHost === "MEGA" && !priorityLink) {
                             priorityLink = link;
                         }
                     }
