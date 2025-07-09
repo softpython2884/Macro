@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -90,7 +91,7 @@ export default function SetupPage() {
   };
   
   const steps = [
-    { name: 'Welcome', icon: <div className="h-10 w-10 text-lg font-bold">M</div> },
+    { name: 'Welcome', icon: <div className="h-10 w-10 text-lg font-bold flex items-center justify-center">M</div> },
     { name: 'Admin Account', icon: <User /> },
     { name: 'Core Settings', icon: <Settings /> },
     { name: 'Finished', icon: <CheckCircle /> },
@@ -111,29 +112,30 @@ export default function SetupPage() {
         <div className="relative z-10 w-full max-w-2xl px-4">
             <Card className="bg-background/80 backdrop-blur-lg border-white/10">
                 <CardHeader>
-                    <div className="flex justify-center items-center gap-4 mb-4">
+                    <div className="flex w-full justify-between items-start mb-4">
                         {steps.map((s, index) => (
-                           <React.Fragment key={s.name}>
-                             <div className="flex flex-col items-center gap-2">
-                                <div className={cn(
-                                    "flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300",
-                                    step > index ? 'bg-primary border-primary text-primary-foreground' :
-                                    step === index ? 'border-primary scale-110' : 'border-border bg-muted/50 text-muted-foreground'
-                                )}>
-                                    {s.icon}
+                            <div key={s.name} className={cn("flex items-start", index < steps.length - 1 && "flex-1")}>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className={cn(
+                                        "flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 bg-background z-10",
+                                        step > index ? 'bg-primary border-primary text-primary-foreground' :
+                                        step === index ? 'border-primary scale-110' : 'border-border bg-muted/50 text-muted-foreground'
+                                    )}>
+                                        {s.icon}
+                                    </div>
+                                    <span className={cn(
+                                        "text-xs transition-colors text-center w-20",
+                                        step >= index ? 'text-foreground' : 'text-muted-foreground'
+                                    )}>{s.name}</span>
                                 </div>
-                                <span className={cn(
-                                    "text-xs transition-colors",
-                                    step >= index ? 'text-foreground' : 'text-muted-foreground'
-                                )}>{s.name}</span>
+                                
+                                {index < steps.length - 1 && (
+                                    <div className={cn(
+                                        "h-0.5 w-full mt-6 -ml-2 -mr-2 relative",
+                                        step > index ? "bg-primary" : "bg-border"
+                                    )} />
+                                )}
                             </div>
-                            {index < steps.length - 1 && (
-                                <div className={cn(
-                                    "flex-1 h-0.5 mt-[-1.25rem] transition-colors duration-500",
-                                     step > index ? 'bg-primary' : 'bg-border'
-                                )} />
-                            )}
-                           </React.Fragment>
                         ))}
                     </div>
                 </CardHeader>
