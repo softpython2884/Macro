@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Rocket, FileCode, ArrowLeft, Clock, Camera } from "lucide-react";
+import { Rocket, FileCode, ArrowLeft, Clock, Camera, GalleryThumbnails } from "lucide-react";
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { useHints } from "@/context/HintContext";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
@@ -15,9 +15,78 @@ import { launchGame } from "@/lib/game-launcher";
 import { useSound } from "@/context/SoundContext";
 import { formatDuration } from "@/lib/utils";
 import { useBackground } from "@/context/BackgroundContext";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { HeroImageSelector } from "@/components/hero-image-selector";
+import { getGrids, type SteamGridDbImage } from "@/lib/steamgrid";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 
+// --- PosterImageSelector Component Definition ---
+// Defined inside this file to keep it scoped, as it's only used here.
+const PosterImageSelector = ({ gameId, onSave, onRevert, onClose }: { gameId: number, onSave: (url: string) => void, onRevert: () => void, onClose: () => void }) => {
+    const [images, setImages] = useState<SteamGridDbImage[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [customUrl, setCustomUrl] = useState('');
+    const { currentUser } = useUser();
+    const gridRef = useRef<HTMLDivElement>(null);
+    useGridNavigation({ gridRef });
+
+    useEffect(() => {
+        async function fetchImageOptions() {
+            if (!currentUser) return;
+            setIsLoading(true);
+            const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
+            const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
+            const fetchedImages = await getGrids(gameId, ['600x900'], nsfwApiSetting, prioritizeNsfw);
+            setImages(fetchedImages);
+            setIsLoading(false);
+        }
+        if (gameId) fetchImageOptions();
+    }, [gameId, currentUser]);
+
+    useEffect(() => {
+        if (!isLoading) gridRef.current?.querySelector('button')?.focus();
+    }, [isLoading]);
+
+    const handleSaveCustomUrl = () => { if (customUrl) onSave(customUrl); };
+
+    return (
+        <>
+            <DialogHeader>
+                <DialogTitle>Change Game Poster</DialogTitle>
+                <DialogDescription>Select a new poster from the list below or provide a custom image URL.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+                <ScrollArea className="h-96 pr-4 -mr-4">
+                    <div ref={gridRef} className="grid grid-cols-3 gap-4">
+                        {isLoading
+                            ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="w-full aspect-[3/4] rounded-md" />)
+                            : images.map((img) => (
+                                <button key={img.id} className="block rounded-md overflow-hidden border-2 border-transparent focus:border-primary focus:outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2" onClick={() => onSave(img.url)}>
+                                    <Image src={img.thumb} alt={`Poster ${img.id}`} width={200} height={300} className="object-cover w-full aspect-[3/4]" />
+                                </button>
+                            ))}
+                    </div>
+                </ScrollArea>
+                <div className="space-y-2">
+                    <p className="text-sm font-medium">Or use a custom URL</p>
+                    <div className="flex items-center gap-2">
+                        <Input placeholder="https://example.com/image.png" value={customUrl} onChange={(e) => setCustomUrl(e.target.value)} />
+                        <Button onClick={handleSaveCustomUrl}>Save URL</Button>
+                    </div>
+                </div>
+            </div>
+            <DialogFooter className="justify-between">
+                <Button variant="outline" onClick={onRevert}>Revert to Default</Button>
+                <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            </DialogFooter>
+        </>
+    );
+};
+
+
+// --- GameDetailPage Component ---
 export default function GameDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -30,7 +99,9 @@ export default function GameDetailPage() {
     
     const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
     const [isHeroSelectorOpen, setIsHeroSelectorOpen] = useState(false);
+    const [isPosterSelectorOpen, setIsPosterSelectorOpen] = useState(false);
     const [effectiveHeroUrls, setEffectiveHeroUrls] = useState<string[]>([]);
+    const [isCustomHeroPinned, setIsCustomHeroPinned] = useState(false);
 
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
     const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
@@ -40,7 +111,6 @@ export default function GameDetailPage() {
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
     
-    // Effect to set the effective hero URLs, considering custom ones from localStorage
     useEffect(() => {
         if (!game) return;
         
@@ -52,49 +122,40 @@ export default function GameDetailPage() {
             let urls = [...(game.heroUrls || [])];
             
             if (customHero) {
-                // Remove the custom hero from its original position to avoid duplicates
                 urls = urls.filter(url => url !== customHero);
-                // Add it to the front of the array to be displayed first
                 urls.unshift(customHero);
+                setIsCustomHeroPinned(true);
+            } else {
+                setIsCustomHeroPinned(false);
             }
             setEffectiveHeroUrls(urls);
         } catch(e) {
             console.error("Failed to parse custom heroes", e);
             setEffectiveHeroUrls(game.heroUrls || []);
+            setIsCustomHeroPinned(false);
         }
 
     }, [game]);
 
-    // Effect to set the background image based on the current index
     useEffect(() => {
         if (game) {
             const newImage = effectiveHeroUrls?.[currentHeroIndex] || game.posterUrl;
             setBackgroundImage(newImage || null);
         }
-        // On component unmount, clear the background
         return () => setBackgroundImage(null);
     }, [game, currentHeroIndex, effectiveHeroUrls, setBackgroundImage]);
 
-    // Effect to handle the timer for cycling hero images
     useEffect(() => {
-        if (!game || !effectiveHeroUrls || effectiveHeroUrls.length <= 1) {
-            return;
-        }
-
-        // Check if a custom hero is pinned
-        const customHeroes = JSON.parse(localStorage.getItem('macro-custom-heroes') || '{}');
-        if (customHeroes[game.id]) {
-            // If a custom hero is set, we've already put it at the front of the array.
-            // We just don't start the timer.
+        if (!game || !effectiveHeroUrls || effectiveHeroUrls.length <= 1 || isCustomHeroPinned) {
             return;
         }
         
         const timer = setInterval(() => {
             setCurrentHeroIndex(prevIndex => (prevIndex + 1) % effectiveHeroUrls.length);
-        }, 8000); // 8 seconds
+        }, 8000);
         
         return () => clearInterval(timer);
-    }, [game, effectiveHeroUrls]);
+    }, [game, effectiveHeroUrls, isCustomHeroPinned]);
 
 
     useEffect(() => {
@@ -113,19 +174,24 @@ export default function GameDetailPage() {
     }, [gameId]);
 
     useEffect(() => {
+        const isDialogOpen = isHeroSelectorOpen || isPosterSelectorOpen;
         setHints([
             { key: 'A', action: 'Launch' },
             { key: 'B', action: 'Back' },
-            { key: 'Y', action: 'Change Art' },
+            { key: 'Y', action: 'Change Banner' },
+            { key: 'X', action: 'Change Poster' },
         ]);
         
-        const firstButton = executableListRef.current?.querySelector('button') as HTMLElement;
-        firstButton?.focus();
+        if (!isDialogOpen) {
+            const firstButton = executableListRef.current?.querySelector('button') as HTMLElement;
+            firstButton?.focus();
+        }
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key.toLowerCase() === 'y' && !isHeroSelectorOpen) {
-                setIsHeroSelectorOpen(true);
-            }
+            if (isDialogOpen) return;
+            const key = e.key.toLowerCase();
+            if (key === 'y') setIsHeroSelectorOpen(true);
+            if (key === 'x') setIsPosterSelectorOpen(true);
         };
 
         document.addEventListener('keydown', handleKeyDown);
@@ -134,7 +200,7 @@ export default function GameDetailPage() {
             setHints([]);
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [setHints, isHeroSelectorOpen]);
+    }, [setHints, isHeroSelectorOpen, isPosterSelectorOpen]);
 
     const handleLaunch = async (executable: string) => {
         if (!game) return;
@@ -144,26 +210,52 @@ export default function GameDetailPage() {
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }
 
+    const triggerLibraryRefresh = () => {
+        window.dispatchEvent(new Event('settings-updated'));
+    };
+
     const handleSaveCustomHero = (url: string) => {
         if (!game) return;
-        try {
-            const customHeroesJSON = localStorage.getItem('macro-custom-heroes');
-            const customHeroes = customHeroesJSON ? JSON.parse(customHeroesJSON) : {};
-            customHeroes[game.id] = url;
-            localStorage.setItem('macro-custom-heroes', JSON.stringify(customHeroes));
+        const customHeroes = JSON.parse(localStorage.getItem('macro-custom-heroes') || '{}');
+        customHeroes[game.id] = url;
+        localStorage.setItem('macro-custom-heroes', JSON.stringify(customHeroes));
+        setIsCustomHeroPinned(true);
+        setEffectiveHeroUrls(prev => [url, ...prev.filter(u => u !== url)]);
+        setCurrentHeroIndex(0);
+        setIsHeroSelectorOpen(false);
+        playSound('select');
+    };
 
-            // Update state immediately for visual feedback
-            setEffectiveHeroUrls(prevUrls => {
-                const newUrls = prevUrls.filter(u => u !== url);
-                newUrls.unshift(url);
-                return newUrls;
-            });
-            setCurrentHeroIndex(0); // Reset to show the new image
-            setIsHeroSelectorOpen(false); // Close dialog
-            playSound('select');
-        } catch(e) {
-            console.error("Failed to save custom hero", e);
-        }
+    const handleRevertCustomHero = () => {
+        if (!game) return;
+        const customHeroes = JSON.parse(localStorage.getItem('macro-custom-heroes') || '{}');
+        delete customHeroes[game.id];
+        localStorage.setItem('macro-custom-heroes', JSON.stringify(customHeroes));
+        setIsCustomHeroPinned(false);
+        setEffectiveHeroUrls(game.heroUrls || []); // Revert to original list
+        setIsHeroSelectorOpen(false);
+        playSound('select');
+    };
+
+    const handleSaveCustomPoster = (url: string) => {
+        if (!game) return;
+        const customPosters = JSON.parse(localStorage.getItem('macro-custom-posters') || '{}');
+        customPosters[game.id] = url;
+        localStorage.setItem('macro-custom-posters', JSON.stringify(customPosters));
+        updateGamePoster(game.id, url); // Update context
+        setIsPosterSelectorOpen(false);
+        playSound('select');
+        triggerLibraryRefresh();
+    };
+
+    const handleRevertCustomPoster = () => {
+        if (!game) return;
+        const customPosters = JSON.parse(localStorage.getItem('macro-custom-posters') || '{}');
+        delete customPosters[game.id];
+        localStorage.setItem('macro-custom-posters', JSON.stringify(customPosters));
+        setIsPosterSelectorOpen(false);
+        playSound('select');
+        triggerLibraryRefresh(); // Let the context re-fetch the original poster
     };
 
     if (!currentUser || !game) {
@@ -176,8 +268,11 @@ export default function GameDetailPage() {
                 <Button variant="outline" size="sm" onClick={() => router.back()} >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Library
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => setIsHeroSelectorOpen(true)}>
+                <Button variant="outline" size="icon" onClick={() => setIsHeroSelectorOpen(true)} aria-label="Change Banner (Y)">
                     <Camera className="h-4 w-4" />
+                </Button>
+                 <Button variant="outline" size="icon" onClick={() => setIsPosterSelectorOpen(true)} aria-label="Change Poster (X)">
+                    <GalleryThumbnails className="h-4 w-4" />
                 </Button>
             </div>
 
@@ -254,7 +349,13 @@ export default function GameDetailPage() {
 
             <Dialog open={isHeroSelectorOpen} onOpenChange={setIsHeroSelectorOpen}>
                 <DialogContent className="max-w-4xl">
-                   {game.steamgridGameId && <HeroImageSelector gameId={game.steamgridGameId} onSave={handleSaveCustomHero} onClose={() => setIsHeroSelectorOpen(false)} />}
+                   {game.steamgridGameId && <HeroImageSelector gameId={game.steamgridGameId} onSave={handleSaveCustomHero} onRevert={handleRevertCustomHero} onClose={() => setIsHeroSelectorOpen(false)} />}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isPosterSelectorOpen} onOpenChange={setIsPosterSelectorOpen}>
+                <DialogContent className="max-w-4xl">
+                   {game.steamgridGameId && <PosterImageSelector gameId={game.steamgridGameId} onSave={handleSaveCustomPoster} onRevert={handleRevertCustomPoster} onClose={() => setIsPosterSelectorOpen(false)} />}
                 </DialogContent>
             </Dialog>
         </div>

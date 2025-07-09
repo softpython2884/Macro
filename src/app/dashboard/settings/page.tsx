@@ -24,6 +24,7 @@ import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { scanAndInstallGames } from "@/lib/installer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGridNavigation } from "@/hooks/use-grid-navigation";
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -46,7 +47,10 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { setHints } = useHints();
   const [isScanning, setIsScanning] = React.useState(false);
+  const formRef = React.useRef<HTMLFormElement>(null);
+  
   useBackNavigation('/dashboard');
+  useGridNavigation({ gridRef: formRef });
   
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(formSchema),
@@ -65,8 +69,6 @@ export default function SettingsPage() {
       const savedSettings = localStorage.getItem(SETTINGS_KEY);
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
-        // Ensure all fields have a default value to prevent uncontrolled -> controlled switch
-        // and that array fields have at least one entry for the form.
         const sanitizedSettings: SettingsFormValues = {
           games: (parsed.games && parsed.games.length > 0) ? parsed.games : [{ value: "" }],
           plugins: (parsed.plugins && parsed.plugins.length > 0) ? parsed.plugins : [{ value: "" }],
@@ -87,9 +89,10 @@ export default function SettingsPage() {
       { key: '↕↔', action: 'Navigate' },
       { key: 'A', action: 'Interact' },
       { key: 'B', action: 'Back' },
-      { key: 'Q', action: 'Prev Tab' },
-      { key: 'E', action: 'Next Tab' },
     ]);
+    // Auto-focus the first element when the page loads
+    setTimeout(() => formRef.current?.querySelector<HTMLElement>('[role="tab"]')?.focus(), 100);
+    
     return () => setHints([]);
   }, [setHints]);
 
@@ -177,7 +180,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Tabs defaultValue="directories" className="space-y-6">
                 <TabsList>
                   <TabsTrigger value="directories">Directories</TabsTrigger>

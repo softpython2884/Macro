@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle, Download, Bed } from 'lucide-react';
+import { Film, Youtube, Twitch, Globe, Settings, Music, Power, Moon, Puzzle, Download, Bed, GalleryThumbnails } from 'lucide-react';
 import { SiSteam } from '@icons-pack/react-simple-icons';
 import type { IconType } from '@icons-pack/react-simple-icons/types';
 import { getPluginApps } from './plugins';

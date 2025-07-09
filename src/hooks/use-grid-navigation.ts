@@ -16,6 +16,19 @@ function getDistance(rect1: DOMRect, rect2: DOMRect): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+const FOCUSABLE_SELECTOR = [
+    'a[href]:not([disabled])',
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'textarea:not([disabled])',
+    'select:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+    '[role="button"]',
+    '[role="checkbox"]',
+    '[role="switch"]',
+    '[role="tab"]',
+].join(', ');
+
 export function useGridNavigation({ gridRef }: GridNavigationOptions) {
   const { playSound } = useSound();
 
@@ -38,16 +51,17 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
     e.stopPropagation();
 
     if (e.key === 'Enter' || e.key === ' ') {
-      playSound('select');
+      // Allow custom click handling, but also simulate a click
       if (typeof activeElement.click === 'function') {
+        playSound('select');
         activeElement.click();
       }
       return;
     }
     
     const focusable = Array.from(
-      grid.querySelectorAll<HTMLElement>('a[href]:not([disabled]), button:not([disabled])')
-    );
+      grid.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+    ).filter(el => el.offsetParent !== null); // Filter for visible elements
 
     if (focusable.length < 2) return; // Not enough elements to navigate between
 
@@ -62,34 +76,21 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
       const distance = getDistance(currentRect, candidateRect);
       let isViableCandidate = false;
 
-      // Project a vector in the direction of navigation and check if the candidate is in that general direction.
       const dx = (candidateRect.left + candidateRect.width / 2) - (currentRect.left + currentRect.width / 2);
       const dy = (candidateRect.top + candidateRect.height / 2) - (currentRect.top + currentRect.height / 2);
       
       switch (e.key) {
         case 'ArrowUp':
-          // Must be above, and more vertical than horizontal
-          if (dy < 0 && Math.abs(dy) > Math.abs(dx)) {
-            isViableCandidate = true;
-          }
+          if (dy < 0 && Math.abs(dy) > Math.abs(dx)) isViableCandidate = true;
           break;
         case 'ArrowDown':
-          // Must be below, and more vertical than horizontal
-          if (dy > 0 && Math.abs(dy) > Math.abs(dx)) {
-            isViableCandidate = true;
-          }
+          if (dy > 0 && Math.abs(dy) > Math.abs(dx)) isViableCandidate = true;
           break;
         case 'ArrowLeft':
-          // Must be to the left, and more horizontal than vertical
-          if (dx < 0 && Math.abs(dx) > Math.abs(dy)) {
-            isViableCandidate = true;
-          }
+          if (dx < 0 && Math.abs(dx) > Math.abs(dy)) isViableCandidate = true;
           break;
         case 'ArrowRight':
-          // Must be to the right, and more horizontal than vertical
-          if (dx > 0 && Math.abs(dx) > Math.abs(dy)) {
-            isViableCandidate = true;
-          }
+          if (dx > 0 && Math.abs(dx) > Math.abs(dy)) isViableCandidate = true;
           break;
       }
       
@@ -106,7 +107,6 @@ export function useGridNavigation({ gridRef }: GridNavigationOptions) {
   }, [gridRef, playSound]);
 
   useEffect(() => {
-    // Add the listener to the document to capture keys globally
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);

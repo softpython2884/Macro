@@ -16,10 +16,11 @@ import { useGridNavigation } from '@/hooks/use-grid-navigation';
 interface HeroImageSelectorProps {
   gameId: number;
   onSave: (url: string) => void;
+  onRevert: () => void;
   onClose: () => void;
 }
 
-export function HeroImageSelector({ gameId, onSave, onClose }: HeroImageSelectorProps) {
+export function HeroImageSelector({ gameId, onSave, onRevert, onClose }: HeroImageSelectorProps) {
   const [heroes, setHeroes] = useState<SteamGridDbImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [customUrl, setCustomUrl] = useState('');
@@ -92,7 +93,8 @@ export function HeroImageSelector({ gameId, onSave, onClose }: HeroImageSelector
           </div>
         </div>
       </div>
-      <DialogFooter>
+      <DialogFooter className="justify-between">
+        <Button variant="outline" onClick={onRevert}>Re-enable Rotation</Button>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
       </DialogFooter>
     </>

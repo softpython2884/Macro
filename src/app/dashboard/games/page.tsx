@@ -77,8 +77,10 @@ export default function GamesPage() {
       { key: 'E', action: 'Next Tab' },
     ]);
 
-    const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
-    if (firstElement) firstElement.focus();
+    if (!isLoading) {
+      const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+      firstElement?.focus();
+    }
 
     return () => setHints([]);
   }, [setHints, isLoading]);
@@ -114,8 +116,14 @@ export default function GamesPage() {
 
   const handleKeyboardClose = () => {
     setIsKeyboardOpen(false);
-    const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
-    if (firstElement) firstElement.focus();
+    // After the keyboard closes and the search query is set,
+    // the grid will re-render. We need to focus the first element after that.
+    setTimeout(() => {
+        const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+        if (firstElement) {
+            firstElement.focus();
+        }
+    }, 100);
   }
 
   if (!currentUser) {
@@ -159,7 +167,7 @@ export default function GamesPage() {
                 onInput={(char) => setSearchQuery(q => q + char)}
                 onDelete={() => setSearchQuery(q => q.slice(0, -1))}
                 onEnter={handleKeyboardClose}
-                onClose={handleKeyboardClose}
+                onClose={() => setIsKeyboardOpen(false)}
             />
         </DialogContent>
       </Dialog>
