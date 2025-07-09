@@ -170,3 +170,37 @@ export async function getSocialActivities(): Promise<SocialActivity[]> {
     if (connection) connection.release();
   }
 }
+
+export type SocialProfile = {
+    username: string;
+    created_at: string;
+    activity_status: string | null;
+    activity_details: string | null;
+};
+
+export async function getSocialProfile(userId: number): Promise<SocialProfile | null> {
+    if (!userId) return null;
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [rows]: any = await connection.execute(`
+            SELECT
+                u.username,
+                u.created_at,
+                a.activity_status,
+                a.activity_details
+            FROM social_users u
+            LEFT JOIN social_activities a ON u.id = a.user_id
+            WHERE u.id = ?
+        `, [userId]);
+        
+        if (rows.length === 0) return null;
+        return rows[0];
+
+    } catch (error) {
+        console.error(`[SOCIAL-DB] Error fetching profile for user ${userId}:`, error);
+        return null;
+    } finally {
+        if (connection) connection.release();
+    }
+}

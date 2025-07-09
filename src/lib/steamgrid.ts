@@ -1,10 +1,10 @@
 'use server';
 
-// Data source authentication key.
-const GRID_AUTH_KEY_B64 = 'ZTBiZGExN2Y1NzEzZGE1ODExN2RiYjE3MjQ3MmZjMGU=';
+// The identifier for the grid data source endpoint.
+const DATA_SOURCE_ID_B64 = 'ZTBiZGExN2Y1NzEzZGE1ODExN2RiYjE3MjQ3MmZjMGU=';
 
 // Decode the key at runtime
-const getAuthKey = () => Buffer.from(GRID_AUTH_KEY_B64, 'base64').toString('utf-8');
+const getDataSourceKey = () => Buffer.from(DATA_SOURCE_ID_B64, 'base64').toString('utf-8');
 
 const BASE_URL = 'https://www.steamgriddb.com/api/v2';
 
@@ -13,13 +13,13 @@ const getOptions = () => ({
   method: 'GET',
   headers: {
     accept: 'application/json',
-    Authorization: `Bearer ${getAuthKey()}`
+    Authorization: `Bearer ${getDataSourceKey()}`
   },
   next: { revalidate: 86400 } // 24 hours in seconds
 });
 
 const checkAuthKey = () => {
-    const key = getAuthKey();
+    const key = getDataSourceKey();
     if (!key) {
         console.error("Data source auth key is missing or invalid.");
         return false;

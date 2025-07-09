@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useSound } from "@/context/SoundContext";
 
 type SocialUser = {
   id: number;
@@ -22,6 +24,7 @@ type SocialUser = {
 const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void }) => {
   const [activities, setActivities] = useState<SocialActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { playSound } = useSound();
 
   const fetchActivities = useCallback(async () => {
     setIsLoading(true);
@@ -65,7 +68,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
         </CardHeader>
         <CardContent>
             <ScrollArea className="h-96 pr-4">
-                <div className="space-y-4">
+                <div className="space-y-2">
                     {isLoading 
                         ? (Array.from({ length: 3 }).map((_, i) => (
                             <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-background/50">
@@ -81,23 +84,25 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
                         )))
                         : (
                         activities.map(activity => (
-                             <div key={activity.user_id} className="flex items-center justify-between p-3 rounded-lg bg-background/50">
-                                <div className="flex items-center gap-4">
-                                     <Avatar>
-                                        <AvatarImage />
-                                        <AvatarFallback>{activity.username.substring(0, 1).toUpperCase()}</AvatarFallback>
-                                     </Avatar>
-                                    <div>
-                                        <p className="font-semibold">{activity.username}</p>
-                                        <div className="text-sm">
-                                            {renderStatus(activity)}
+                             <Link key={activity.user_id} href={`/dashboard/social/${activity.user_id}`} onClick={() => playSound('select')} className="block rounded-lg transition-colors hover:bg-white/5 focus:bg-white/10 focus:outline-none">
+                                <div className="flex items-center justify-between p-3">
+                                    <div className="flex items-center gap-4">
+                                        <Avatar>
+                                            <AvatarImage />
+                                            <AvatarFallback>{activity.username.substring(0, 1).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold">{activity.username}</p>
+                                            <div className="text-sm">
+                                                {renderStatus(activity)}
+                                            </div>
                                         </div>
                                     </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {new Date(activity.updated_at).toLocaleTimeString()}
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    {new Date(activity.updated_at).toLocaleTimeString()}
-                                </p>
-                            </div>
+                             </Link>
                         ))
                     )}
                 </div>
