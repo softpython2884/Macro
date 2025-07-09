@@ -69,18 +69,46 @@ async function initializeDatabase() {
         await connection.query(`
             INSERT IGNORE INTO \`achievements\` (\`id\`, \`name\`, \`description\`, \`icon\`) VALUES
             ('PIONEER', 'Pioneer', 'Joined the Macro community.', 'Rocket'),
-            ('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
-            ('COLLECTOR_2', 'Adept Collector', 'Have at least 10 games in your library.', 'Library'),
             ('SOCIALITE', 'Socialite', 'Created a local user profile for someone else.', 'Users'),
-            ('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download'),
             ('FIRST_CONTACT', 'First Contact', 'Add your first friend.', 'UserPlus'),
             ('NETWORKER', 'Networker', 'Build a network of 5 friends.', 'Users'),
+            ('NETWORKER_2', 'Community Pillar', 'Build a network of 10 friends.', 'Network'),
+            ('NETWORKER_3', 'Party Starter', 'Build a network of 25 friends.', 'PartyPopper'),
+            
+            ('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
+            ('COLLECTOR_2', 'Adept Collector', 'Have at least 10 games in your library.', 'Library'),
+            ('COLLECTOR_3', 'Collector III', 'Have at least 25 games in your library.', 'Gem'),
+            ('COLLECTOR_4', 'Collector IV', 'Have at least 50 games in your library.', 'Crown'),
+            ('LIBRARIAN', 'Librarian', 'Have at least 100 games in your library.', 'BookOpen'),
+
             ('APP_CONNOISSEUR', 'App Connoisseur', 'Launch 5 different applications.', 'LayoutGrid'),
+            ('APP_JUGGLER', 'App Juggler', 'Launch 10 different applications.', 'Layers'),
+            ('WEB_SURFER', 'Web Surfer', 'Launch 5 different web apps.', 'Globe'),
+            ('STREAMER_PAL', 'Streamer''s Pal', 'Launch Moonlight for the first time.', 'Moon'),
+            ('COMMANDER', 'Commander', 'Put the computer to sleep using Macro.', 'Bed'),
+
             ('PLAYTIME_1', 'Apprentice Gamer', 'Accumulate 1 hour of total playtime across all games.', 'Hourglass'),
             ('PLAYTIME_2', 'Dedicated Gamer', 'Accumulate 10 hours of total playtime across all games.', 'Clock'),
             ('PLAYTIME_3', 'Hardcore Gamer', 'Accumulate 50 hours of total playtime across all games.', 'Timer'),
+            ('PLAYTIME_4', 'Master Gamer', 'Accumulate 100 hours of total playtime.', 'Gamepad'),
+            ('PLAYTIME_5', 'Gaming Legend', 'Accumulate 250 hours of total playtime.', 'Star'),
+
             ('SESSION_1', 'Focused Player', 'Complete a single play session of at least 2 hours.', 'Gamepad2'),
-            ('SESSION_2', 'Marathon Runner', 'Complete a single play session of at least 4 hours.', 'Trophy');
+            ('SESSION_2', 'Marathon Runner', 'Complete a single play session of at least 4 hours.', 'Trophy'),
+
+            ('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download'),
+            ('WINDOW_SHOPPER', 'Window Shopper', 'View 25 different items in the App Store.', 'ShoppingCart'),
+            ('SUPER_SHOPPER', 'Super Shopper', 'View 50 different items in the App Store.', 'ShoppingBag'),
+            ('THE_CURATOR', 'The Curator', 'Install a game using the Direct Install feature.', 'PackageCheck'),
+            ('DOWNLOAD_MANAGER', 'Download Manager', 'Install 5 games using the Direct Install feature.', 'PackagePlus'),
+
+            ('TINKERER', 'Tinkerer', 'Save the settings for the first time.', 'Cog'),
+            ('SECURITY_CONSCIOUS', 'Security Conscious', 'Create a new profile that is protected by a PIN.', 'Shield'),
+            ('IDENTITY_CHANGE', 'New Look', 'Change your social profile avatar.', 'UserCog'),
+            ('PHOTOGRAPHER', 'Photographer', 'Set a custom banner image for a game.', 'Image'),
+            ('ART_DIRECTOR', 'Art Director', 'Set custom banner images for 5 different games.', 'Images'),
+            ('POSTER_PERFECT', 'Poster Perfect', 'Change the poster for 5 different games or apps.', 'GalleryThumbnails'),
+            ('TASTEMAKER', 'Tastemaker', 'Get a game recommendation from the AI.', 'Wand2');
         `);
 
         await connection.query(`
