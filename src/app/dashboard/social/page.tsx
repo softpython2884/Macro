@@ -112,13 +112,26 @@ const FindFriends = ({ currentUser, onFriendRequestSent, gridRef }: { currentUse
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [hasSearched, setHasSearched] = useState(false);
     const { toast } = useToast();
     const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+    useEffect(() => {
+        if (!isLoading && hasSearched) {
+            setTimeout(() => {
+                const firstResultButton = gridRef.current?.querySelector('button');
+                if (firstResultButton) {
+                    firstResultButton.focus();
+                }
+            }, 100);
+        }
+    }, [isLoading, hasSearched, gridRef]);
 
     const handleSearch = async (e?: React.FormEvent) => {
         if(e) e.preventDefault();
         if (!searchQuery) return;
         setIsLoading(true);
+        setHasSearched(true);
         const results = await searchUsers(searchQuery, currentUser.id);
         setSearchResults(results);
         setIsLoading(false);
@@ -183,7 +196,7 @@ const FindFriends = ({ currentUser, onFriendRequestSent, gridRef }: { currentUse
                     <ScrollArea className="h-40">
                         <div ref={gridRef} className="space-y-2 pr-4">
                             {isLoading && <Skeleton className="h-10 w-full" />}
-                            {!isLoading && searchResults.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">Enter a username to search.</p>}
+                            {!isLoading && searchResults.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">{hasSearched ? 'No users found.' : 'Enter a username to search.'}</p>}
                             {!isLoading && searchResults.map(user => (
                                  <div key={user.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
                                     <div className="flex items-center gap-3">
@@ -223,11 +236,16 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
     const [isLoading, setIsLoading] = useState(true);
     const { playSound } = useSound();
     
-    const pageRef = useRef<HTMLDivElement>(null);
     const friendListRef = useRef<HTMLDivElement>(null);
     const friendRequestsRef = useRef<HTMLDivElement>(null);
     const findFriendsRef = useRef<HTMLDivElement>(null);
-    useGridNavigation({ gridRef: pageRef });
+    const mainActionsRef = useRef<HTMLDivElement>(null);
+
+    useGridNavigation({ gridRef: mainActionsRef });
+    useGridNavigation({ gridRef: friendListRef });
+    useGridNavigation({ gridRef: friendRequestsRef });
+    useGridNavigation({ gridRef: findFriendsRef });
+
 
     const fetchProfileData = useCallback(async () => {
         setIsLoading(true);
@@ -242,9 +260,10 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
 
     useEffect(() => {
         if (!isLoading) {
-            // Focus the first interactive element in the hub when it's ready.
-            const firstElement = pageRef.current?.querySelector('button, a[href]') as HTMLElement;
-            firstElement?.focus();
+            const firstElement = mainActionsRef.current?.querySelector('button, a[href]') as HTMLElement;
+            if (firstElement && document.activeElement?.tagName === 'BODY') {
+                firstElement.focus();
+            }
         }
     }, [isLoading]);
     
@@ -269,7 +288,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
     }
 
     return (
-        <div ref={pageRef} className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
             <aside className="lg:col-span-1 space-y-6">
                 <Card className="text-center">
                     <CardHeader>
@@ -280,7 +299,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
                         <CardTitle>{user.username}</CardTitle>
                         <CardDescription>Your personal hub</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
+                    <CardContent ref={mainActionsRef} className="flex flex-col gap-2">
                         <Button asChild variant="secondary" className="w-full">
                            <Link href={`/dashboard/social/${user.id}`} onClick={() => playSound('select')}>
                                 <UserIcon className="mr-2 h-4 w-4" /> View My Profile
@@ -352,7 +371,7 @@ export default function SocialPage() {
     if (!socialUser) {
         pageRef.current?.querySelector('button[role="tab"]')?.focus()
     } else {
-        pageRef.current?.querySelector('button, a')?.focus()
+        // Focus is handled by the SocialHub component now
     }
   }, [setHints, socialUser]);
 
