@@ -14,6 +14,7 @@ type GameContextType = {
   isLoading: boolean;
   fetchGameMetadata: () => Promise<void>;
   allScannedGames: Game[];
+  updateGamePoster: (gameId: string, posterUrl: string) => void;
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -64,6 +65,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
+    const customPostersJSON = localStorage.getItem('macro-custom-posters');
+    const customPosters = customPostersJSON ? JSON.parse(customPostersJSON) : {};
+
     const enrichedGames = await Promise.all(
       initialGames.map(async (game) => {
         try {
@@ -75,8 +79,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
                 getHeroes(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw),
                 getLogos(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw)
             ]);
-
-            const posterUrl = grids.length > 0 ? grids[0].url : undefined;
+            
+            const customPosterUrl = customPosters[game.id];
+            const posterUrl = customPosterUrl || (grids.length > 0 ? grids[0].url : undefined);
             const heroUrls = heroes.length > 0 ? heroes.map(h => h.url).slice(0, 9) : undefined;
             const logoUrl = logos.length > 0 ? logos[0].url : undefined;
             
@@ -98,6 +103,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, [currentUser]);
 
+  const updateGamePoster = (gameId: string, posterUrl: string) => {
+    setGames(prevGames => 
+        prevGames.map(g => g.id === gameId ? { ...g, posterUrl } : g)
+    );
+  };
+
   useEffect(() => {
     const handleSettingsUpdate = () => {
       hasFetched.current = false;
@@ -111,7 +122,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [fetchGameMetadata]);
 
-  const value = { games, isLoading, fetchGameMetadata, allScannedGames };
+  const value = { games, isLoading, fetchGameMetadata, allScannedGames, updateGamePoster };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };

@@ -24,7 +24,6 @@ type ContentItem = {
     href: string;
     type: 'game' | 'nav';
     Icon?: React.ElementType;
-    'data-ai-hint'?: string;
 };
 
 const ContentCard = ({ item }: { item: ContentItem }) => {
@@ -57,7 +56,7 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
     );
 };
 
-const navItems: Omit<ContentItem, 'image' | 'data-ai-hint'>[] = [
+const navItems: Omit<ContentItem, 'image'>[] = [
     { id: 'nav-games', name: 'My Library', href: '/dashboard/games', type: 'nav', Icon: Gamepad2 },
     { id: 'nav-apps', name: 'Applications', href: '/dashboard/applications', type: 'nav', Icon: LayoutGrid },
     { id: 'nav-profiles', name: 'Profiles', href: '/dashboard/profiles', type: 'nav', Icon: UserIcon },
@@ -117,7 +116,7 @@ export default function DashboardPage() {
             if (document.activeElement !== carouselRef.current) return;
 
             if (e.key === 'Enter' || e.key === ' ') {
-                const isDialogFocused = document.querySelector('[role="dialog"]');
+                const isDialogFocused = !!document.querySelector('[role="dialog"]');
                 if (isDialogFocused) return;
                 
                 e.preventDefault();
@@ -139,7 +138,7 @@ export default function DashboardPage() {
                 'nav-games': '/game.png',
                 'nav-apps': '/apps.png',
                 'nav-profiles': '/user.png',
-                'nav-settings': '/setting.png',
+                'nav-settings': '/settings.png',
             };
 
             if (!games.length || !currentUser) {

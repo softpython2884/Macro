@@ -21,7 +21,7 @@ import { HeroImageSelector } from "@/components/hero-image-selector";
 export default function GameDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const { games } = useGames();
+    const { games, updateGamePoster } = useGames();
     const { currentUser } = useUser();
     const { setHints } = useHints();
     const { playSound } = useSound();
@@ -77,14 +77,24 @@ export default function GameDetailPage() {
 
     // Effect to handle the timer for cycling hero images
     useEffect(() => {
-        if (!effectiveHeroUrls || effectiveHeroUrls.length <= 1) return;
+        if (!game || !effectiveHeroUrls || effectiveHeroUrls.length <= 1) {
+            return;
+        }
+
+        // Check if a custom hero is pinned
+        const customHeroes = JSON.parse(localStorage.getItem('macro-custom-heroes') || '{}');
+        if (customHeroes[game.id]) {
+            // If a custom hero is set, we've already put it at the front of the array.
+            // We just don't start the timer.
+            return;
+        }
         
         const timer = setInterval(() => {
             setCurrentHeroIndex(prevIndex => (prevIndex + 1) % effectiveHeroUrls.length);
         }, 8000); // 8 seconds
         
         return () => clearInterval(timer);
-    }, [effectiveHeroUrls]);
+    }, [game, effectiveHeroUrls]);
 
 
     useEffect(() => {
