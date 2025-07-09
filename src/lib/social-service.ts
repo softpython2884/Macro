@@ -7,69 +7,99 @@ import type { PoolConnection } from 'mysql2/promise';
 // NOTE: For a real production app, passwords MUST be hashed using a library like bcrypt.
 // This implementation stores plaintext passwords for prototype simplicity.
 
-// Assumed DB schema:
-/*
-CREATE TABLE `social_users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `username` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`),
-  UNIQUE KEY `email` (`email`)
-);
+let isDbInitialized = false;
 
-CREATE TABLE `social_activities` (
-  `user_id` int(11) NOT NULL,
-  `activity_status` varchar(255) DEFAULT NULL,
-  `activity_details` varchar(255) DEFAULT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`user_id`),
-  CONSTRAINT `social_activities_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE
-);
+async function initializeDatabase() {
+    if (isDbInitialized) return;
 
-CREATE TABLE `achievements` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` text NOT NULL,
-  `icon` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`)
-);
+    let connection;
+    try {
+        console.log('[SOCIAL-DB] Initializing database schema...');
+        connection = await pool.getConnection();
 
-INSERT INTO `achievements` (`id`, `name`, `description`, `icon`) VALUES
-('PIONEER', 'Pioneer', 'Joined the Macro community.', 'Rocket'),
-('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
-('COLLECTOR_2', 'Adept Collector', 'Have at least 10 games in your library.', 'Library'),
-('SOCIALITE', 'Socialite', 'Created a local user profile for someone else.', 'Users'),
-('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download');
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS \`social_users\` (
+              \`id\` int(11) NOT NULL AUTO_INCREMENT,
+              \`username\` varchar(255) NOT NULL,
+              \`email\` varchar(255) NOT NULL,
+              \`password\` varchar(255) NOT NULL,
+              \`created_at\` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (\`id\`),
+              UNIQUE KEY \`username\` (\`username\`),
+              UNIQUE KEY \`email\` (\`email\`)
+            );
+        `);
 
-CREATE TABLE `user_achievements` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `achievement_id` varchar(255) NOT NULL,
-  `unlocked_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `user_achievement_unique` (`user_id`,`achievement_id`),
-  KEY `achievement_id` (`achievement_id`),
-  CONSTRAINT `user_achievements_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `user_achievements_ibfk_2` FOREIGN KEY (`achievement_id`) REFERENCES `achievements` (`id`) ON DELETE CASCADE
-);
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS \`social_activities\` (
+              \`user_id\` int(11) NOT NULL,
+              \`activity_status\` varchar(255) DEFAULT NULL,
+              \`activity_details\` varchar(255) DEFAULT NULL,
+              \`updated_at\` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (\`user_id\`),
+              CONSTRAINT \`social_activities_ibfk_1\` FOREIGN KEY (\`user_id\`) REFERENCES \`social_users\` (\`id\`) ON DELETE CASCADE
+            );
+        `);
+        
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS \`achievements\` (
+              \`id\` varchar(255) NOT NULL,
+              \`name\` varchar(255) NOT NULL,
+              \`description\` text NOT NULL,
+              \`icon\` varchar(255) NOT NULL,
+              PRIMARY KEY (\`id\`)
+            );
+        `);
 
-CREATE TABLE `friends` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `user_one_id` int NOT NULL,
-  `user_two_id` int NOT NULL,
-  `status` enum('pending','accepted','blocked') NOT NULL,
-  `action_user_id` int NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_friendship` (`user_one_id`,`user_two_id`),
-  KEY `user_two_id` (`user_two_id`),
-  CONSTRAINT `friends_ibfk_1` FOREIGN KEY (`user_one_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `friends_ibfk_2` FOREIGN KEY (`user_two_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE
-);
-*/
+        await connection.query(`
+            INSERT IGNORE INTO \`achievements\` (\`id\`, \`name\`, \`description\`, \`icon\`) VALUES
+            ('PIONEER', 'Pioneer', 'Joined the Macro community.', 'Rocket'),
+            ('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
+            ('COLLECTOR_2', 'Adept Collector', 'Have at least 10 games in your library.', 'Library'),
+            ('SOCIALITE', 'Socialite', 'Created a local user profile for someone else.', 'Users'),
+            ('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download');
+        `);
+
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS \`user_achievements\` (
+              \`id\` int(11) NOT NULL AUTO_INCREMENT,
+              \`user_id\` int(11) NOT NULL,
+              \`achievement_id\` varchar(255) NOT NULL,
+              \`unlocked_at\` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (\`id\`),
+              UNIQUE KEY \`user_achievement_unique\` (\`user_id\`,\`achievement_id\`),
+              KEY \`achievement_id\` (\`achievement_id\`),
+              CONSTRAINT \`user_achievements_ibfk_1\` FOREIGN KEY (\`user_id\`) REFERENCES \`social_users\` (\`id\`) ON DELETE CASCADE,
+              CONSTRAINT \`user_achievements_ibfk_2\` FOREIGN KEY (\`achievement_id\`) REFERENCES \`achievements\` (\`id\`) ON DELETE CASCADE
+            );
+        `);
+        
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS \`friends\` (
+              \`id\` int NOT NULL AUTO_INCREMENT,
+              \`user_one_id\` int NOT NULL,
+              \`user_two_id\` int NOT NULL,
+              \`status\` enum('pending','accepted','blocked') NOT NULL,
+              \`action_user_id\` int NOT NULL,
+              \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (\`id\`),
+              UNIQUE KEY \`unique_friendship\` (\`user_one_id\`,\`user_two_id\`),
+              KEY \`user_two_id\` (\`user_two_id\`),
+              CONSTRAINT \`friends_ibfk_1\` FOREIGN KEY (\`user_one_id\`) REFERENCES \`social_users\` (\`id\`) ON DELETE CASCADE,
+              CONSTRAINT \`friends_ibfk_2\` FOREIGN KEY (\`user_two_id\`) REFERENCES \`social_users\` (\`id\`) ON DELETE CASCADE
+            );
+        `);
+
+        console.log('[SOCIAL-DB] Database schema is ready.');
+        isDbInitialized = true;
+    } catch (error) {
+        console.error('[SOCIAL-DB] Failed to initialize database schema:', error);
+        // Don't set isDbInitialized to true, so it can be retried.
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 
 type AuthResult = {
   success: boolean;
@@ -112,6 +142,7 @@ async function grantAchievement(userId: number, achievementId: string, connectio
 
 
 export async function registerUser({ username, email, password }: Record<string, string>): Promise<AuthResult> {
+  await initializeDatabase();
   if (!username || !email || !password) {
     return { success: false, message: 'All fields are required.' };
   }
@@ -164,6 +195,7 @@ export async function registerUser({ username, email, password }: Record<string,
 }
 
 export async function loginUser({ email, password }: Record<string, string>): Promise<AuthResult> {
+    await initializeDatabase();
     if (!email || !password) {
         return { success: false, message: 'Email and password are required.' };
     }
@@ -205,6 +237,7 @@ export async function loginUser({ email, password }: Record<string, string>): Pr
 }
 
 export async function updateUserActivity(userId: number, status: string | null, details: string | null): Promise<{ success: boolean }> {
+  await initializeDatabase();
   if (!userId) {
     return { success: false };
   }
@@ -234,6 +267,7 @@ export type SocialActivity = {
 };
 
 export async function getSocialActivities(): Promise<SocialActivity[]> {
+  await initializeDatabase();
   let connection;
   try {
     connection = await pool.getConnection();
@@ -267,6 +301,7 @@ export type SocialProfile = {
 };
 
 export async function getSocialProfile(userId: number): Promise<SocialProfile | null> {
+    await initializeDatabase();
     if (!userId) return null;
     let connection;
     try {
@@ -315,6 +350,7 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
 
 
 export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number, storeHistoryCount?: number }): Promise<string[]> {
+    await initializeDatabase();
     if (!userId) return [];
 
     let connection;
@@ -379,6 +415,7 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
 // --- Friends System ---
 
 export async function sendFriendRequest(requesterId: number, addresseeId: number): Promise<{ success: boolean; message: string }> {
+    await initializeDatabase();
     if (requesterId === addresseeId) return { success: false, message: "You cannot add yourself as a friend." };
 
     const [userOneId, userTwoId] = [requesterId, addresseeId].sort((a, b) => a - b);
@@ -402,6 +439,7 @@ export async function sendFriendRequest(requesterId: number, addresseeId: number
 }
 
 export async function respondToFriendRequest(userId: number, requesterId: number, action: 'accept' | 'decline'): Promise<{ success: boolean; message: string }> {
+    await initializeDatabase();
     const [userOneId, userTwoId] = [userId, requesterId].sort((a, b) => a - b);
     let connection;
     try {
@@ -428,6 +466,7 @@ export async function respondToFriendRequest(userId: number, requesterId: number
 }
 
 export async function getFriendshipStatus(userOneId: number, userTwoId: number): Promise<FriendshipStatus> {
+    await initializeDatabase();
     if (userOneId === userTwoId) return 'self';
 
     const [id1, id2] = [userOneId, userTwoId].sort((a, b) => a - b);
@@ -456,6 +495,7 @@ export async function getFriendshipStatus(userOneId: number, userTwoId: number):
 }
 
 export async function getPendingRequests(userId: number): Promise<PendingRequest[]> {
+    await initializeDatabase();
     let connection;
     try {
         connection = await pool.getConnection();
@@ -477,6 +517,7 @@ export async function getPendingRequests(userId: number): Promise<PendingRequest
 }
 
 export async function getFriends(userId: number, existingConnection?: PoolConnection): Promise<SocialFriend[]> {
+    await initializeDatabase();
     const connection = existingConnection || await pool.getConnection();
     try {
         const [rows]: any = await connection.execute(`
