@@ -65,7 +65,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
-    const customPostersJSON = localStorage.getItem('macro-custom-posters');
+    const customPostersJSON = localStorage.getItem(`macro-custom-posters-${currentUser.id}`);
     const customPosters = customPostersJSON ? JSON.parse(customPostersJSON) : {};
 
     const enrichedGames = await Promise.all(

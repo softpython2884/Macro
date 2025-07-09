@@ -222,7 +222,7 @@ export default function ApplicationsPage() {
         const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
         const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
 
-        const customAppPostersJSON = localStorage.getItem('macro-custom-app-posters');
+        const customAppPostersJSON = localStorage.getItem(`macro-custom-app-posters-${currentUser.id}`);
         const customAppPosters = customAppPostersJSON ? JSON.parse(customAppPostersJSON) : {};
 
         const enriched = await Promise.all(
@@ -263,20 +263,20 @@ export default function ApplicationsPage() {
   };
 
   const handleSaveCustomPoster = (url: string) => {
-    if (!focusedApp) return;
-    const customAppPosters = JSON.parse(localStorage.getItem('macro-custom-app-posters') || '{}');
+    if (!focusedApp || !currentUser) return;
+    const customAppPosters = JSON.parse(localStorage.getItem(`macro-custom-app-posters-${currentUser.id}`) || '{}');
     customAppPosters[focusedApp.id] = url;
-    localStorage.setItem('macro-custom-app-posters', JSON.stringify(customAppPosters));
+    localStorage.setItem(`macro-custom-app-posters-${currentUser.id}`, JSON.stringify(customAppPosters));
     setEnrichedApps(prev => prev.map(app => app.id === focusedApp.id ? { ...app, posterUrl: url } : app));
     setIsPosterSelectorOpen(false);
     playSound('select');
   };
 
   const handleRevertCustomPoster = () => {
-      if (!focusedApp) return;
-      const customAppPosters = JSON.parse(localStorage.getItem('macro-custom-app-posters') || '{}');
+      if (!focusedApp || !currentUser) return;
+      const customAppPosters = JSON.parse(localStorage.getItem(`macro-custom-app-posters-${currentUser.id}`) || '{}');
       delete customAppPosters[focusedApp.id];
-      localStorage.setItem('macro-custom-app-posters', JSON.stringify(customAppPosters));
+      localStorage.setItem(`macro-custom-app-posters-${currentUser.id}`, JSON.stringify(customAppPosters));
       setIsPosterSelectorOpen(false);
       playSound('select');
       triggerLibraryRefresh();

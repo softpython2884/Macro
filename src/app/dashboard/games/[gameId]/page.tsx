@@ -112,10 +112,10 @@ export default function GameDetailPage() {
     useGridNavigation({ gridRef: executableListRef });
     
     useEffect(() => {
-        if (!game) return;
+        if (!game || !currentUser) return;
         
         try {
-            const customHeroesJSON = localStorage.getItem('macro-custom-heroes');
+            const customHeroesJSON = localStorage.getItem(`macro-custom-heroes-${currentUser.id}`);
             const customHeroes = customHeroesJSON ? JSON.parse(customHeroesJSON) : {};
             const customHero = customHeroes[game.id];
             
@@ -135,7 +135,7 @@ export default function GameDetailPage() {
             setIsCustomHeroPinned(false);
         }
 
-    }, [game]);
+    }, [game, currentUser]);
 
     useEffect(() => {
         if (game) {
@@ -215,10 +215,10 @@ export default function GameDetailPage() {
     };
 
     const handleSaveCustomHero = (url: string) => {
-        if (!game) return;
-        const customHeroes = JSON.parse(localStorage.getItem('macro-custom-heroes') || '{}');
+        if (!game || !currentUser) return;
+        const customHeroes = JSON.parse(localStorage.getItem(`macro-custom-heroes-${currentUser.id}`) || '{}');
         customHeroes[game.id] = url;
-        localStorage.setItem('macro-custom-heroes', JSON.stringify(customHeroes));
+        localStorage.setItem(`macro-custom-heroes-${currentUser.id}`, JSON.stringify(customHeroes));
         setIsCustomHeroPinned(true);
         setEffectiveHeroUrls(prev => [url, ...prev.filter(u => u !== url)]);
         setCurrentHeroIndex(0);
@@ -227,10 +227,10 @@ export default function GameDetailPage() {
     };
 
     const handleRevertCustomHero = () => {
-        if (!game) return;
-        const customHeroes = JSON.parse(localStorage.getItem('macro-custom-heroes') || '{}');
+        if (!game || !currentUser) return;
+        const customHeroes = JSON.parse(localStorage.getItem(`macro-custom-heroes-${currentUser.id}`) || '{}');
         delete customHeroes[game.id];
-        localStorage.setItem('macro-custom-heroes', JSON.stringify(customHeroes));
+        localStorage.setItem(`macro-custom-heroes-${currentUser.id}`, JSON.stringify(customHeroes));
         setIsCustomHeroPinned(false);
         setEffectiveHeroUrls(game.heroUrls || []); // Revert to original list
         setIsHeroSelectorOpen(false);
@@ -238,10 +238,10 @@ export default function GameDetailPage() {
     };
 
     const handleSaveCustomPoster = (url: string) => {
-        if (!game) return;
-        const customPosters = JSON.parse(localStorage.getItem('macro-custom-posters') || '{}');
+        if (!game || !currentUser) return;
+        const customPosters = JSON.parse(localStorage.getItem(`macro-custom-posters-${currentUser.id}`) || '{}');
         customPosters[game.id] = url;
-        localStorage.setItem('macro-custom-posters', JSON.stringify(customPosters));
+        localStorage.setItem(`macro-custom-posters-${currentUser.id}`, JSON.stringify(customPosters));
         updateGamePoster(game.id, url); // Update context
         setIsPosterSelectorOpen(false);
         playSound('select');
@@ -249,10 +249,10 @@ export default function GameDetailPage() {
     };
 
     const handleRevertCustomPoster = () => {
-        if (!game) return;
-        const customPosters = JSON.parse(localStorage.getItem('macro-custom-posters') || '{}');
+        if (!game || !currentUser) return;
+        const customPosters = JSON.parse(localStorage.getItem(`macro-custom-posters-${currentUser.id}`) || '{}');
         delete customPosters[game.id];
-        localStorage.setItem('macro-custom-posters', JSON.stringify(customPosters));
+        localStorage.setItem(`macro-custom-posters-${currentUser.id}`, JSON.stringify(customPosters));
         setIsPosterSelectorOpen(false);
         playSound('select');
         triggerLibraryRefresh(); // Let the context re-fetch the original poster
