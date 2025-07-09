@@ -2,8 +2,8 @@
 'use client';
 
 import { Card } from "@/components/ui/card";
-import { Gamepad2, Search } from 'lucide-react';
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { Gamepad2, Search, Wand2, Loader2 } from 'lucide-react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { useHints } from '@/context/HintContext';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
 import { useBackNavigation } from '@/hooks/use-back-navigation';
@@ -17,6 +17,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBackground } from "@/context/BackgroundContext";
+import { recommendGames } from "@/ai/flows/recommend-games-flow";
+import { Button } from "@/components/ui/button";
 
 const GameCard = ({ game }: { game: Game }) => {
   const { setBackgroundImage } = useBackground();
@@ -63,42 +65,14 @@ export default function GamesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   
+  const [isRecsOpen, setIsRecsOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [isRecsLoading, setIsRecsLoading] = useState(false);
+
   useEffect(() => {
     fetchGameMetadata();
   }, [fetchGameMetadata]);
-
-  useEffect(() => {
-    setHints([
-      { key: '↕↔', action: 'Navigate' },
-      { key: 'A', action: 'Launch' },
-      { key: 'B', action: 'Back' },
-      { key: 'Y', action: 'Search' },
-      { key: 'Q', action: 'Prev Tab' },
-      { key: 'E', action: 'Next Tab' },
-    ]);
-
-    if (!isLoading) {
-      const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
-      firstElement?.focus();
-    }
-
-    return () => setHints([]);
-  }, [setHints, isLoading]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-        const isAnyDialogOpen = !!document.querySelector('[role="dialog"]');
-        if (e.key.toLowerCase() === 'y' && !isAnyDialogOpen) {
-            e.preventDefault();
-            setIsKeyboardOpen(true);
-        }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
+  
   const permittedGames = React.useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.name === 'Admin') {
@@ -106,6 +80,63 @@ export default function GamesPage() {
     }
     return games.filter(game => currentUser.permissions.games.includes(game.id));
   }, [currentUser, games]);
+
+  const handleGetRecommendations = useCallback(async () => {
+    if (permittedGames.length === 0) return;
+    setIsRecsOpen(true);
+    setIsRecsLoading(true);
+    setRecommendations([]);
+    const gameNames = permittedGames.map(g => g.name);
+    try {
+        const result = await recommendGames({ playedGames: gameNames });
+        setRecommendations(result.recommendations);
+    } catch (error) {
+        console.error("Failed to get recommendations:", error);
+    } finally {
+        setIsRecsLoading(false);
+    }
+  }, [permittedGames]);
+
+  useEffect(() => {
+    setHints([
+      { key: '↕↔', action: 'Navigate' },
+      { key: 'A', action: 'Launch' },
+      { key: 'B', action: 'Back' },
+      { key: 'Y', action: 'Search' },
+      { key: 'X', action: 'Suggestions' },
+      { key: 'Q', action: 'Prev Tab' },
+      { key: 'E', action: 'Next Tab' },
+    ]);
+
+    if (!isLoading) {
+      const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+      if (gridRef.current && !gridRef.current.contains(document.activeElement)) {
+        firstElement?.focus();
+      }
+    }
+
+  }, [setHints, isLoading]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        const isAnyDialogOpen = !!document.querySelector('[role="dialog"]');
+        if (isAnyDialogOpen) return;
+
+        const key = e.key.toLowerCase();
+        if (key === 'y') {
+            e.preventDefault();
+            setIsKeyboardOpen(true);
+        }
+        if (key === 'x') {
+            e.preventDefault();
+            handleGetRecommendations();
+        }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleGetRecommendations]);
 
   const filteredGames = useMemo(() => {
     if (!searchQuery) return permittedGames;
@@ -116,8 +147,6 @@ export default function GamesPage() {
 
   const handleKeyboardClose = () => {
     setIsKeyboardOpen(false);
-    // After the keyboard closes and the search query is set,
-    // the grid will re-render. We need to focus the first element after that.
     setTimeout(() => {
         const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
         if (firstElement) {
@@ -135,16 +164,22 @@ export default function GamesPage() {
       <div>
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-4xl font-bold tracking-tight text-glow">My Game Library</h2>
-            <div className="relative w-1/3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                placeholder="Search library..."
-                className="pl-10 focus-visible:ring-primary focus-visible:ring-2"
-                value={searchQuery}
-                onFocus={() => setIsKeyboardOpen(true)}
-                onClick={() => setIsKeyboardOpen(true)}
-                readOnly
-                />
+            <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={handleGetRecommendations}>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Suggestions IA
+                </Button>
+                <div className="relative w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                    placeholder="Search library..."
+                    className="pl-10 focus-visible:ring-primary focus-visible:ring-2"
+                    value={searchQuery}
+                    onFocus={() => setIsKeyboardOpen(true)}
+                    onClick={() => setIsKeyboardOpen(true)}
+                    readOnly
+                    />
+                </div>
             </div>
         </div>
         <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -169,6 +204,26 @@ export default function GamesPage() {
                 onEnter={handleKeyboardClose}
                 onClose={() => setIsKeyboardOpen(false)}
             />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRecsOpen} onOpenChange={setIsRecsOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Suggestions de jeux</DialogTitle>
+                <DialogDescription>
+                    Basé sur votre bibliothèque, voici quelques jeux qui pourraient vous plaire.
+                </DialogDescription>
+            </DialogHeader>
+            {isRecsLoading ? (
+                <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <ul className="list-disc list-inside space-y-2 py-4">
+                    {recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
+                </ul>
+            )}
         </DialogContent>
       </Dialog>
     </div>
