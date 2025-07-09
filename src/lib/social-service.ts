@@ -42,8 +42,8 @@ INSERT INTO `achievements` (`id`, `name`, `description`, `icon`) VALUES
 ('PIONEER', 'Pioneer', 'Joined the Macro community.', 'Rocket'),
 ('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
 ('COLLECTOR_2', 'Adept Collector', 'Have at least 10 games in your library.', 'Library'),
-('SOCIALITE', 'Socialite', 'Created a local user profile for someone else.', 'Users');
-
+('SOCIALITE', 'Socialite', 'Created a local user profile for someone else.', 'Users'),
+('APP_STORE_EXPLORER', 'App Store Explorer', 'Viewed 10 different items in the App Store.', 'Download');
 
 CREATE TABLE `user_achievements` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -55,6 +55,20 @@ CREATE TABLE `user_achievements` (
   KEY `achievement_id` (`achievement_id`),
   CONSTRAINT `user_achievements_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `user_achievements_ibfk_2` FOREIGN KEY (`achievement_id`) REFERENCES `achievements` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE `friends` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_one_id` int NOT NULL,
+  `user_two_id` int NOT NULL,
+  `status` enum('pending','accepted','blocked') NOT NULL,
+  `action_user_id` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_friendship` (`user_one_id`,`user_two_id`),
+  KEY `user_two_id` (`user_two_id`),
+  CONSTRAINT `friends_ibfk_1` FOREIGN KEY (`user_one_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `friends_ibfk_2` FOREIGN KEY (`user_two_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE
 );
 */
 
@@ -276,7 +290,7 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
 }
 
 
-export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number }): Promise<string[]> {
+export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number, storeHistoryCount?: number }): Promise<string[]> {
     if (!userId) return [];
 
     let connection;
@@ -315,6 +329,15 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
                 }
             }
         }
+
+        // App Store Explorer Achievement
+        if (criteria.storeHistoryCount !== undefined) {
+            if (criteria.storeHistoryCount >= 10 && !existingIds.has('APP_STORE_EXPLORER')) {
+                 if (await grantAchievement(userId, 'APP_STORE_EXPLORER', connection)) {
+                    newlyAwarded.push('App Store Explorer');
+                }
+            }
+        }
         
         await connection.commit();
         return newlyAwarded;
@@ -327,4 +350,3 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
         if (connection) connection.release();
     }
 }
-    

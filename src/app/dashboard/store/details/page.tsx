@@ -12,7 +12,7 @@ import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { useSound } from '@/context/SoundContext';
 import { launchWebApp } from '@/lib/webapp-launcher';
 import { getSkidrowGameDetails } from '@/lib/skidrow-scraper';
-import type { SkidrowGameDetails, SkidrowSearchResult } from '@/lib/skidrow-scraper';
+import type { SkidrowSearchResult } from '@/lib/skidrow-scraper';
 import { getHeroes, searchGame } from '@/lib/steamgrid';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBackground } from '@/context/BackgroundContext';
@@ -20,6 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import { downloadAndInstallGame } from '@/lib/installer';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { checkAndAwardAchievements } from '@/lib/social-service';
+import { useGames } from '@/context/GameContext';
 
 export default function StoreDetailsPage() {
     const searchParams = useSearchParams();
@@ -38,6 +40,7 @@ export default function StoreDetailsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isInstalling, setIsInstalling] = useState(false);
     const { currentUser } = useUser();
+    const { games } = useGames();
 
     const linksRef = useRef<HTMLDivElement>(null);
     const scrollViewportRef = useRef<HTMLDivElement>(null);
@@ -131,6 +134,7 @@ export default function StoreDetailsPage() {
 
             if (url && title) {
                 try {
+                    const socialUserJson = localStorage.getItem('macro-social-user');
                     const historyString = localStorage.getItem('macro-store-history');
                     let history: SkidrowSearchResult[] = historyString ? JSON.parse(historyString) : [];
                     
@@ -140,13 +144,30 @@ export default function StoreDetailsPage() {
                         posterUrl: posterUrl,
                     };
 
-                    history = history.filter(item => item.url !== url);
-                    history.unshift(newItem);
-                    history = history.slice(0, 6); // Limit history
+                    const isNewItem = !history.some(item => item.url === url);
+                    if (isNewItem) {
+                        history.unshift(newItem);
+                        history = history.slice(0, 50); // Store up to 50 for achievement tracking
+                        localStorage.setItem('macro-store-history', JSON.stringify(history));
 
-                    localStorage.setItem('macro-store-history', JSON.stringify(history));
+                        if (socialUserJson) {
+                            const socialUserId = JSON.parse(socialUserJson).id;
+                            const newAchievements = await checkAndAwardAchievements(socialUserId, {
+                                storeHistoryCount: history.length,
+                                gameCount: games.length, // Pass current game count
+                            });
+
+                             if (newAchievements.length > 0) {
+                                toast({
+                                    title: "Achievement Unlocked!",
+                                    description: `You've earned: ${newAchievements.join(', ')}`,
+                                    action: <Award className="h-6 w-6 text-yellow-400" />,
+                                });
+                            }
+                        }
+                    }
                 } catch (e) {
-                    console.error("Failed to save to store history:", e);
+                    console.error("Failed to save to store history or check achievements:", e);
                 }
             }
 
@@ -156,7 +177,7 @@ export default function StoreDetailsPage() {
         
         return () => setBackgroundImage(null);
 
-    }, [url, title, currentUser, setBackgroundImage, posterUrl]);
+    }, [url, title, currentUser, setBackgroundImage, posterUrl, games, toast]);
 
     const handleDirectInstall = async (apiUrl: string, gameTitle: string) => {
         if (isInstalling) return;

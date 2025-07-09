@@ -8,13 +8,15 @@ import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, UserPlus, type LucideIcon, Download } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const iconMap: Record<string, LucideIcon> = {
     Rocket,
     Album,
     Library,
     Users,
+    Download,
     Award, // Fallback
 };
 
@@ -90,9 +92,12 @@ export default function SocialProfilePage() {
     
     return (
         <div className="animate-fade-in">
-            <div className="mb-4">
+            <div className="mb-4 flex items-center justify-between">
                  <Button variant="outline" size="sm" onClick={() => router.back()} >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Social Hub
+                </Button>
+                 <Button variant="outline" size="sm">
+                    <UserPlus className="mr-2 h-4 w-4" /> Add Friend
                 </Button>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -112,40 +117,57 @@ export default function SocialProfilePage() {
                     </Card>
                 </div>
                  <div className="lg:col-span-2">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Award className="h-6 w-6" /> Achievements ({profile.achievements.length})
-                            </CardTitle>
-                            <CardDescription>A collection of this user's accomplishments across Macro.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {profile.achievements.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {profile.achievements.map((ach) => (
-                                        <div key={ach.id} className="flex items-start gap-4 p-4 rounded-lg bg-background/50">
-                                            <AchievementIcon name={ach.icon} className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
-                                            <div>
-                                                <p className="font-bold">{ach.name}</p>
-                                                <p className="text-sm text-muted-foreground">{ach.description}</p>
-                                                <p className="text-xs text-muted-foreground/70 mt-1">
-                                                    Unlocked on {new Date(ach.unlocked_at).toLocaleDateString()}
-                                                </p>
-                                            </div>
+                     <Tabs defaultValue="achievements" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="achievements">Achievements ({profile.achievements.length})</TabsTrigger>
+                            <TabsTrigger value="friends" disabled>Friends (Coming Soon)</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="achievements">
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Award className="h-6 w-6" /> Accomplishments
+                                    </CardTitle>
+                                    <CardDescription>A collection of this user's unlocked achievements.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {profile.achievements.length > 0 ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {profile.achievements.map((ach) => (
+                                                <div key={ach.id} className="flex items-start gap-4 p-4 rounded-lg bg-background/50">
+                                                    <AchievementIcon name={ach.icon} className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="font-bold">{ach.name}</p>
+                                                        <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                                        <p className="text-xs text-muted-foreground/70 mt-1">
+                                                            Unlocked on {new Date(ach.unlocked_at).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center h-32 text-muted-foreground">
-                                    <p>No achievements unlocked yet.</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-32 text-muted-foreground">
+                                            <p>No achievements unlocked yet.</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="friends">
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle>Friends</CardTitle>
+                                    <CardDescription>This user's network on Macro.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
+                                    <p>Friends list coming soon!</p>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </div>
         </div>
     );
 }
-
-    
