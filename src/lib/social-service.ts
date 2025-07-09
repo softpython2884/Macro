@@ -30,6 +30,20 @@ async function initializeDatabase() {
               UNIQUE KEY \`email\` (\`email\`)
             );
         `);
+        
+        // --- Migration: Add avatar_url if it doesn't exist ---
+        try {
+            await connection.query('ALTER TABLE `social_users` ADD COLUMN `avatar_url` TEXT DEFAULT NULL');
+            console.log('[SOCIAL-DB] Migration: Added `avatar_url` column to `social_users`.');
+        } catch (error: any) {
+            // ER_DUP_FIELDNAME is the error code for when the column already exists.
+            if (error.code !== 'ER_DUP_FIELDNAME') {
+                throw error; // Re-throw unexpected errors
+            }
+            // If the column already exists, we can safely ignore the error.
+        }
+        // --- End Migration ---
+
 
         await connection.query(`
             CREATE TABLE IF NOT EXISTS \`social_activities\` (
