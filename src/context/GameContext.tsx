@@ -43,11 +43,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
-            const gameDirs = settings.games?.map((g: { value: string }) => g.value).filter(Boolean) ?? [];
+            const gameDirsRaw = settings.games?.map((g: { value: string }) => g.value).filter(Boolean) ?? [];
             
             if (settings.localGamesPath) {
-                gameDirs.push(settings.localGamesPath);
+                gameDirsRaw.push(settings.localGamesPath);
             }
+
+            // Deduplicate the array to prevent issues from corrupted localStorage data
+            const gameDirs = [...new Set(gameDirsRaw)];
 
             if (gameDirs.length > 0) {
                 initialGames = await scanForGames(gameDirs);
