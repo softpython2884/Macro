@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/context/ThemeContext';
 
 // --- AppPosterSelector Component ---
 const AppPosterSelector = ({ app, onSave, onRevert, onClose }: { app: AppInfo, onSave: (url: string) => void, onRevert: () => void, onClose: () => void }) => {
@@ -101,6 +102,7 @@ const AppCard = ({ app, onFocus }: { app: AppInfo; onFocus: () => void }) => {
     const router = useRouter();
     const { toast } = useToast();
     const { setBackgroundImage } = useBackground();
+    const { setDynamicTheme, resetDynamicTheme } = useTheme();
     const { id, name, icon: Icon, href, description, onClick, posterUrl } = app;
 
     const handleLaunch = async () => {
@@ -174,9 +176,13 @@ const AppCard = ({ app, onFocus }: { app: AppInfo; onFocus: () => void }) => {
         className:"block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]",
         onFocus: () => {
             setBackgroundImage(posterUrl || null);
+            setDynamicTheme(posterUrl || null);
             onFocus();
         },
-        onBlur: () => setBackgroundImage(null),
+        onBlur: () => {
+            setBackgroundImage(null);
+            resetDynamicTheme();
+        },
     };
     
     if (href && !href.startsWith('http') && !href.startsWith('steam') && !href.startsWith('spotify')) {

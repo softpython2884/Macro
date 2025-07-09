@@ -27,36 +27,33 @@
   }
 
   .dark {
-    --background: 224 71% 4%; /* Deep Blue-Black */
-    --foreground: 210 40% 98%; /* Almost White */
+    --background: 180 25% 25%; /* #2F4F4F - Dark Slate Gray */
+    --foreground: 180 5% 95%; /* Lighter shade for text */
     
-    --card: 216 34% 17%; /* Dark Slate Blue */
-    --card-foreground: 210 40% 98%;
+    --card: 248 39% 28%; /* Darker purple for cards */
+    --card-foreground: 180 5% 95%;
     
-    --popover: 224 71% 4%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 248 39% 20%; /* Even darker purple */
+    --popover-foreground: 180 5% 95%;
     
-    --primary-default: 217 91% 60%; /* Bright Blue */
-    --primary: var(--primary-default);
-    --primary-foreground: 210 40% 98%;
+    --primary: 248 39% 58%; /* #483D8B - Deep Purple */
+    --primary-foreground: 180 100% 96%; /* Brighter cyan for contrast */
     
-    --secondary: 216 34% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 248 39% 38%; /* Lighter purple for secondary elements */
+    --secondary-foreground: 180 5% 95%;
     
-    --muted: 216 34% 17%;
-    --muted-foreground: 215 28% 63%;
+    --muted: 248 39% 38%;
+    --muted-foreground: 180 10% 70%; /* Muted cyan/gray */
     
-    --accent-default: 217 91% 60%;
-    --accent: var(--accent-default);
-    --accent-foreground: 210 40% 98%;
+    --accent: 180 100% 94%; /* #E0FFFF - Light Cyan */
+    --accent-foreground: 248 39% 15%; /* Dark purple text on cyan buttons */
     
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 180 5% 95%;
     
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring-default: 217 91% 60%;
-    --ring: var(--ring-default);
+    --border: 248 39% 40%;
+    --input: 248 39% 38%;
+    --ring: 180 100% 94%; /* Light Cyan for rings */
     --radius: 0.75rem;
   }
 
@@ -77,7 +74,7 @@
     background-image: radial-gradient(ellipse 80% 80% at 50% -20%, hsl(var(--primary) / 0.3), transparent);
     background-repeat: no-repeat;
     cursor: none;
-    transition: background-image 0.5s ease-in-out;
+    transition: background-image 0.5s ease-in-out, background-color 0.5s ease-in-out;
   }
 }
 

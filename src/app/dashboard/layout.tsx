@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BackgroundProvider, useBackground } from "@/context/BackgroundContext";
 import Image from "next/image";
 import { updateUserActivity } from "@/lib/social-service";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -186,7 +187,9 @@ export default function DashboardLayout({
     <HintProvider>
       <GameProvider>
         <BackgroundProvider>
-          <LayoutWithBackground>{children}</LayoutWithBackground>
+          <ThemeProvider>
+            <LayoutWithBackground>{children}</LayoutWithBackground>
+          </ThemeProvider>
         </BackgroundProvider>
       </GameProvider>
     </HintProvider>

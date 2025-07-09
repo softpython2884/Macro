@@ -21,16 +21,24 @@ import { recommendGames } from "@/ai/flows/recommend-games-flow";
 import { Button } from "@/components/ui/button";
 import { checkAndAwardAchievements } from "@/lib/social-service";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/context/ThemeContext";
 
 const GameCard = ({ game }: { game: Game }) => {
   const { setBackgroundImage } = useBackground();
+  const { setDynamicTheme, resetDynamicTheme } = useTheme();
   
   return (
     <Link 
       href={`/dashboard/games/${game.id}`} 
       className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
-      onFocus={() => setBackgroundImage(game.posterUrl || null)}
-      onBlur={() => setBackgroundImage(null)}
+      onFocus={() => {
+        setBackgroundImage(game.posterUrl || null);
+        setDynamicTheme(game.posterUrl || null);
+      }}
+      onBlur={() => {
+        setBackgroundImage(null);
+        resetDynamicTheme();
+      }}
     >
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
         {game.posterUrl ? (

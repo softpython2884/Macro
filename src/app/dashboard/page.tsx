@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useBackground } from "@/context/BackgroundContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTheme } from "@/context/ThemeContext";
 
 type ContentItem = {
     id: string;
@@ -70,6 +71,7 @@ export default function DashboardPage() {
     const carouselRef = useRef<HTMLDivElement>(null);
     const isInitialMount = useRef(true);
     const { setBackgroundImage } = useBackground();
+    const { setDynamicTheme, resetDynamicTheme } = useTheme();
 
     const [content, setContent] = useState<ContentItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -192,8 +194,15 @@ export default function DashboardPage() {
         if (content.length > 0) {
             const currentItem = content[current];
             setBackgroundImage(currentItem?.image || null);
+            setDynamicTheme(currentItem?.image || null);
         }
-    }, [current, content, setBackgroundImage]);
+    }, [current, content, setBackgroundImage, setDynamicTheme]);
+
+    useEffect(() => {
+        return () => {
+            resetDynamicTheme();
+        }
+    }, [resetDynamicTheme]);
     
     if (isLoading) {
         return (

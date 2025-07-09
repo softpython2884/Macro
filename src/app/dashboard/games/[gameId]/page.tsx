@@ -21,6 +21,7 @@ import { getGrids, type SteamGridDbImage } from "@/lib/steamgrid";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { useTheme } from "@/context/ThemeContext";
 
 // --- PosterImageSelector Component Definition ---
 // Defined inside this file to keep it scoped, as it's only used here.
@@ -96,6 +97,7 @@ export default function GameDetailPage() {
     const { playSound } = useSound();
     const executableListRef = useRef<HTMLDivElement>(null);
     const { setBackgroundImage } = useBackground();
+    const { setDynamicTheme, resetDynamicTheme } = useTheme();
     
     const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
     const [isHeroSelectorOpen, setIsHeroSelectorOpen] = useState(false);
@@ -141,9 +143,13 @@ export default function GameDetailPage() {
         if (game) {
             const newImage = effectiveHeroUrls?.[currentHeroIndex] || game.posterUrl;
             setBackgroundImage(newImage || null);
+            setDynamicTheme(newImage || null);
         }
-        return () => setBackgroundImage(null);
-    }, [game, currentHeroIndex, effectiveHeroUrls, setBackgroundImage]);
+        return () => {
+            setBackgroundImage(null);
+            resetDynamicTheme();
+        }
+    }, [game, currentHeroIndex, effectiveHeroUrls, setBackgroundImage, setDynamicTheme, resetDynamicTheme]);
 
     useEffect(() => {
         if (!game || !effectiveHeroUrls || effectiveHeroUrls.length <= 1 || isCustomHeroPinned) {
