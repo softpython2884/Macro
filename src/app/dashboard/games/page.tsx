@@ -75,7 +75,7 @@ export default function GamesPage() {
   
   const permittedGames = React.useMemo(() => {
     if (!currentUser) return [];
-    if (currentUser.name === 'Admin') {
+    if (currentUser.permissions.allGames) {
       return games;
     }
     return games.filter(game => currentUser.permissions.games.includes(game.id));

@@ -35,6 +35,7 @@ export type User = {
   permissions: {
     apps: string[];
     games: string[];
+    allGames: boolean;
     nsfwEnabled: boolean;
     prioritizeNsfw: boolean;
   };
@@ -71,6 +72,7 @@ export const INITIAL_USERS: User[] = [
     permissions: {
       apps: ALL_APPS.map(app => app.id),
       games: [],
+      allGames: true,
       nsfwEnabled: true,
       prioritizeNsfw: false,
     },
@@ -82,6 +84,7 @@ export const INITIAL_USERS: User[] = [
     permissions: {
       apps: ['netflix', 'youtube', 'spotify'],
       games: [],
+      allGames: false,
       nsfwEnabled: false,
       prioritizeNsfw: false,
     },

@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { scanAndInstallGames } from "@/lib/installer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
+import { useGames } from "@/context/GameContext";
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -46,6 +47,7 @@ type SettingsFormValues = z.infer<typeof formSchema>;
 export default function SettingsPage() {
   const { toast } = useToast();
   const { setHints } = useHints();
+  const { refreshGames } = useGames();
   const [isScanning, setIsScanning] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
   
@@ -113,7 +115,7 @@ export default function SettingsPage() {
         title: "Settings saved!",
         description: "Your configurations have been updated.",
       });
-      window.dispatchEvent(new Event('settings-updated'));
+      refreshGames();
     } catch (error) {
        toast({
         title: "Error saving settings",
@@ -148,7 +150,7 @@ export default function SettingsPage() {
         });
 
         if (result.success && result.gamesInstalled > 0) {
-            window.dispatchEvent(new Event('settings-updated'));
+            refreshGames();
         }
     } catch (error) {
          toast({
@@ -166,7 +168,7 @@ export default function SettingsPage() {
       title: "Library Scan Initiated",
       description: "Your game directories are being scanned in the background.",
     });
-    window.dispatchEvent(new Event('settings-updated'));
+    refreshGames();
   };
 
   return (

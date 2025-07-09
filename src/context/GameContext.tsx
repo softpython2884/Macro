@@ -13,6 +13,7 @@ type GameContextType = {
   games: Game[];
   isLoading: boolean;
   fetchGameMetadata: () => Promise<void>;
+  refreshGames: () => void;
   allScannedGames: Game[];
   updateGamePoster: (gameId: string, posterUrl: string) => void;
 };
@@ -108,21 +109,24 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         prevGames.map(g => g.id === gameId ? { ...g, posterUrl } : g)
     );
   };
-
-  useEffect(() => {
-    const handleSettingsUpdate = () => {
-      hasFetched.current = false;
-      setGames([]);
-      setAllScannedGames([]);
-      setTimeout(() => fetchGameMetadata(), 0);
-    };
-    window.addEventListener('settings-updated', handleSettingsUpdate);
-    return () => {
-      window.removeEventListener('settings-updated', handleSettingsUpdate);
-    };
+  
+  const refreshGames = useCallback(() => {
+    hasFetched.current = false;
+    setGames([]);
+    setAllScannedGames([]);
+    // Use a small timeout to let the state update before fetching
+    setTimeout(() => fetchGameMetadata(), 0);
   }, [fetchGameMetadata]);
 
-  const value = { games, isLoading, fetchGameMetadata, allScannedGames, updateGamePoster };
+
+  useEffect(() => {
+    window.addEventListener('settings-updated', refreshGames);
+    return () => {
+      window.removeEventListener('settings-updated', refreshGames);
+    };
+  }, [refreshGames]);
+
+  const value = { games, isLoading, fetchGameMetadata, allScannedGames, updateGamePoster, refreshGames };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };

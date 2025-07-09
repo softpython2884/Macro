@@ -25,6 +25,7 @@ const formSchema = z.object({
   permissions: z.object({
     apps: z.array(z.string()),
     games: z.array(z.string()),
+    allGames: z.boolean().default(false),
     nsfwEnabled: z.boolean().default(true),
     prioritizeNsfw: z.boolean().default(false),
   }),
@@ -54,11 +55,14 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
           permissions: {
             apps: ALL_APPS.map((app) => app.id),
             games: [], // Populated by useEffect below
+            allGames: false,
             nsfwEnabled: true,
             prioritizeNsfw: false,
           },
         },
   });
+  
+  const allGamesPermission = form.watch('permissions.allGames');
 
   React.useEffect(() => {
     if (!userToEdit && allScannedGames.length > 0) {
@@ -197,25 +201,41 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
                       </FormItem>
                   )} />
 
-                  <FormField control={form.control} name="permissions.games" render={() => (
+                  <div className="space-y-2">
+                    <FormField
+                      control={form.control}
+                      name="permissions.allGames"
+                      render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50 mb-2">
+                              <div className="space-y-0.5">
+                                  <FormLabel>Grant Access to All Games</FormLabel>
+                              </div>
+                              <FormControl>
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                          </FormItem>
+                      )}
+                    />
+                    <FormField control={form.control} name="permissions.games" render={() => (
                       <FormItem>
                           <div className="mb-4">
                               <FormLabel>Game Permissions</FormLabel>
                               <FormDescription>Select the games this profile can access.</FormDescription>
                           </div>
-                          <ScrollArea className="h-40 rounded-md border p-4">
+                           <ScrollArea className="h-40 rounded-md border p-4">
                           {allScannedGames.length > 0 ? (
                           allScannedGames.map((game) => (
                               <FormField key={game.id} control={form.control} name="permissions.games" render={({ field }) => (
                                   <FormItem key={game.id} className="flex flex-row items-start space-x-3 space-y-0">
                                   <FormControl>
                                       <Checkbox
-                                      checked={field.value?.includes(game.id)}
+                                      checked={allGamesPermission || field.value?.includes(game.id)}
                                       onCheckedChange={(checked) => {
                                           return checked
                                           ? field.onChange([...field.value, game.id])
                                           : field.onChange(field.value?.filter((value) => value !== game.id));
                                       }}
+                                      disabled={allGamesPermission}
                                       />
                                   </FormControl>
                                   <FormLabel className="font-normal">{game.name}</FormLabel>
@@ -229,6 +249,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
                           <FormMessage />
                       </FormItem>
                   )} />
+                  </div>
               </div>
 
               <div className="space-y-4 pt-6 mt-6 border-t">
