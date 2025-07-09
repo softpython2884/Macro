@@ -28,15 +28,12 @@ type ContentItem = {
 
 const ContentCard = ({ item }: { item: ContentItem }) => {
     const { playSound } = useSound();
-    const { setBackgroundImage } = useBackground();
     
     return (
         <Link 
             href={item.href} 
             className="block group w-full h-full rounded-lg focus:outline-none" 
             onClick={() => playSound('select')}
-            onFocus={() => setBackgroundImage(item.image)}
-            onBlur={() => setBackgroundImage(null)}
         >
             <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary group-focus-within:border-primary h-full w-full aspect-video overflow-hidden relative">
                 {item.image ? (
@@ -73,6 +70,7 @@ export default function DashboardPage() {
     const router = useRouter();
     const carouselRef = useRef<HTMLDivElement>(null);
     const isInitialMount = useRef(true);
+    const { setBackgroundImage } = useBackground();
 
     const [content, setContent] = useState<ContentItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -191,13 +189,21 @@ export default function DashboardPage() {
 
             } catch (e) {
                 console.error("Error constructing dashboard:", e);
-                const staticNavItems = navItems.map(item => ({...item, image: null }));
+                const staticNavItems = navItems.map(item => ({...item, image: navItemImages[item.id] || null }));
                 setContent(staticNavItems);
             }
             setIsLoading(false);
         };
         fetchDashboardContent();
     }, [games, currentUser]);
+
+    useEffect(() => {
+        if (content.length > 0) {
+            const currentItem = content[current];
+            setBackgroundImage(currentItem?.image || null);
+        }
+        // No cleanup function here to keep the background of the last focused item
+    }, [current, content, setBackgroundImage]);
     
     if (isLoading) {
         return (

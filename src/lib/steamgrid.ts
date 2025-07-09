@@ -104,8 +104,9 @@ async function getImagesWithFallback(
         const nsfwUrl = `${BASE_URL}/${type}/game/${gameId}?nsfw=true${params}`;
         const nsfwImages = await fetchImages(nsfwUrl);
         
-        // Use NSFW if available
-        if (nsfwImages.length > 0) return nsfwImages.filter(img => img.nsfw);
+        // Use NSFW if available, but filter just in case API returns mixed results
+        const filteredNsfw = nsfwImages.filter(img => img.nsfw);
+        if (filteredNsfw.length > 0) return filteredNsfw;
     }
     
     // Fallback to SFW images

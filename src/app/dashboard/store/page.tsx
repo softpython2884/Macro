@@ -62,8 +62,11 @@ export default function StorePage() {
             { key: 'Y', action: 'Search' },
             { key: 'B', action: 'Back' },
         ]);
+        if (!isLoading && hasSearched) {
+             gridRef.current?.querySelector('a, button')?.focus();
+        }
         return () => setHints([]);
-    }, [setHints]);
+    }, [setHints, isLoading, hasSearched]);
     
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -84,9 +87,16 @@ export default function StorePage() {
         const searchResults = await searchSkidrow(searchQuery, currentUser);
         setResults(searchResults);
         setIsLoading(false);
-        const firstElement = gridRef.current?.querySelector('a');
-        firstElement?.focus();
     }, [searchQuery, currentUser]);
+
+    useEffect(() => {
+        if (!isLoading && hasSearched) {
+            // Give the DOM a moment to update before trying to focus
+            setTimeout(() => {
+                gridRef.current?.querySelector('a')?.focus();
+            }, 100);
+        }
+    }, [isLoading, hasSearched]);
 
     const handleKeyboardClose = () => {
         setIsKeyboardOpen(false);

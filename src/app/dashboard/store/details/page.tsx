@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useBackground } from '@/context/BackgroundContext';
 import { useToast } from '@/hooks/use-toast';
 import { downloadAndInstallGame } from '@/lib/installer';
+import { useGridNavigation } from '@/hooks/use-grid-navigation';
 
 export default function StoreDetailsPage() {
     const searchParams = useSearchParams();
@@ -35,12 +37,15 @@ export default function StoreDetailsPage() {
     const [isInstalling, setIsInstalling] = useState(false);
     const { currentUser } = useUser();
 
+    const linksRef = useRef<HTMLDivElement>(null);
     useBackNavigation('/dashboard/store');
+    useGridNavigation({ gridRef: linksRef });
 
     useEffect(() => {
         setHints([
             { key: 'A', action: isInstalling ? 'Installing...' : 'Install/Download' },
             { key: 'B', action: 'Back' },
+            { key: '↕↔', action: 'Navigate Links' },
         ]);
         return () => setHints([]);
     }, [setHints, isInstalling]);
@@ -205,7 +210,7 @@ export default function StoreDetailsPage() {
                             </div>
                         </div>
                     )}
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div ref={linksRef} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {Object.entries(details.allLinks).map(([host, link]) => (
                             <Button key={host} variant="outline" onClick={() => handleManualDownload(link)} disabled={isInstalling}>
                                 <Download className="mr-2 h-4 w-4" />
