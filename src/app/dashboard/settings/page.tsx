@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2, Download, RefreshCw } from "lucide-react";
+import { PlusCircle, Trash2, Download, RefreshCw, AlertTriangle } from "lucide-react";
 import React from 'react';
 import { useHints } from '@/context/HintContext';
 import { useBackNavigation } from "@/hooks/use-back-navigation";
@@ -25,6 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { scanAndInstallGames } from "@/lib/installer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
+import { resetSetup } from "@/app/setup/actions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -45,6 +48,7 @@ type SettingsFormValues = z.infer<typeof formSchema>;
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const { setHints } = useHints();
   const [isScanning, setIsScanning] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
@@ -169,6 +173,11 @@ export default function SettingsPage() {
     window.dispatchEvent(new Event('settings-updated'));
   };
 
+  const handleRerunSetup = async () => {
+    await resetSetup();
+    router.refresh(); // This will re-trigger the middleware
+  };
+
   return (
     <div>
       <Card>
@@ -186,6 +195,7 @@ export default function SettingsPage() {
                   <TabsTrigger value="directories">Directories</TabsTrigger>
                   <TabsTrigger value="system">System</TabsTrigger>
                   <TabsTrigger value="installer">Game Installer</TabsTrigger>
+                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="directories" className="space-y-8">
@@ -385,6 +395,37 @@ export default function SettingsPage() {
                       <Download className="mr-2 h-4 w-4" />
                       {isScanning ? 'Scanning...' : 'Scan Downloads for New Games'}
                   </Button>
+                </TabsContent>
+
+                <TabsContent value="advanced" className="space-y-8">
+                   <div className="p-4 rounded-lg border border-destructive/50 bg-destructive/10">
+                     <h3 className="text-lg font-semibold text-destructive-foreground flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        Danger Zone
+                     </h3>
+                     <p className="text-sm text-destructive-foreground/80 mt-2 mb-4">
+                        These actions can reset parts of your application configuration. Be sure before proceeding.
+                     </p>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">
+                                Re-run Setup Wizard
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will mark the setup as incomplete and force the setup wizard to run on the next launch. Your current settings will not be lost, but you will be prompted to confirm them again.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleRerunSetup}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                   </div>
                 </TabsContent>
               </Tabs>
 
