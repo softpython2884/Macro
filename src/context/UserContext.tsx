@@ -14,7 +14,7 @@ type UserContextType = {
   currentUser: User | null;
   login: (user: User, pin?: string) => boolean;
   logout: () => void;
-  addUser: (user: Omit<User, 'id'>) => Promise<void>;
+  addUser: (user: Omit<User, 'id'>) => Promise<string[]>;
   updateUser: (user: User) => void;
   deleteUser: (userId: string) => void;
 };
@@ -64,7 +64,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
-  const addUser = async (newUser: Omit<User, 'id'>) => {
+  const addUser = async (newUser: Omit<User, 'id'>): Promise<string[]> => {
     const userWithId = {
       ...newUser,
       id: `user-${Date.now()}`,
@@ -78,11 +78,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         const socialUserJson = localStorage.getItem('macro-social-user');
         if (socialUserJson) {
             const socialUserId = JSON.parse(socialUserJson).id;
-            await checkAndAwardAchievements(socialUserId, { profileCount: newUsers.length });
+            return await checkAndAwardAchievements(socialUserId, { profileCount: newUsers.length });
         }
     } catch (e) {
         console.error("Failed to check for socialite achievement:", e);
     }
+    return [];
   };
 
   const updateUser = (updatedUser: User) => {

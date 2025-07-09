@@ -17,6 +17,8 @@ import { useSound } from '@/context/SoundContext';
 import { Switch } from './ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { OnScreenKeyboard } from './on-screen-keyboard';
+import { useToast } from '@/hooks/use-toast';
+import { Award } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -40,6 +42,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
   const { addUser, updateUser } = useUser();
   const { allScannedGames } = useGames();
   const { playSound } = useSound();
+  const { toast } = useToast();
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [editingField, setEditingField] = useState<'name' | 'avatar' | 'pin' | null>(null);
@@ -79,13 +82,23 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
         permissions: values.permissions,
     };
 
+    let newAchievements: string[] = [];
+
     if (userToEdit) {
       updateUser({ ...userData, id: userToEdit.id });
     } else {
-      await addUser(userData);
+      newAchievements = await addUser(userData);
     }
     playSound('select');
     onFinished();
+
+    if (newAchievements.length > 0) {
+      toast({
+          title: "Achievement Unlocked!",
+          description: `You've earned: ${newAchievements.join(', ')}`,
+          action: <Award className="h-6 w-6 text-yellow-400" />,
+      });
+    }
   }
 
   const handleCancel = () => {
