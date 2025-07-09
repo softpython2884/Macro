@@ -174,87 +174,91 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
               
               <div className="grid grid-cols-2 gap-6">
                 {/* APP PERMISSIONS */}
-                <FormField
-                  control={form.control}
-                  name="permissions.apps"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                        <div className="mb-2">
-                            <FormLabel>App Permissions</FormLabel>
-                            <FormDescription>Select the apps this profile can access.</FormDescription>
-                        </div>
-                        <ScrollArea className="h-40 rounded-md border p-4">
-                        {ALL_APPS.map((app) => (
-                            <FormItem key={app.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                <FormControl>
-                                    <Checkbox
-                                    checked={field.value?.includes(app.id)}
-                                    onCheckedChange={(checked) => {
-                                        return checked
-                                        ? field.onChange([...(field.value || []), app.id])
-                                        : field.onChange(field.value?.filter((value) => value !== app.id));
-                                    }}
-                                    />
-                                </FormControl>
-                                <FormLabel className="font-normal">{app.name}</FormLabel>
-                            </FormItem>
-                        ))}
-                        </ScrollArea>
-                        <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-2">
+                    <div className="mb-2">
+                        <FormLabel>App Permissions</FormLabel>
+                        <FormDescription>Select the apps this profile can access.</FormDescription>
+                    </div>
+                    <ScrollArea className="h-40 rounded-md border p-4">
+                    <FormField
+                      control={form.control}
+                      name="permissions.apps"
+                      render={({ field }) => (
+                        <>
+                          {ALL_APPS.map((app) => (
+                              <FormItem key={app.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                      <Checkbox
+                                      checked={field.value?.includes(app.id)}
+                                      onCheckedChange={(checked) => {
+                                          return checked
+                                          ? field.onChange([...(field.value || []), app.id])
+                                          : field.onChange(field.value?.filter((value) => value !== app.id));
+                                      }}
+                                      />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">{app.name}</FormLabel>
+                              </FormItem>
+                          ))}
+                        </>
+                      )}
+                    />
+                    </ScrollArea>
+                    <FormField control={form.control} name="permissions.apps" render={() => <FormMessage />} />
+                </div>
 
                 {/* GAME PERMISSIONS */}
-                <FormField
-                    control={form.control}
-                    name="permissions.games"
-                    render={({ field }) => (
-                        <FormItem className="space-y-2">
-                             <div className="mb-2">
-                                <FormLabel>Game Permissions</FormLabel>
-                                <FormDescription>Select the games this profile can access.</FormDescription>
-                            </div>
-                            <FormField
-                                control={form.control}
-                                name="permissions.allGames"
-                                render={({ field: allGamesField }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
-                                        <div className="space-y-0.5">
-                                            <FormLabel>Grant Access to All Games</FormLabel>
-                                        </div>
-                                        <FormControl>
-                                            <Switch checked={allGamesField.value} onCheckedChange={allGamesField.onChange} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <ScrollArea className="h-40 rounded-md border p-4">
-                                {allScannedGames.length > 0 ? (
-                                    allScannedGames.map((game) => (
-                                        <FormItem key={game.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                            <FormControl>
-                                                <Checkbox
-                                                    checked={allGamesPermission || field.value?.includes(game.id)}
-                                                    onCheckedChange={(checked) => {
-                                                        return checked
-                                                            ? field.onChange([...(field.value || []), game.id])
-                                                            : field.onChange(field.value?.filter((value) => value !== game.id));
-                                                    }}
-                                                    disabled={allGamesPermission}
-                                                />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">{game.name}</FormLabel>
-                                        </FormItem>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-muted-foreground text-center py-4">No games found. Configure directories in settings.</p>
-                                )}
-                            </ScrollArea>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="space-y-2">
+                      <div className="mb-2">
+                        <FormLabel>Game Permissions</FormLabel>
+                        <FormDescription>Select the games this profile can access.</FormDescription>
+                      </div>
+                      <FormField
+                          control={form.control}
+                          name="permissions.allGames"
+                          render={({ field: allGamesField }) => (
+                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-background/50">
+                                  <div className="space-y-0.5">
+                                      <FormLabel>Grant Access to All Games</FormLabel>
+                                  </div>
+                                  <FormControl>
+                                      <Switch checked={allGamesField.value} onCheckedChange={allGamesField.onChange} />
+                                  </FormControl>
+                              </FormItem>
+                          )}
+                      />
+                      <ScrollArea className="h-40 rounded-md border p-4">
+                          <FormField
+                              control={form.control}
+                              name="permissions.games"
+                              render={({ field }) => (
+                                  <>
+                                      {allScannedGames.length > 0 ? (
+                                          allScannedGames.map((game) => (
+                                              <FormItem key={game.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                                  <FormControl>
+                                                      <Checkbox
+                                                          checked={allGamesPermission || field.value?.includes(game.id)}
+                                                          onCheckedChange={(checked) => {
+                                                              return checked
+                                                                  ? field.onChange([...(field.value || []), game.id])
+                                                                  : field.onChange(field.value?.filter((value) => value !== game.id));
+                                                          }}
+                                                          disabled={allGamesPermission}
+                                                      />
+                                                  </FormControl>
+                                                  <FormLabel className="font-normal">{game.name}</FormLabel>
+                                              </FormItem>
+                                          ))
+                                      ) : (
+                                          <p className="text-sm text-muted-foreground text-center py-4">No games found. Configure directories in settings.</p>
+                                      )}
+                                  </>
+                              )}
+                          />
+                      </ScrollArea>
+                      <FormField control={form.control} name="permissions.games" render={() => <FormMessage />} />
+                </div>
               </div>
 
               <div className="space-y-4 pt-6 mt-6 border-t">
