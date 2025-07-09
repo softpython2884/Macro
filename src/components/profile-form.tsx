@@ -12,9 +12,11 @@ import { ALL_APPS } from '@/lib/data';
 import { useUser } from '@/context/UserContext';
 import { ScrollArea } from './ui/scroll-area';
 import { useGames } from '@/context/GameContext';
-import React from 'react';
+import React, { useState } from 'react';
 import { useSound } from '@/context/SoundContext';
 import { Switch } from './ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { OnScreenKeyboard } from './on-screen-keyboard';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -38,6 +40,9 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
   const { allScannedGames } = useGames();
   const { playSound } = useSound();
 
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [editingField, setEditingField] = useState<'name' | 'avatar' | 'pin' | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: userToEdit
@@ -55,9 +60,6 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
         },
   });
 
-  // For new users, default to all games being enabled when the component mounts
-  // and the game list is available. For existing users, this does nothing,
-  // preserving their saved permissions.
   React.useEffect(() => {
     if (!userToEdit && allScannedGames.length > 0) {
       form.setValue('permissions.games', allScannedGames.map(game => game.id));
@@ -87,7 +89,32 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
     onFinished();
   }
 
+  const handleInputClick = (fieldName: 'name' | 'avatar' | 'pin') => {
+    setEditingField(fieldName);
+    setIsKeyboardOpen(true);
+  };
+
+  const handleKeyboardInput = (char: string) => {
+    if (editingField) {
+      const currentValue = form.getValues(editingField) || '';
+      form.setValue(editingField, currentValue + char, { shouldValidate: true });
+    }
+  };
+
+  const handleKeyboardDelete = () => {
+    if (editingField) {
+      const currentValue = form.getValues(editingField) || '';
+      form.setValue(editingField, currentValue.slice(0, -1), { shouldValidate: true });
+    }
+  };
+
+  const handleKeyboardClose = () => {
+    setIsKeyboardOpen(false);
+    setEditingField(null);
+  };
+
   return (
+    <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col" style={{ height: 'calc(100vh - 22rem)' }}>
         <ScrollArea className="flex-grow pr-6 -mr-6">
@@ -95,23 +122,47 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
               <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
                   <FormLabel>Profile Name</FormLabel>
-                  <FormControl><Input placeholder="e.g., Galaxy Wanderer" {...field} /></FormControl>
+                  <FormControl>
+                    <Input 
+                      placeholder="e.g., Galaxy Wanderer" 
+                      {...field}
+                      readOnly
+                      onClick={() => handleInputClick('name')}
+                    />
+                  </FormControl>
+                  <FormDescription>Click or press A on controller to open keyboard.</FormDescription>
                   <FormMessage />
               </FormItem>
               )} />
               <FormField control={form.control} name="avatar" render={({ field }) => (
               <FormItem>
                   <FormLabel>Avatar URL</FormLabel>
-                  <FormControl><Input placeholder="https://example.com/avatar.png" {...field} /></FormControl>
-                  <FormDescription>Leave blank to use the default avatar.</FormDescription>
+                  <FormControl>
+                    <Input 
+                      placeholder="https://example.com/avatar.png" 
+                      {...field} 
+                      readOnly
+                      onClick={() => handleInputClick('avatar')}
+                    />
+                  </FormControl>
+                  <FormDescription>Leave blank for default. Click to open keyboard.</FormDescription>
                   <FormMessage />
               </FormItem>
               )} />
               <FormField control={form.control} name="pin" render={({ field }) => (
               <FormItem>
                   <FormLabel>4-Digit PIN</FormLabel>
-                  <FormControl><Input type="password" maxLength={4} placeholder="e.g., 1234" {...field} /></FormControl>
-                  <FormDescription>Leave blank for no PIN protection.</FormDescription>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      maxLength={4} 
+                      placeholder="e.g., 1234" 
+                      {...field}
+                      readOnly
+                      onClick={() => handleInputClick('pin')}
+                    />
+                  </FormControl>
+                  <FormDescription>Leave blank for no PIN. Click to open keyboard.</FormDescription>
                   <FormMessage />
               </FormItem>
               )} />
@@ -221,5 +272,22 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
         </div>
       </form>
     </Form>
+    <Dialog open={isKeyboardOpen} onOpenChange={(isOpen) => !isOpen && handleKeyboardClose()}>
+        <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-4xl flex justify-center" onInteractOutside={(e) => e.preventDefault()}>
+            <DialogHeader className="sr-only">
+                <DialogTitle>On-Screen Keyboard</DialogTitle>
+                <DialogDescription>
+                    Enter a value for {editingField}.
+                </DialogDescription>
+            </DialogHeader>
+            <OnScreenKeyboard
+                onInput={handleKeyboardInput}
+                onDelete={handleKeyboardDelete}
+                onEnter={handleKeyboardClose}
+                onClose={handleKeyboardClose}
+            />
+        </DialogContent>
+    </Dialog>
+    </>
   );
 };

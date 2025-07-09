@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,13 +36,25 @@ export default function ProfilesPage() {
     setHints([
       { key: '↕↔', action: 'Navigate Cards' },
       { key: 'A', action: 'Interact' },
+      { key: 'Y', action: 'New Profile' },
       { key: 'B', action: 'Back' },
     ]);
     const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
     firstElement?.focus();
     
-    return () => setHints([]);
-  }, [setHints]);
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if(e.key.toLowerCase() === 'y' && !showPinPad) {
+            playSound('select');
+            router.push('/dashboard/profiles/new');
+        }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+        setHints([]);
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [setHints, router, playSound, showPinPad]);
 
   const handleSwitchProfile = (user: User) => {
     playSound('select');

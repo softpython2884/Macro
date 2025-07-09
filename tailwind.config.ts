@@ -107,7 +107,7 @@ const config = {
         "zoom-in-fade": 'zoom-in-fade 0.5s ease-out forwards',
         "zoom-out-fade": 'zoom-out-fade 0.5s ease-out forwards',
         "shake": 'shake 0.82s cubic-bezier(.36,.07,.19,.97) both',
-        "levitate": 'levitate 12s ease-in-out infinite',
+        "levitate": 'levitate 30s ease-in-out infinite',
       },
       dropShadow: {
         'glow': '0 0 10px hsl(var(--primary) / 0.8)',
