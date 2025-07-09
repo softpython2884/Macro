@@ -205,7 +205,11 @@ export default function GameDetailPage() {
     const handleLaunch = async (executable: string) => {
         if (!game) return;
         playSound('launch');
-        localStorage.setItem('macro-active-session', JSON.stringify({ gameId: game.id, startTime: Date.now() }));
+        localStorage.setItem('macro-active-session', JSON.stringify({ 
+            gameId: game.id,
+            gameName: game.name,
+            startTime: Date.now() 
+        }));
         await launchGame(game.path, executable);
         router.push(`/dashboard/games/${game.id}/launching?exe=${encodeURIComponent(executable)}`);
     }

@@ -22,9 +22,9 @@ export default function NewProfilePage() {
         </Button>
       <Card>
         <CardHeader>
-          <CardTitle>Create New Local Profile</CardTitle>
+          <CardTitle>Create New Profile</CardTitle>
           <CardDescription>
-            Fill in the details for the new local profile.
+            Fill in the details for the new profile.
           </CardDescription>
         </CardHeader>
         <CardContent>

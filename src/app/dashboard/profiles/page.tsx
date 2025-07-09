@@ -96,8 +96,8 @@ export default function ProfilesPage() {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-glow">Manage Local Profiles</h2>
-          <p className="text-muted-foreground mt-2">Add, edit, or switch between profiles on this device.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-glow">Manage Profiles</h2>
+          <p className="text-muted-foreground mt-2">Add, edit, or switch between profiles.</p>
         </div>
         <div className="flex items-center gap-2">
             <Button onClick={() => { playSound('select'); logout(); }} variant="outline">

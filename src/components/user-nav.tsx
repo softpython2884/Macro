@@ -12,12 +12,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "@/context/UserContext";
+import { useEffect, useState } from "react";
+import { Gamepad2 } from "lucide-react";
 
 export function UserNav() {
   const router = useRouter();
+  const pathname = usePathname();
   const { currentUser, logout } = useUser();
+  const [nowPlaying, setNowPlaying] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const sessionJSON = localStorage.getItem('macro-active-session');
+      if (sessionJSON) {
+        const session = JSON.parse(sessionJSON);
+        setNowPlaying(session.gameName || null);
+      } else {
+        setNowPlaying(null);
+      }
+    } catch (error) {
+      console.error("Failed to read active session from localStorage", error);
+      setNowPlaying(null);
+    }
+  }, [pathname]); // Re-check whenever the route changes
 
   const handleLogout = () => {
     logout();
@@ -46,6 +65,17 @@ export function UserNav() {
             </p>
           </div>
         </DropdownMenuLabel>
+        
+        {nowPlaying && (
+          <>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-xs text-muted-foreground flex items-center gap-2">
+                <Gamepad2 className="h-4 w-4" />
+                <span>Playing: {nowPlaying}</span>
+            </div>
+          </>
+        )}
+
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => router.push('/dashboard/profiles')}>
