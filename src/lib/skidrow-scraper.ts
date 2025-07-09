@@ -107,10 +107,10 @@ export async function getSkidrowGameDetails(url: string): Promise<Omit<SkidrowGa
         let pixeldrainApi: string | null = null;
         
         const knownHosts = [
-            "ONE FTP LINK", "MEGA", "1FICHIER", "GOFILE", "MEDIAFIRE", "RANOZ", "DROPAPK", "BOWFILE",
+            "MEGA", "1FICHIER", "GOFILE", "MEDIAFIRE", "RANOZ", "DROPAPK", "BOWFILE",
             "SENDCM", "FREEDLINK", "MIXDROP", "CHOMIKUJ", "VIKINGFILE", "DOWNMEDIALOAD", "HEXLOAD",
             "1CLOUDFILE", "USERSDRIVE", "FILEFACTORY", "MEGAUP", "CLICKNUPLOAD", "DAILYUPLOAD",
-            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "MULTI LINKS", "FTP LINK"
+            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "MULTI LINKS"
         ];
         
         $("p").each((i, p_el) => {
@@ -127,7 +127,6 @@ export async function getSkidrowGameDetails(url: string): Promise<Omit<SkidrowGa
 
                     if(link) {
                         let standardizedHost = host;
-                        if (["ONE FTP LINK", "FTP LINK"].includes(host)) standardizedHost = "FTP";
                         if (host === "MULTI LINKS") standardizedHost = "MULTIUP";
                         if (host === "CHOMIKUJ") standardizedHost = "CHOMIKUJ.PL";
                         
