@@ -1,4 +1,3 @@
-
 'use server';
 
 import pool from './db';
@@ -135,6 +134,38 @@ export async function updateUserActivity(userId: number, status: string | null, 
   } catch (error) {
     console.error(`[SOCIAL-DB] Error updating activity for user ${userId}:`, error);
     return { success: false };
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+export type SocialActivity = {
+  user_id: number;
+  username: string;
+  activity_status: string | null;
+  activity_details: string | null;
+  updated_at: string;
+};
+
+export async function getSocialActivities(): Promise<SocialActivity[]> {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows]: any = await connection.execute(`
+      SELECT
+        u.id AS user_id,
+        u.username,
+        a.activity_status,
+        a.activity_details,
+        a.updated_at
+      FROM social_users u
+      LEFT JOIN social_activities a ON u.id = a.user_id
+      ORDER BY a.updated_at DESC
+    `);
+    return rows;
+  } catch (error) {
+    console.error('[SOCIAL-DB] Error fetching activities:', error);
+    return [];
   } finally {
     if (connection) connection.release();
   }

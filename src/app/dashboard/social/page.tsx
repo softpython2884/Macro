@@ -1,20 +1,112 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
-import React, { useState, useEffect } from 'react';
+import { Gamepad2, LogOut, RefreshCw, User as UserIcon } from "lucide-react";
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { loginUser, registerUser } from "@/lib/social-service";
+import { getSocialActivities, loginUser, registerUser, type SocialActivity } from "@/lib/social-service";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type SocialUser = {
   id: number;
   username: string;
 };
+
+const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void }) => {
+  const [activities, setActivities] = useState<SocialActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchActivities = useCallback(async () => {
+    setIsLoading(true);
+    const activityData = await getSocialActivities();
+    setActivities(activityData);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
+
+  const renderStatus = (activity: SocialActivity) => {
+    if (activity.activity_status === 'playing' && activity.activity_details) {
+      return (
+        <span className="flex items-center gap-2 text-primary">
+          <Gamepad2 className="h-4 w-4" />
+          Playing {activity.activity_details}
+        </span>
+      );
+    }
+    return <span className="text-muted-foreground">Online</span>;
+  };
+
+  return (
+    <Card className="w-full max-w-2xl animate-fade-in">
+        <CardHeader className="flex flex-row justify-between items-center">
+            <div>
+                <CardTitle>Macro Social Hub</CardTitle>
+                <CardDescription>Welcome, {user.username}! See what others are up to.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+                 <Button variant="ghost" size="icon" onClick={fetchActivities} disabled={isLoading}>
+                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                </Button>
+                <Button onClick={onLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log Out
+                </Button>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <ScrollArea className="h-96 pr-4">
+                <div className="space-y-4">
+                    {isLoading 
+                        ? (Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-background/50">
+                                <div className="flex items-center gap-4">
+                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-24" />
+                                        <Skeleton className="h-4 w-32" />
+                                    </div>
+                                </div>
+                                <Skeleton className="h-4 w-20" />
+                            </div>
+                        )))
+                        : (
+                        activities.map(activity => (
+                             <div key={activity.user_id} className="flex items-center justify-between p-3 rounded-lg bg-background/50">
+                                <div className="flex items-center gap-4">
+                                     <Avatar>
+                                        <AvatarImage />
+                                        <AvatarFallback>{activity.username.substring(0, 1).toUpperCase()}</AvatarFallback>
+                                     </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{activity.username}</p>
+                                        <div className="text-sm">
+                                            {renderStatus(activity)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {new Date(activity.updated_at).toLocaleTimeString()}
+                                </p>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </ScrollArea>
+        </CardContent>
+    </Card>
+  );
+};
+
 
 export default function SocialPage() {
   const [socialUser, setSocialUser] = useState<SocialUser | null>(null);
@@ -80,23 +172,7 @@ export default function SocialPage() {
   if (socialUser) {
     return (
       <div className="flex flex-1 items-center justify-center animate-fade-in">
-        <Card className="w-full max-w-2xl text-center">
-          <CardHeader>
-            <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-              <Users className="h-12 w-12 text-primary" />
-            </div>
-            <CardTitle className="mt-4">Welcome, {socialUser.username}!</CardTitle>
-            <CardDescription>
-              You are now connected to the Macro Social Hub.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Your profile, achievements, and activity will be available here soon.
-            </p>
-            <Button onClick={handleLogout}>Log Out</Button>
-          </CardContent>
-        </Card>
+        <SocialHub user={socialUser} onLogout={handleLogout} />
       </div>
     );
   }

@@ -1,13 +1,10 @@
-
 'use server';
 
-// IMPORTANT: The API key is now hardcoded and Base64 encoded here.
-// No need for .env files.
-
-const API_KEY_ENCODED = 'ZTBiZGExN2Y1NzEzZGE1ODExN2RiYjE3MjQ3MmZjMGU=';
+// Data source authentication key.
+const GRID_AUTH_KEY_B64 = 'ZTBiZGExN2Y1NzEzZGE1ODExN2RiYjE3MjQ3MmZjMGU=';
 
 // Decode the key at runtime
-const getApiKey = () => Buffer.from(API_KEY_ENCODED, 'base64').toString('utf-8');
+const getAuthKey = () => Buffer.from(GRID_AUTH_KEY_B64, 'base64').toString('utf-8');
 
 const BASE_URL = 'https://www.steamgriddb.com/api/v2';
 
@@ -16,15 +13,15 @@ const getOptions = () => ({
   method: 'GET',
   headers: {
     accept: 'application/json',
-    Authorization: `Bearer ${getApiKey()}`
+    Authorization: `Bearer ${getAuthKey()}`
   },
   next: { revalidate: 86400 } // 24 hours in seconds
 });
 
-const checkApiKey = () => {
-    const key = getApiKey();
+const checkAuthKey = () => {
+    const key = getAuthKey();
     if (!key) {
-        console.error("SteamGridDB API Key is missing or invalid.");
+        console.error("Data source auth key is missing or invalid.");
         return false;
     }
     return true;
@@ -49,7 +46,7 @@ export interface SteamGridDbImage {
 // --- API Functions ---
 
 export const searchGame = async (name: string, nsfw: 'true' | 'false' | 'any' = 'false', prioritizeNsfw: boolean = false): Promise<SteamGridDbGame | null> => {
-    if (!checkApiKey()) return null;
+    if (!checkAuthKey()) return null;
 
     try {
         const response = await fetch(`${BASE_URL}/search/autocomplete/${encodeURIComponent(name)}?nsfw=${nsfw}`, getOptions());
@@ -120,7 +117,7 @@ async function getImagesWithFallback(
 
 
 export const getGrids = async (gameId: number, dimensions: string[], nsfw: 'true' | 'false' | 'any' = 'false', prioritizeNsfw: boolean = false): Promise<SteamGridDbImage[]> => {
-    if (!checkApiKey() || !gameId) return [];
+    if (!checkAuthKey() || !gameId) return [];
     try {
         const params = `&dimensions=${dimensions.join(',')}`;
         return await getImagesWithFallback('grids', gameId, nsfw, prioritizeNsfw, params);
@@ -131,7 +128,7 @@ export const getGrids = async (gameId: number, dimensions: string[], nsfw: 'true
 }
 
 export const getHeroes = async (gameId: number, nsfw: 'true' | 'false' | 'any' = 'false', prioritizeNsfw: boolean = false): Promise<SteamGridDbImage[]> => {
-    if (!checkApiKey() || !gameId) return [];
+    if (!checkAuthKey() || !gameId) return [];
      try {
         return await getImagesWithFallback('heroes', gameId, nsfw, prioritizeNsfw, `&mimes=image/png,image/jpeg,image/webp`);
     } catch (error) {
@@ -141,7 +138,7 @@ export const getHeroes = async (gameId: number, nsfw: 'true' | 'false' | 'any' =
 };
 
 export const getLogos = async (gameId: number, nsfw: 'true' | 'false' | 'any' = 'false', prioritizeNsfw: boolean = false): Promise<SteamGridDbImage[]> => {
-    if (!checkApiKey() || !gameId) return [];
+    if (!checkAuthKey() || !gameId) return [];
      try {
         return await getImagesWithFallback('logos', gameId, nsfw, prioritizeNsfw);
     } catch (error) {

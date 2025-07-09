@@ -6,7 +6,7 @@ function decode(encoded: string): string {
 }
 
 export function getDbConfig() {
-    // Encoded credentials
+    // Connection details
     const host_encoded = 'MTg1LjIwNy4yMjYuOQ';
     const port_encoded = 'MzMwNg';
     const db_name_encoded = 'aXF6bGZwX25hdGlvbnF1X2Ri';
