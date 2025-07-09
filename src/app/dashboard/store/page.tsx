@@ -24,9 +24,9 @@ const StoreResultCard = ({ result }: { result: SkidrowSearchResult }) => {
           href={`/dashboard/store/details?url=${encodeURIComponent(result.url)}&title=${encodeURIComponent(result.title)}`}
           className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
         >
-            <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden relative">
+            <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden relative transform hover:scale-105 focus-within:scale-105">
                 {result.posterUrl ? (
-                    <Image src={result.posterUrl} alt={result.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300"/>
+                    <Image src={result.posterUrl} alt={result.title} fill className="object-cover"/>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center p-4">
                         <h3 className="text-xl font-bold text-foreground">{result.title}</h3>

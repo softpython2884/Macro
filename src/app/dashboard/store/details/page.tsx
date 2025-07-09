@@ -19,6 +19,7 @@ import { useBackground } from '@/context/BackgroundContext';
 import { useToast } from '@/hooks/use-toast';
 import { downloadAndInstallGame } from '@/lib/installer';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function StoreDetailsPage() {
     const searchParams = useSearchParams();
@@ -38,14 +39,42 @@ export default function StoreDetailsPage() {
     const { currentUser } = useUser();
 
     const linksRef = useRef<HTMLDivElement>(null);
+    const scrollViewportRef = useRef<HTMLDivElement>(null);
+
     useBackNavigation('/dashboard/store');
     useGridNavigation({ gridRef: linksRef });
+
+    useEffect(() => {
+        const handleKeys = (e: KeyboardEvent) => {
+            const viewport = scrollViewportRef.current;
+            if (!viewport) return;
+
+            let scrollAmount = 0;
+            const scrollSpeed = 150;
+
+            if (e.key === 'ArrowDown' || e.key === '+') {
+                scrollAmount = scrollSpeed;
+            } else if (e.key === 'ArrowUp' || e.key === '-') {
+                scrollAmount = -scrollSpeed;
+            }
+
+            if (scrollAmount !== 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                viewport.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+            }
+        };
+
+        document.addEventListener('keydown', handleKeys, true);
+        return () => document.removeEventListener('keydown', handleKeys, true);
+    }, []);
 
     useEffect(() => {
         setHints([
             { key: 'A', action: isInstalling ? 'Installing...' : 'Install/Download' },
             { key: 'B', action: 'Back' },
-            { key: '↕↔', action: 'Navigate Links' },
+            { key: '↑↓ or +/-', action: 'Scroll' },
+            { key: '↔', action: 'Navigate Links' },
         ]);
         return () => setHints([]);
     }, [setHints, isInstalling]);
@@ -149,77 +178,82 @@ export default function StoreDetailsPage() {
     const hasDirectInstall = !!details.pixeldrainApi;
 
     return (
-        <div className="flex flex-col text-white animate-fade-in">
-             <div className="absolute top-4 left-4 m-4 z-20">
+         <div className="flex flex-col h-full animate-fade-in">
+             <div className="absolute top-0 left-0 p-4 z-20">
                 <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/store')} disabled={isInstalling}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Store
                 </Button>
             </div>
-
-            <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden bg-card">
-                {heroUrl && (
-                    <Image
-                        src={heroUrl}
-                        alt={`${title} Hero Image`}
-                        fill
-                        className="object-cover object-center"
-                        priority
-                    />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-            </div>
             
-            <div className="relative z-10 -mt-24 md:-mt-36 px-8 md:px-12 pb-8 space-y-8">
-                <div>
-                    <h1 className="text-5xl md:text-6xl font-bold text-glow">{title}</h1>
-                    <div className="flex items-center gap-6 text-muted-foreground mt-4">
-                        <div className="flex items-center gap-2">
-                            <HardDrive className="h-5 w-5" />
-                            <span>{details.size}</span>
-                        </div>
+            <ScrollArea className="h-full w-full" viewportRef={scrollViewportRef}>
+                <div className="flex flex-col text-white pb-8 pr-4">
+                    <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden bg-card">
+                        {heroUrl && (
+                            <Image
+                                src={heroUrl}
+                                alt={`${title} Hero Image`}
+                                fill
+                                className="object-cover object-center"
+                                priority
+                            />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
                     </div>
-                </div>
-
-                {hasDirectInstall && (
-                    <div className="flex flex-col items-start gap-4 p-6 rounded-lg bg-primary/10 border border-primary/20">
-                         <h2 className="text-2xl font-bold text-primary text-glow">Direct Install Available</h2>
-                         <p className="text-primary-foreground/80 max-w-2xl">
-                             This game can be downloaded and installed automatically by Macro. Click the button below to start the process.
-                         </p>
-                         <Button size="lg" onClick={() => handleDirectInstall(details.pixeldrainApi!, title)} disabled={isInstalling}>
-                            <Download className="mr-2 h-5 w-5" />
-                            {isInstalling ? 'Installing... Please Wait' : 'Install Game Directly'}
-                        </Button>
-                    </div>
-                )}
-                
-                <p className="max-w-4xl text-foreground/80 leading-relaxed">
-                    {details.description}
-                </p>
-                
-                <div>
-                    <h3 className="text-2xl font-bold mb-4">{hasDirectInstall ? "Manual Download Links" : "Download Links"}</h3>
-                     {!hasDirectInstall && (
-                        <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-900/20 border border-yellow-700/50 mb-4 text-yellow-300">
-                           <AlertTriangle className="h-5 w-5 mt-1 flex-shrink-0" />
-                            <div className="text-sm">
-                                <p className="font-bold">Manual Installation Required</p>
-                                <p className="text-yellow-300/80">
-                                   Download one of the files below and place the .zip archive in the "Downloads" directory configured in your settings. Macro will handle the rest on the next scan.
-                                </p>
+                    
+                    <div className="relative z-10 -mt-24 md:-mt-36 px-8 md:px-12 pb-8 space-y-8">
+                        <div>
+                            <h1 className="text-5xl md:text-6xl font-bold text-glow">{title}</h1>
+                            <div className="flex items-center gap-6 text-muted-foreground mt-4">
+                                <div className="flex items-center gap-2">
+                                    <HardDrive className="h-5 w-5" />
+                                    <span>{details.size}</span>
+                                </div>
                             </div>
                         </div>
-                    )}
-                    <div ref={linksRef} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {Object.entries(details.allLinks).map(([host, link]) => (
-                            <Button key={host} variant="outline" onClick={() => handleManualDownload(link)} disabled={isInstalling}>
-                                <Download className="mr-2 h-4 w-4" />
-                                {host}
-                            </Button>
-                        ))}
+
+                        {hasDirectInstall && (
+                            <div className="flex flex-col items-start gap-4 p-6 rounded-lg bg-primary/10 border border-primary/20">
+                                <h2 className="text-2xl font-bold text-primary text-glow">Direct Install Available</h2>
+                                <p className="text-primary-foreground/80 max-w-2xl">
+                                    This game can be downloaded and installed automatically by Macro. Click the button below to start the process.
+                                </p>
+                                <Button size="lg" onClick={() => handleDirectInstall(details.pixeldrainApi!, title)} disabled={isInstalling}>
+                                    <Download className="mr-2 h-5 w-5" />
+                                    {isInstalling ? 'Installing... Please Wait' : 'Install Game Directly'}
+                                </Button>
+                            </div>
+                        )}
+                        
+                        <p className="max-w-4xl text-foreground/80 leading-relaxed">
+                            {details.description}
+                        </p>
+                        
+                        <div>
+                            <h3 className="text-2xl font-bold mb-4">{hasDirectInstall ? "Manual Download Links" : "Download Links"}</h3>
+                            {!hasDirectInstall && (
+                                <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-900/20 border border-yellow-700/50 mb-4 text-yellow-300">
+                                <AlertTriangle className="h-5 w-5 mt-1 flex-shrink-0" />
+                                    <div className="text-sm">
+                                        <p className="font-bold">Manual Installation Required</p>
+                                        <p className="text-yellow-300/80">
+                                        Download one of the files below and place the .zip archive in the "Downloads" directory configured in your settings. Macro will handle the rest on the next scan.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={linksRef} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                {Object.entries(details.allLinks).map(([host, link]) => (
+                                    <Button key={host} variant="outline" onClick={() => handleManualDownload(link)} disabled={isInstalling}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        {host}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+                <ScrollBar />
+            </ScrollArea>
         </div>
     );
 }
