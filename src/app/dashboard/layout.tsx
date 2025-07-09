@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { UserNav } from "@/components/user-nav";
 import { cn, formatDuration } from "@/lib/utils";
-import { Home, User, Settings, Gamepad2, LayoutGrid } from "lucide-react";
+import { Home, Settings, Gamepad2, LayoutGrid, Users, UserCog } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -25,7 +25,8 @@ const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/games", label: "Games", icon: Gamepad2 },
   { href: "/dashboard/applications", label: "Apps", icon: LayoutGrid },
-  { href: "/dashboard/profiles", label: "Profiles", icon: User },
+  { href: "/dashboard/social", label: "Social", icon: Users },
+  { href: "/dashboard/profiles", label: "Profiles", icon: UserCog },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

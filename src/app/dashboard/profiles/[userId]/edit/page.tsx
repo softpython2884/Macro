@@ -41,9 +41,9 @@ export default function EditProfilePage() {
         </Button>
       <Card>
         <CardHeader>
-          <CardTitle>Edit Profile: {userToEdit.name}</CardTitle>
+          <CardTitle>Edit Local Profile: {userToEdit.name}</CardTitle>
           <CardDescription>
-            Modify the details for this profile.
+            Modify the details for this local profile.
           </CardDescription>
         </CardHeader>
         <CardContent>
