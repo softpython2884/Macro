@@ -2,28 +2,32 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gamepad2, LogOut, RefreshCw, User as UserIcon, UserCheck, UserX } from "lucide-react";
+import { Gamepad2, LogOut, Search, User as UserIcon, UserCheck, UserX, UserPlus, Clock, Loader2 } from "lucide-react";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 import { 
-    getSocialActivities, 
+    getSocialProfile,
     loginUser, 
     registerUser, 
-    type SocialActivity, 
+    type SocialProfile,
     getPendingRequests,
     respondToFriendRequest,
-    type PendingRequest
+    type PendingRequest,
+    searchUsers,
+    type SearchedUser,
+    sendFriendRequest,
+    type SocialFriendWithActivity,
 } from "@/lib/social-service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useSound } from "@/context/SoundContext";
+import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRouter } from "next/navigation";
 
 type SocialUser = {
   id: number;
@@ -54,7 +58,7 @@ const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => 
             variant: result.success ? "default" : "destructive",
         });
         if (result.success) {
-            onAction(); // Triggers a re-fetch in the parent
+            onAction(); 
         }
     };
 
@@ -62,7 +66,7 @@ const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => 
     if (requests.length === 0) return null;
 
     return (
-        <Card className="mb-4 bg-background/50">
+        <Card className="bg-background/50">
             <CardHeader>
                 <CardTitle>Friend Requests</CardTitle>
             </CardHeader>
@@ -91,103 +95,183 @@ const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => 
     );
 };
 
-const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void }) => {
-  const [activities, setActivities] = useState<SocialActivity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { playSound } = useSound();
+const FindFriends = ({ currentUser, onFriendRequestSent }: { currentUser: SocialUser, onFriendRequestSent: () => void }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
 
-  const fetchActivities = useCallback(async () => {
-    setIsLoading(true);
-    const activityData = await getSocialActivities();
-    // Filter out the current user from the main activity feed
-    setActivities(activityData.filter(act => act.user_id !== user.id));
-    setIsLoading(false);
-  }, [user.id]);
+    const handleSearch = async (e?: React.FormEvent) => {
+        if(e) e.preventDefault();
+        if (!searchQuery) return;
+        setIsLoading(true);
+        const results = await searchUsers(searchQuery, currentUser.id);
+        setSearchResults(results);
+        setIsLoading(false);
+    };
 
-  useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+    const handleAddFriend = async (addresseeId: number) => {
+        const result = await sendFriendRequest(currentUser.id, addresseeId);
+        toast({
+            title: result.success ? "Success" : "Error",
+            description: result.message,
+            variant: result.success ? "default" : "destructive",
+        });
+        if (result.success) {
+            handleSearch();
+            onFriendRequestSent();
+        }
+    };
+    
+    const getButtonForStatus = (user: SearchedUser) => {
+        switch (user.friendshipStatus) {
+            case 'friends':
+                return <Button size="sm" variant="outline" disabled><UserCheck className="mr-2 h-4 w-4" /> Friends</Button>;
+            case 'pending_sent':
+                return <Button size="sm" variant="outline" disabled><Clock className="mr-2 h-4 w-4" /> Sent</Button>;
+            case 'pending_received':
+                 return <Button size="sm" onClick={() => handleAddFriend(user.id)}><UserCheck className="mr-2 h-4 w-4" /> Accept</Button>;
+            default:
+                return <Button size="sm" onClick={() => handleAddFriend(user.id)}><UserPlus className="mr-2 h-4 w-4" /> Add</Button>;
+        }
+    };
 
-  const renderStatus = (activity: SocialActivity) => {
-    if (activity.activity_status === 'playing' && activity.activity_details) {
-      return (
-        <span className="flex items-center gap-2 text-primary">
-          <Gamepad2 className="h-4 w-4" />
-          Playing {activity.activity_details}
-        </span>
-      );
-    }
-    return <span className="text-muted-foreground">Online</span>;
-  };
-
-  return (
-    <Card className="w-full max-w-2xl animate-fade-in">
-        <CardHeader className="flex flex-row justify-between items-center">
-            <div>
-                <CardTitle>Macro Social Hub</CardTitle>
-                <CardDescription>Welcome, {user.username}! See what others are up to.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-                 <Button variant="ghost" size="icon" onClick={fetchActivities} disabled={isLoading}>
-                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                </Button>
-                <Button onClick={onLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log Out
-                </Button>
-            </div>
-        </CardHeader>
-        <CardContent>
-            <FriendRequests userId={user.id} onAction={fetchActivities} />
-
-            <ScrollArea className="h-96 pr-4">
-                <div className="space-y-2">
-                    {isLoading 
-                        ? (Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-background/50">
-                                <div className="flex items-center gap-4">
-                                    <Skeleton className="h-10 w-10 rounded-full" />
-                                    <div className="space-y-2">
-                                        <Skeleton className="h-4 w-24" />
-                                        <Skeleton className="h-4 w-32" />
-                                    </div>
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Find Friends</CardTitle>
+                <CardDescription>Search for other users on Macro to connect with.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
+                    <Input 
+                        placeholder="Search by username..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                        Search
+                    </Button>
+                </form>
+                <ScrollArea className="h-40">
+                    <div className="space-y-2 pr-4">
+                        {isLoading && <Skeleton className="h-10 w-full" />}
+                        {!isLoading && searchResults.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">Enter a username to search.</p>}
+                        {!isLoading && searchResults.map(user => (
+                             <div key={user.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage />
+                                        <AvatarFallback>{user.username.substring(0, 1).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <span>{user.username}</span>
                                 </div>
-                                <Skeleton className="h-4 w-20" />
+                                {getButtonForStatus(user)}
                             </div>
-                        )))
-                        : activities.length > 0 ? (
-                        activities.map(activity => (
-                             <Link key={activity.user_id} href={`/dashboard/social/${activity.user_id}`} onClick={() => playSound('select')} className="block rounded-lg transition-colors hover:bg-white/5 focus:bg-white/10 focus:outline-none">
-                                <div className="flex items-center justify-between p-3">
-                                    <div className="flex items-center gap-4">
-                                        <Avatar>
-                                            <AvatarImage />
-                                            <AvatarFallback>{activity.username.substring(0, 1).toUpperCase()}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-semibold">{activity.username}</p>
-                                            <div className="text-sm">
-                                                {renderStatus(activity)}
+                        ))}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
+};
+
+const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void }) => {
+    const [profile, setProfile] = useState<SocialProfile | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const { playSound } = useSound();
+    const router = useRouter();
+
+    const fetchProfileData = useCallback(async () => {
+        setIsLoading(true);
+        const profileData = await getSocialProfile(user.id);
+        setProfile(profileData);
+        setIsLoading(false);
+    }, [user.id]);
+
+    useEffect(() => {
+        fetchProfileData();
+    }, [fetchProfileData]);
+    
+    const renderStatus = (activity: SocialFriendWithActivity) => {
+        if (activity.activity_status === 'playing' && activity.activity_details) {
+          return (
+            <span className="flex items-center gap-1 text-xs text-primary truncate">
+              <Gamepad2 className="h-3 w-3" />
+              {activity.activity_details}
+            </span>
+          );
+        }
+        return <span className="text-xs text-green-400">Online</span>;
+    };
+
+    if (isLoading || !profile) {
+        return (
+             <div className="flex h-[60vh] w-full flex-1 items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
+            <aside className="lg:col-span-1 space-y-6">
+                <Card className="text-center">
+                    <CardHeader>
+                        <Avatar className="w-20 h-20 mx-auto mb-2">
+                            <AvatarImage />
+                            <AvatarFallback className="text-3xl">{user.username.substring(0,1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <CardTitle>{user.username}</CardTitle>
+                        <CardDescription>Your personal hub</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2">
+                        <Button asChild variant="secondary" className="w-full">
+                           <Link href={`/dashboard/social/${user.id}`} onClick={() => playSound('select')}>
+                                <UserIcon className="mr-2 h-4 w-4" /> View My Profile
+                           </Link>
+                        </Button>
+                         <Button onClick={onLogout} className="w-full">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Log Out
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Friends ({profile.friends.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-64">
+                            <div className="space-y-1 pr-2">
+                                {profile.friends.length > 0 ? profile.friends.map(friend => (
+                                    <Link key={friend.id} href={`/dashboard/social/${friend.id}`} className="block p-2 rounded-md transition-colors hover:bg-white/5 focus:bg-white/10 focus:outline-none">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage />
+                                                <AvatarFallback>{friend.username.substring(0,1).toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="overflow-hidden">
+                                                <p className="font-semibold text-sm truncate">{friend.username}</p>
+                                                {renderStatus(friend)}
                                             </div>
                                         </div>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        {new Date(activity.updated_at).toLocaleTimeString()}
-                                    </p>
-                                </div>
-                             </Link>
-                        ))
-                    ) : (
-                        <div className="text-center text-muted-foreground py-12">
-                            <p>It's quiet in here... for now.</p>
-                            <p className="text-sm">Why not invite some friends?</p>
-                        </div>
-                    )}
-                </div>
-            </ScrollArea>
-        </CardContent>
-    </Card>
-  );
+                                    </Link>
+                                )) : <p className="text-sm text-center text-muted-foreground py-8">Your friends list is empty. Find some friends!</p>}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            </aside>
+
+            <main className="lg:col-span-3 space-y-6">
+                <FriendRequests userId={user.id} onAction={fetchProfileData} />
+                <FindFriends currentUser={user} onFriendRequestSent={fetchProfileData} />
+            </main>
+        </div>
+    );
 };
 
 
@@ -206,7 +290,6 @@ export default function SocialPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in from a previous session
     try {
       const storedUser = localStorage.getItem('macro-social-user');
       if (storedUser) {
@@ -254,7 +337,7 @@ export default function SocialPage() {
 
   if (socialUser) {
     return (
-      <div className="flex flex-1 items-center justify-center animate-fade-in">
+      <div className="flex flex-1 items-start justify-center animate-fade-in pt-8">
         <SocialHub user={socialUser} onLogout={handleLogout} />
       </div>
     );
@@ -317,5 +400,3 @@ export default function SocialPage() {
     </div>
   );
 }
-
-    

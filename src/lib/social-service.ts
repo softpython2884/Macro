@@ -94,7 +94,6 @@ async function initializeDatabase() {
         isDbInitialized = true;
     } catch (error) {
         console.error('[SOCIAL-DB] Failed to initialize database schema:', error);
-        // Don't set isDbInitialized to true, so it can be retried.
     } finally {
         if (connection) connection.release();
     }
@@ -118,20 +117,28 @@ export type Achievement = {
 export type SocialFriend = {
     id: number;
     username: string;
-}
+};
+
+export type SocialFriendWithActivity = {
+    id: number;
+    username: string;
+    activity_status: string | null;
+    activity_details: string | null;
+};
 
 export type PendingRequest = {
     id: number;
     username: string;
 };
 
-// The friendship status between two users.
-// 'pending_sent' means userOneId sent a request to userTwoId.
-// 'pending_received' means userOneId received a request from userTwoId.
 export type FriendshipStatus = 'not_friends' | 'pending_sent' | 'pending_received' | 'friends' | 'self';
 
+export type SearchedUser = {
+    id: number;
+    username: string;
+    friendshipStatus: FriendshipStatus;
+};
 
-// Internal helper function to grant an achievement. Not exported.
 async function grantAchievement(userId: number, achievementId: string, connection: PoolConnection): Promise<boolean> {
     const [result]: any = await connection.execute(
         'INSERT IGNORE INTO user_achievements (user_id, achievement_id) VALUES (?, ?)',
@@ -152,14 +159,12 @@ export async function registerUser({ username, email, password }: Record<string,
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    // Check for existing username
     const [existingUsername]: any = await connection.execute('SELECT id FROM social_users WHERE username = ?', [username]);
     if (existingUsername.length > 0) {
         await connection.rollback();
         return { success: false, message: 'This username is already taken.' };
     }
 
-    // Check for existing email
     const [existingEmail]: any = await connection.execute('SELECT id FROM social_users WHERE email = ?', [email]);
     if (existingEmail.length > 0) {
         await connection.rollback();
@@ -297,7 +302,7 @@ export type SocialProfile = {
     activity_status: string | null;
     activity_details: string | null;
     achievements: Achievement[];
-    friends: SocialFriend[];
+    friends: SocialFriendWithActivity[];
 };
 
 export async function getSocialProfile(userId: number): Promise<SocialProfile | null> {
@@ -366,7 +371,6 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
         );
         const existingIds = new Set(existingAchievements.map((a: any) => a.achievement_id));
 
-        // Collector Achievements
         if (criteria.gameCount !== undefined) {
             if (criteria.gameCount >= 10 && !existingIds.has('COLLECTOR_2')) {
                 if (await grantAchievement(userId, 'COLLECTOR_2', connection)) {
@@ -380,9 +384,7 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
             }
         }
 
-        // Socialite Achievement
         if (criteria.profileCount !== undefined) {
-            // The creator has their own profile, so we check for more than 1.
             if (criteria.profileCount > 1 && !existingIds.has('SOCIALITE')) {
                  if (await grantAchievement(userId, 'SOCIALITE', connection)) {
                     newlyAwarded.push('Socialite');
@@ -390,7 +392,6 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
             }
         }
 
-        // App Store Explorer Achievement
         if (criteria.storeHistoryCount !== undefined) {
             if (criteria.storeHistoryCount >= 10 && !existingIds.has('APP_STORE_EXPLORER')) {
                  if (await grantAchievement(userId, 'APP_STORE_EXPLORER', connection)) {
@@ -411,8 +412,6 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
     }
 }
 
-
-// --- Friends System ---
 
 export async function sendFriendRequest(requesterId: number, addresseeId: number): Promise<{ success: boolean; message: string }> {
     await initializeDatabase();
@@ -450,7 +449,7 @@ export async function respondToFriendRequest(userId: number, requesterId: number
                 ['accepted', userId, userOneId, userTwoId]
             );
             return { success: true, message: 'Friend request accepted.' };
-        } else { // decline
+        } else {
             await connection.execute(
                 'DELETE FROM friends WHERE user_one_id = ? AND user_two_id = ?',
                 [userOneId, userTwoId]
@@ -516,14 +515,19 @@ export async function getPendingRequests(userId: number): Promise<PendingRequest
     }
 }
 
-export async function getFriends(userId: number, existingConnection?: PoolConnection): Promise<SocialFriend[]> {
+export async function getFriends(userId: number, existingConnection?: PoolConnection): Promise<SocialFriendWithActivity[]> {
     await initializeDatabase();
     const connection = existingConnection || await pool.getConnection();
     try {
         const [rows]: any = await connection.execute(`
-            SELECT u.id, u.username
+            SELECT 
+                u.id, 
+                u.username,
+                sa.activity_status,
+                sa.activity_details
             FROM social_users u
             JOIN friends f ON (u.id = f.user_one_id OR u.id = f.user_two_id)
+            LEFT JOIN social_activities sa ON u.id = sa.user_id
             WHERE (f.user_one_id = ? OR f.user_two_id = ?)
               AND f.status = 'accepted'
               AND u.id != ?
@@ -534,5 +538,38 @@ export async function getFriends(userId: number, existingConnection?: PoolConnec
         return [];
     } finally {
         if (!existingConnection && connection) (connection as PoolConnection).release();
+    }
+}
+
+
+export async function searchUsers(query: string, currentUserId: number): Promise<SearchedUser[]> {
+    await initializeDatabase();
+    if (!query) return [];
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [users]: any = await connection.execute(
+            `SELECT id, username FROM social_users WHERE username LIKE ? AND id != ? LIMIT 10`,
+            [`%${query}%`, currentUserId]
+        );
+
+        if (users.length === 0) return [];
+        
+        const usersWithStatus = await Promise.all(users.map(async (user: { id: number; username: string; }) => {
+            const status = await getFriendshipStatus(currentUserId, user.id);
+            return {
+                id: user.id,
+                username: user.username,
+                friendshipStatus: status
+            };
+        }));
+
+        return usersWithStatus.filter(user => user.friendshipStatus !== 'friends');
+    } catch (error) {
+        console.error(`[SOCIAL-DB] Error searching users for query "${query}":`, error);
+        return [];
+    } finally {
+        if (connection) connection.release();
     }
 }
