@@ -1,2 +1,4 @@
 keyboard
 inputs
+psutil
+pyautogui

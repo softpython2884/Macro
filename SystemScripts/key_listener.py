@@ -1,118 +1,103 @@
-import keyboard
-import subprocess
-import platform
-from inputs import get_gamepad
-import threading
 import time
+import threading
 import configparser
 import os
+import psutil
+import keyboard
 
-def get_browser_from_config():
-    """Reads the browser executable from config.ini."""
-    try:
-        config = configparser.ConfigParser()
-        # Path relative to this script's location
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(script_dir, 'config.ini')
+try:
+    from inputs import get_gamepad, UnpluggedError
+except ImportError:
+    get_gamepad = None
 
-        if not os.path.exists(config_path):
-            print(f"Config file not found at {config_path}. Creating with default.")
-            default_config = '[general]\nbrowser = chrome.exe\nsetupconfig = false\n'
-            with open(config_path, 'w') as configfile:
-                configfile.write(default_config)
-            return 'chrome.exe'
-            
-        config.read(config_path)
-        browser = config.get('general', 'browser', fallback='chrome.exe')
-        print(f"Using browser from config: {browser}")
-        return browser
-    except Exception as e:
-        print(f"Error reading config.ini, defaulting to chrome.exe. Error: {e}")
-        return 'chrome.exe'
+import pyautogui
 
-def close_browser():
-    """Closes the browser specified in the config file."""
-    browser_executable = get_browser_from_config()
-    current_os = platform.system()
-    
-    print(f"Attempting to close browser: {browser_executable} on {current_os}...")
+# Lire la config
+config = configparser.ConfigParser()
+# Path relative to this script's location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(script_dir, 'config.ini')
+config.read(config_path)
 
-    try:
-        if current_os == "Windows":
-            process_name = browser_executable
-            # shell=True is needed for commands like taskkill on Windows
-            subprocess.run(["taskkill", "/F", "/IM", process_name], check=True, shell=True, capture_output=True, text=True)
-            print(f"{process_name} process terminated.")
-        
-        elif current_os == "Darwin": # macOS
-            process_map = {
-                "chrome.exe": "Google Chrome",
-                "msedge.exe": "Microsoft Edge",
-                "firefox.exe": "Firefox"
-            }
-            process_name = process_map.get(browser_executable.lower(), "Google Chrome")
-            subprocess.run(["pkill", "-f", process_name], check=True, capture_output=True, text=True)
-            print(f"'{process_name}' process terminated.")
-        
-        elif current_os == "Linux":
-            process_map = {
-                "chrome.exe": "chrome",
-                "msedge.exe": "msedge",
-                "firefox.exe": "firefox"
-            }
-            process_name = process_map.get(browser_executable.lower(), "chrome")
-            subprocess.run(["pkill", process_name], check=True, capture_output=True, text=True)
-            print(f"'{process_name}' process terminated.")
+browser_process = config.get("general", "browser", fallback="chrome.exe").strip()
 
-    except subprocess.CalledProcessError as e:
-        stderr_lower = e.stderr.lower() if e.stderr else ""
-        if "could not be found" in stderr_lower or "no process found" in stderr_lower:
-            print(f"Browser process was not running.")
+# État d'appui
+key_hold_time = {}
+HOLD_THRESHOLD = 3  # secondes
+
+def alt_tab():
+    pyautogui.keyDown("alt")
+    pyautogui.press("tab")
+    pyautogui.keyUp("alt")
+
+def kill_browser():
+    print(f"[INFO] Attempting to close process: {browser_process}")
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] and proc.info['name'].lower() == browser_process.lower():
+            try:
+                psutil.Process(proc.info['pid']).terminate()
+                print(f"[INFO] Terminated: {proc.info['name']}")
+            except Exception as e:
+                print(f"[ERROR] Could not terminate {proc.info['name']}: {e}")
+
+def handle_press(key_name):
+    if key_name not in key_hold_time:
+        key_hold_time[key_name] = time.time()
+        print(f"[INFO] {key_name} pressed. Hold for {HOLD_THRESHOLD}s to kill browser.")
+
+def handle_release(key_name):
+    if key_name in key_hold_time:
+        duration = time.time() - key_hold_time[key_name]
+        del key_hold_time[key_name]
+        print(f"[INFO] {key_name} released after {duration:.2f}s.")
+        if duration >= HOLD_THRESHOLD:
+            kill_browser()
         else:
-            print(f"Error closing browser: {e.stderr}")
-    except FileNotFoundError:
-        print("Error: 'taskkill' or 'pkill' command not found. Make sure it's in your system's PATH.")
+            alt_tab()
 
+# Thread pour touche F9
+def monitor_keyboard():
+    keyboard.on_press_key("f9", lambda _: handle_press("f9"))
+    keyboard.on_release_key("f9", lambda _: handle_release("f9"))
+    print("[INFO] Keyboard listener for F9 is active.")
+    keyboard.wait()
 
-def detect_keyboard():
-    print("Keyboard listener started. Waiting for F9...")
-    keyboard.wait('F9')
-    print("F9 detected!")
-    close_browser()
-    # Relaunch the listener to catch the next press
-    threading.Thread(target=detect_keyboard, daemon=True).start()
-
-
-def detect_xbox_button():
-    print("Gamepad listener started. Waiting for Xbox button...")
-    try:
-        while True:
+# Thread pour bouton Xbox
+def monitor_gamepad():
+    if get_gamepad is None:
+        print("[WARN] 'inputs' library not found. Gamepad listener disabled. Run 'pip install inputs'.")
+        return
+        
+    print("[INFO] Gamepad listener for Xbox button is active.")
+    pressed = False
+    while True:
+        try:
             events = get_gamepad()
             for event in events:
-                # BTN_MODE is often the code for the Xbox/Guide button
-                if event.code == "BTN_MODE" and event.state == 1:
-                    print("Xbox button detected!")
-                    close_browser()
-    except Exception:
-        # This will happen if no gamepad is connected. We'll wait and retry.
-        print("[INFO] No gamepad detected. Retrying in 10 seconds...")
-        time.sleep(10)
-        # Relaunch the listener
-        threading.Thread(target=detect_xbox_button, daemon=True).start()
+                if event.code == "BTN_MODE":
+                    if event.state == 1 and not pressed:
+                        handle_press("xbox")
+                        pressed = True
+                    elif event.state == 0 and pressed:
+                        handle_release("xbox")
+                        pressed = False
+        except UnpluggedError:
+            print("[INFO] Gamepad unplugged. Waiting for connection...")
+            time.sleep(5)
+        except Exception as e:
+            print(f"[ERROR Gamepad] An unexpected error occurred: {e}")
+            time.sleep(5)
 
-
-# --- Main Execution ---
 if __name__ == "__main__":
-    print("--- Macro System Listener ---")
-    print("This script runs in the background to add system-level controls.")
+    print("--- Macro System Listener v2 ---")
+    print(f"Target browser process: {browser_process}")
+    print("Action: Tap F9/Xbox for Alt+Tab, Hold for 3s to kill browser.")
     
-    # Run listeners in parallel
-    threading.Thread(target=detect_keyboard, daemon=True).start()
-    threading.Thread(target=detect_xbox_button, daemon=True).start()
+    threading.Thread(target=monitor_keyboard, daemon=True).start()
+    threading.Thread(target=monitor_gamepad, daemon=True).start()
 
-    # Keep the main thread alive to allow daemon threads to run
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Script stopped by user.")
+        print("\nScript stopped by user.")

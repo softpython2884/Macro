@@ -28,6 +28,7 @@ import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { resetSetup } from "@/app/setup/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
+import { saveSystemSettings } from "./actions";
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -51,6 +52,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { setHints } = useHints();
   const [isScanning, setIsScanning] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
   
   useBackNavigation('/dashboard');
@@ -110,21 +112,39 @@ export default function SettingsPage() {
     name: "plugins"
   });
 
-  function onSubmit(values: SettingsFormValues) {
+  async function onSubmit(values: SettingsFormValues) {
+    setIsSaving(true);
+    
+    // 1. Save local settings (directories, etc.) to localStorage
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(values));
-      toast({
-        title: "Settings saved!",
-        description: "Your configurations have been updated.",
-      });
       window.dispatchEvent(new Event('settings-updated'));
     } catch (error) {
        toast({
-        title: "Error saving settings",
+        title: "Error saving local settings",
         description: "Could not save settings to local storage.",
         variant: "destructive"
       });
+       setIsSaving(false);
+       return;
     }
+
+    // 2. Save system settings (like the browser) to the server config files
+    const result = await saveSystemSettings({ browser: values.browser });
+
+    if (result.success) {
+      toast({
+        title: "Settings saved!",
+        description: "Your configurations have been updated successfully.",
+      });
+    } else {
+      toast({
+        title: "Server Error",
+        description: result.error || "Failed to save system settings to config.ini.",
+        variant: "destructive"
+      });
+    }
+    setIsSaving(false);
   }
 
   const handleScan = async () => {
@@ -327,7 +347,7 @@ export default function SettingsPage() {
                             </SelectContent>
                           </Select>
                         <FormDescription>
-                          This browser will be used to open web apps from the dashboard.
+                          This browser will be used to open web apps and by the system listener script.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -430,7 +450,9 @@ export default function SettingsPage() {
               </Tabs>
 
               <div className="flex items-center gap-4 pt-4 border-t">
-                <Button type="submit">Save Configuration</Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Configuration'}
+                </Button>
               </div>
             </form>
           </Form>
