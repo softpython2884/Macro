@@ -3,19 +3,18 @@
 
 import { Card } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useHints } from '@/context/HintContext';
 import { useSound } from '@/context/SoundContext';
 import { useUser } from "@/context/UserContext";
 import { useGames } from "@/context/GameContext";
-import { getHeroes } from "@/lib/steamgrid";
-import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import Image from "next/image";
 import { Gamepad2, LayoutGrid, Settings, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useBackground } from "@/context/BackgroundContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ContentItem = {
     id: string;
@@ -63,7 +62,7 @@ const navItems: Omit<ContentItem, 'image'>[] = [
 export default function DashboardPage() {
     const { setHints } = useHints();
     const { currentUser } = useUser();
-    const { games } = useGames();
+    const { games, isLoading: gamesLoading } = useGames();
     const [api, setApi] = React.useState<CarouselApi>()
     const [current, setCurrent] = React.useState(0)
     const { playSound } = useSound();
@@ -74,6 +73,19 @@ export default function DashboardPage() {
 
     const [content, setContent] = useState<ContentItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const memoizedNavItems = useMemo(() => {
+        const navItemImages: { [key: string]: string } = {
+            'nav-games': '/game.png',
+            'nav-apps': '/apps.png',
+            'nav-profiles': '/user.png',
+            'nav-settings': '/settings.png',
+        };
+        return navItems.map(item => ({
+            ...item,
+            image: navItemImages[item.id] || null,
+        }));
+    }, []);
   
     useEffect(() => {
         setHints([
@@ -132,25 +144,9 @@ export default function DashboardPage() {
 
     useEffect(() => {
         const fetchDashboardContent = async () => {
-            const navItemImages: { [key: string]: string } = {
-                'nav-games': '/game.png',
-                'nav-apps': '/apps.png',
-                'nav-profiles': '/user.png',
-                'nav-settings': '/settings.png',
-            };
-
-            if (!games.length || !currentUser) {
-                 const staticNavItems = navItems.map(item => ({
-                    ...item,
-                    image: navItemImages[item.id] || null,
-                }));
-                setContent(staticNavItems);
-                setIsLoading(false);
-                return;
-            };
-
+            if (!currentUser || gamesLoading) return;
+            
             setIsLoading(true);
-            const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
 
             try {
                 const playtimeJSON = localStorage.getItem('macro-playtime');
@@ -165,14 +161,15 @@ export default function DashboardPage() {
                     
                     const enrichedGames = await Promise.all(playedGames.map(async (playedGame) => {
                         const gameData = games.find(g => g.id === playedGame.gameId);
-                        if (!gameData || !gameData.steamgridGameId) return null;
-
-                        const heroImages = await getHeroes(gameData.steamgridGameId, nsfwEnabled ? 'any' : 'false', prioritizeNsfw);
+                        if (!gameData) return null;
+                        
+                        // Use already fetched heroUrls if available
+                        const heroImage = gameData.heroUrls?.[0] || gameData.posterUrl || null;
                         
                         return {
                             id: gameData.id,
                             name: gameData.name,
-                            image: heroImages[0]?.url || gameData.posterUrl || null,
+                            image: heroImage,
                             href: `/dashboard/games/${gameData.id}`,
                             type: 'game',
                         } as ContentItem;
@@ -180,29 +177,22 @@ export default function DashboardPage() {
                     recentlyPlayed = enrichedGames.filter(Boolean) as ContentItem[];
                 }
                 
-                const staticNavItems = navItems.map(item => ({
-                    ...item,
-                    image: navItemImages[item.id] || null,
-                }));
-
-                setContent([...recentlyPlayed, ...staticNavItems]);
+                setContent([...recentlyPlayed, ...memoizedNavItems]);
 
             } catch (e) {
                 console.error("Error constructing dashboard:", e);
-                const staticNavItems = navItems.map(item => ({...item, image: navItemImages[item.id] || null }));
-                setContent(staticNavItems);
+                setContent(memoizedNavItems);
             }
             setIsLoading(false);
         };
         fetchDashboardContent();
-    }, [games, currentUser]);
+    }, [games, currentUser, gamesLoading, memoizedNavItems]);
 
     useEffect(() => {
         if (content.length > 0) {
             const currentItem = content[current];
             setBackgroundImage(currentItem?.image || null);
         }
-        // No cleanup function here to keep the background of the last focused item
     }, [current, content, setBackgroundImage]);
     
     if (isLoading) {
@@ -236,10 +226,12 @@ export default function DashboardPage() {
                 {content.map((item, index) => (
                   <CarouselItem key={item.id} className="pl-8 md:basis-1/2 lg:basis-2/3">
                       <div className={cn(
-                        "transition-all duration-300 ease-in-out transform",
-                        index === current ? 'scale-100 opacity-100 animate-levitate' : 'scale-75 opacity-50'
+                        "transition-all duration-500 ease-in-out",
+                        index === current ? 'scale-100 opacity-100' : 'scale-90 opacity-60'
                       )}>
-                        <ContentCard item={item} />
+                        <div className={cn(index === current && 'animate-levitate')}>
+                            <ContentCard item={item} />
+                        </div>
                       </div>
                   </CarouselItem>
                 ))}
