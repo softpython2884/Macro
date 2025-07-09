@@ -17,7 +17,7 @@ const BASE_URL = "https://www.skidrowreloaded.com";
 export interface SkidrowSearchResult {
     title: string;
     url: string;
-    posterUrl?: string;
+    posterUrl?: string | null;
 }
 
 export interface SkidrowGameDetails {
@@ -44,7 +44,7 @@ export async function searchSkidrow(query: string, currentUser: User): Promise<S
         const html = await response.text();
         const $ = cheerio.load(html);
 
-        const posts = $("div.post").slice(0, 6);
+        const posts = $("div.post").slice(0, 18);
         const results: {title: string, url: string}[] = [];
 
         posts.each((i, el) => {
@@ -107,40 +107,42 @@ export async function getSkidrowGameDetails(url: string): Promise<Omit<SkidrowGa
         let pixeldrainApi: string | null = null;
         
         const knownHosts = [
-            "PIXELDRAIN", "MEGA", "1FICHIER", "GOFILE", "MEDIAFIRE", "RANOZ", "DROPAPK", "BOWFILE",
+            "ONE FTP LINK", "MEGA", "1FICHIER", "GOFILE", "MEDIAFIRE", "RANOZ", "DROPAPK", "BOWFILE",
             "SENDCM", "FREEDLINK", "MIXDROP", "CHOMIKUJ", "VIKINGFILE", "DOWNMEDIALOAD", "HEXLOAD",
             "1CLOUDFILE", "USERSDRIVE", "FILEFACTORY", "MEGAUP", "CLICKNUPLOAD", "DAILYUPLOAD",
-            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "MULTI LINKS", "ONE FTP LINK", "FTP LINK"
+            "RAPIDGATOR", "NITROFLARE", "TURBOBIT", "HITFILE", "KATFILE", "MULTIUP", "MULTI LINKS", "FTP LINK"
         ];
         
-        $("span").each((i, el) => {
-            const spanEl = $(el);
-            const spanText = spanEl.text().trim().toUpperCase();
-            
-            let host = knownHosts.find(h => spanText.includes(h));
+        $("p").each((i, p_el) => {
+            const pEl = $(p_el);
+            const strongTag = pEl.find('strong');
 
-            if (host) {
-                // Based on the provided HTML, the <a> tag is inside the same <p> as the <span>
-                const linkTag = spanEl.closest('p').find('a');
-                const link = linkTag.attr('href');
+            if (strongTag.length > 0) {
+                const strongText = strongTag.text().trim().toUpperCase();
+                const host = knownHosts.find(h => strongText.includes(h));
 
-                if (link) {
-                    let standardizedHost = host;
-                    if (["ONE FTP LINK", "FTP LINK"].includes(host)) standardizedHost = "FTP";
-                    if (host === "MULTI LINKS") standardizedHost = "MULTIUP";
-                    if (host === "CHOMIKUJ") standardizedHost = "CHOMIKUJ.PL";
-                    
-                    if (!allLinks[standardizedHost]) {
-                        allLinks[standardizedHost] = link;
+                if (host) {
+                    const linkTag = pEl.find('a');
+                    const link = linkTag.attr('href');
+
+                    if(link) {
+                        let standardizedHost = host;
+                        if (["ONE FTP LINK", "FTP LINK"].includes(host)) standardizedHost = "FTP";
+                        if (host === "MULTI LINKS") standardizedHost = "MULTIUP";
+                        if (host === "CHOMIKUJ") standardizedHost = "CHOMIKUJ.PL";
                         
-                        if (standardizedHost === "PIXELDRAIN") {
-                            const match = link.match(/\/u\/([a-zA-Z0-9]+)/);
-                            if (match) {
-                                pixeldrainApi = `https://pixeldrain.com/api/file/${match[1]}`;
-                                if (!priorityLink) priorityLink = link;
+                        if (!allLinks[standardizedHost]) {
+                            allLinks[standardizedHost] = link;
+                            
+                            if (standardizedHost === "PIXELDRAIN") {
+                                const match = link.match(/\/u\/([a-zA-Z0-9]+)/);
+                                if (match) {
+                                    pixeldrainApi = `https://pixeldrain.com/api/file/${match[1]}`;
+                                    if (!priorityLink) priorityLink = link;
+                                }
+                            } else if (standardizedHost === "MEGA" && !priorityLink) {
+                                priorityLink = link;
                             }
-                        } else if (standardizedHost === "MEGA" && !priorityLink) {
-                            priorityLink = link;
                         }
                     }
                 }

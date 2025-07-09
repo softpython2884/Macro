@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -11,7 +12,7 @@ import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { useSound } from '@/context/SoundContext';
 import { launchWebApp } from '@/lib/webapp-launcher';
 import { getSkidrowGameDetails } from '@/lib/skidrow-scraper';
-import type { SkidrowGameDetails } from '@/lib/skidrow-scraper';
+import type { SkidrowGameDetails, SkidrowSearchResult } from '@/lib/skidrow-scraper';
 import { getHeroes, searchGame } from '@/lib/steamgrid';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBackground } from '@/context/BackgroundContext';
@@ -30,6 +31,7 @@ export default function StoreDetailsPage() {
     
     const url = searchParams.get('url');
     const title = searchParams.get('title') || '';
+    const posterUrl = searchParams.get('posterUrl');
 
     const [details, setDetails] = useState<Omit<SkidrowGameDetails, 'title'> | null>(null);
     const [heroUrl, setHeroUrl] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export default function StoreDetailsPage() {
                 } else if (backButton) {
                     (backButton as HTMLElement).focus();
                 }
-            }, 100);
+            }, 300); // Increased timeout for safety
         }
     }, [isLoading]);
 
@@ -117,21 +119,44 @@ export default function StoreDetailsPage() {
 
             setDetails(gameDetails);
 
+            let finalHeroUrl: string | null = null;
             if (steamgridGame) {
                 const heroes = await getHeroes(steamgridGame.id, currentUser.permissions.nsfwEnabled ? 'any' : 'false', currentUser.permissions.prioritizeNsfw);
                 if (heroes.length > 0) {
-                    const hero = heroes[0].url;
-                    setHeroUrl(hero);
-                    setBackgroundImage(hero);
+                    finalHeroUrl = heroes[0].url;
+                    setHeroUrl(finalHeroUrl);
+                    setBackgroundImage(finalHeroUrl);
                 }
             }
+
+            if (url && title) {
+                try {
+                    const historyString = localStorage.getItem('macro-store-history');
+                    let history: SkidrowSearchResult[] = historyString ? JSON.parse(historyString) : [];
+                    
+                    const newItem: SkidrowSearchResult = {
+                        title,
+                        url,
+                        posterUrl: posterUrl,
+                    };
+
+                    history = history.filter(item => item.url !== url);
+                    history.unshift(newItem);
+                    history = history.slice(0, 6); // Limit history
+
+                    localStorage.setItem('macro-store-history', JSON.stringify(history));
+                } catch (e) {
+                    console.error("Failed to save to store history:", e);
+                }
+            }
+
             setIsLoading(false);
         };
         fetchData();
         
         return () => setBackgroundImage(null);
 
-    }, [url, title, currentUser, setBackgroundImage]);
+    }, [url, title, currentUser, setBackgroundImage, posterUrl]);
 
     const handleDirectInstall = async (apiUrl: string, gameTitle: string) => {
         if (isInstalling) return;
@@ -210,7 +235,7 @@ export default function StoreDetailsPage() {
             <ScrollArea className="w-full flex-1" viewportRef={scrollViewportRef}>
                 <div className="flex flex-col text-white pb-8 pr-4">
                     <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden bg-card">
-                        {heroUrl && (
+                        {heroUrl ? (
                             <Image
                                 src={heroUrl}
                                 alt={`${title} Hero Image`}
@@ -218,7 +243,8 @@ export default function StoreDetailsPage() {
                                 className="object-cover object-center"
                                 priority
                             />
-                        )}
+                        ) : ( posterUrl && <Image src={posterUrl} alt={`${title} Poster`} fill className="object-contain" />)
+                        }
                         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
                     </div>
                     

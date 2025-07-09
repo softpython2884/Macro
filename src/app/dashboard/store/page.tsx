@@ -10,7 +10,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
+import { Search, History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHints } from '@/context/HintContext';
 import { useBackNavigation } from '@/hooks/use-back-navigation';
@@ -21,7 +21,7 @@ import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
 const StoreResultCard = ({ result }: { result: SkidrowSearchResult }) => {
     return (
         <Link 
-          href={`/dashboard/store/details?url=${encodeURIComponent(result.url)}&title=${encodeURIComponent(result.title)}`}
+          href={`/dashboard/store/details?url=${encodeURIComponent(result.url)}&title=${encodeURIComponent(result.title)}&posterUrl=${encodeURIComponent(result.posterUrl || '')}`}
           className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4] transition-transform duration-300 ease-in-out hover:scale-105 focus-within:scale-105"
         >
             <Card className="bg-black/20 backdrop-blur-lg border-2 border-transparent group-focus-within:border-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden relative">
@@ -48,6 +48,7 @@ export default function StorePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
+    const [pageTitle, setPageTitle] = useState("App Store");
 
     const { setHints } = useHints();
     const gridRef = useRef<HTMLDivElement>(null);
@@ -56,17 +57,34 @@ export default function StorePage() {
     useGridNavigation({ gridRef });
 
     useEffect(() => {
+        if (!hasSearched) {
+            try {
+                const historyString = localStorage.getItem('macro-store-history');
+                if (historyString) {
+                    const history = JSON.parse(historyString);
+                    if (history.length > 0) {
+                        setResults(history);
+                        setPageTitle("Recently Viewed");
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load store history", e);
+            }
+        }
+    }, [hasSearched]);
+
+    useEffect(() => {
         setHints([
             { key: '↕↔', action: 'Navigate' },
             { key: 'A', action: 'Select' },
             { key: 'Y', action: 'Search' },
             { key: 'B', action: 'Back' },
         ]);
-        if (!isLoading && hasSearched) {
+        if (!isLoading && (hasSearched || results.length > 0)) {
              gridRef.current?.querySelector('a, button')?.focus();
         }
         return () => setHints([]);
-    }, [setHints, isLoading, hasSearched]);
+    }, [setHints, isLoading, hasSearched, results]);
     
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -84,6 +102,7 @@ export default function StorePage() {
         setIsLoading(true);
         setResults([]);
         setHasSearched(true);
+        setPageTitle(`Results for "${searchQuery}"`);
         const searchResults = await searchSkidrow(searchQuery, currentUser);
         setResults(searchResults);
         setIsLoading(false);
@@ -106,7 +125,10 @@ export default function StorePage() {
     return (
         <div className="space-y-8 animate-fade-in">
             <div className="flex justify-between items-center">
-                <h2 className="text-4xl font-bold tracking-tight text-glow">App Store</h2>
+                <h2 className="text-4xl font-bold tracking-tight text-glow flex items-center gap-4">
+                    {pageTitle === 'Recently Viewed' && <History className="h-8 w-8 text-muted-foreground" />}
+                    {pageTitle}
+                </h2>
                 <div className="relative w-1/3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -123,7 +145,7 @@ export default function StorePage() {
             <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {isLoading 
                     ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)
-                    : results.map(result => <StoreResultCard key={result.url} result={result} />)
+                    : results.map((result, i) => <StoreResultCard key={`${result.url}-${i}`} result={result} />)
                 }
             </div>
             
@@ -133,7 +155,7 @@ export default function StorePage() {
                     <p className="text-sm text-muted-foreground/50">Try checking your spelling or using a different search term.</p>
                 </div>
             )}
-            {!isLoading && !hasSearched && (
+            {!isLoading && !hasSearched && results.length === 0 && (
                  <div className="text-center py-16">
                     <p className="text-lg text-muted-foreground">Use the search bar to find new apps and games.</p>
                 </div>
