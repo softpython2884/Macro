@@ -204,6 +204,7 @@ export default function ApplicationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPosterSelectorOpen, setIsPosterSelectorOpen] = useState(false);
   const [focusedApp, setFocusedApp] = useState<AppInfo | null>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
 
   const permittedApps = useMemo(() => {
     if (!currentUser) return [];
@@ -258,8 +259,6 @@ export default function ApplicationsPage() {
   }, [currentUser, permittedApps]);
 
   const triggerLibraryRefresh = () => {
-    // This is a bit of a hack, but it's the simplest way to force a re-fetch
-    // of metadata across the app, as the GameContext listens for this event.
     window.dispatchEvent(new Event('settings-updated'));
   };
 
@@ -283,6 +282,7 @@ export default function ApplicationsPage() {
       triggerLibraryRefresh();
   };
 
+  // Effect for hints and keydown listener
   useEffect(() => {
     setHints([
       { key: '↕↔', action: 'Navigate' },
@@ -293,13 +293,9 @@ export default function ApplicationsPage() {
       { key: 'E', action: 'Next Tab' },
     ]);
     
-    if (!isLoading) {
-      const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
-      firstElement?.focus();
-    }
-    
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key.toLowerCase() === 'y' && focusedApp && !isPosterSelectorOpen) {
+            lastFocusedElementRef.current = document.activeElement as HTMLElement;
             setIsPosterSelectorOpen(true);
         }
     };
@@ -309,7 +305,27 @@ export default function ApplicationsPage() {
       setHints([]);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setHints, isLoading, focusedApp, isPosterSelectorOpen]);
+  }, [setHints, focusedApp, isPosterSelectorOpen]);
+
+  // Effect for focus management
+  useEffect(() => {
+    if (isLoading) return; // Wait until loading is done
+
+    if (isPosterSelectorOpen) {
+      // Focus is managed by the dialog component, so we do nothing here
+      return;
+    }
+
+    if (lastFocusedElementRef.current) {
+      // If we have a stored element, focus it (this happens after closing the dialog)
+      lastFocusedElementRef.current.focus();
+      lastFocusedElementRef.current = null; // Clear the ref after use
+    } else if (gridRef.current && !gridRef.current.contains(document.activeElement)) {
+      // Otherwise, if focus is not inside our grid, set initial focus
+      const firstElement = gridRef.current?.querySelector('button, a') as HTMLElement;
+      firstElement?.focus();
+    }
+  }, [isLoading, isPosterSelectorOpen]);
 
   if (!currentUser) {
     return null;
