@@ -1,14 +1,23 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gamepad2, LogOut, RefreshCw, User as UserIcon } from "lucide-react";
+import { Gamepad2, LogOut, RefreshCw, User as UserIcon, UserCheck, UserX } from "lucide-react";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { getSocialActivities, loginUser, registerUser, type SocialActivity } from "@/lib/social-service";
+import { 
+    getSocialActivities, 
+    loginUser, 
+    registerUser, 
+    type SocialActivity, 
+    getPendingRequests,
+    respondToFriendRequest,
+    type PendingRequest
+} from "@/lib/social-service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +30,67 @@ type SocialUser = {
   username: string;
 };
 
+const FriendRequests = ({ userId, onAction }: { userId: number, onAction: () => void }) => {
+    const [requests, setRequests] = useState<PendingRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    const fetchRequests = useCallback(async () => {
+        setIsLoading(true);
+        const requestData = await getPendingRequests(userId);
+        setRequests(requestData);
+        setIsLoading(false);
+    }, [userId]);
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
+    
+    const handleResponse = async (requesterId: number, action: 'accept' | 'decline') => {
+        const result = await respondToFriendRequest(userId, requesterId, action);
+        toast({
+            title: result.success ? "Success" : "Error",
+            description: result.message,
+            variant: result.success ? "default" : "destructive",
+        });
+        if (result.success) {
+            onAction(); // Triggers a re-fetch in the parent
+        }
+    };
+
+    if (isLoading) return <Skeleton className="h-24 w-full" />;
+    if (requests.length === 0) return null;
+
+    return (
+        <Card className="mb-4 bg-background/50">
+            <CardHeader>
+                <CardTitle>Friend Requests</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {requests.map(req => (
+                    <div key={req.id} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage />
+                                <AvatarFallback>{req.username.substring(0, 1).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <span>{req.username}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button size="icon" variant="outline" className="h-8 w-8 bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300" onClick={() => handleResponse(req.id, 'accept')}>
+                                <UserCheck className="h-4 w-4" />
+                            </Button>
+                             <Button size="icon" variant="outline" className="h-8 w-8 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300" onClick={() => handleResponse(req.id, 'decline')}>
+                                <UserX className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+};
+
 const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void }) => {
   const [activities, setActivities] = useState<SocialActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,9 +99,10 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
   const fetchActivities = useCallback(async () => {
     setIsLoading(true);
     const activityData = await getSocialActivities();
-    setActivities(activityData);
+    // Filter out the current user from the main activity feed
+    setActivities(activityData.filter(act => act.user_id !== user.id));
     setIsLoading(false);
-  }, []);
+  }, [user.id]);
 
   useEffect(() => {
     fetchActivities();
@@ -67,6 +138,8 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
             </div>
         </CardHeader>
         <CardContent>
+            <FriendRequests userId={user.id} onAction={fetchActivities} />
+
             <ScrollArea className="h-96 pr-4">
                 <div className="space-y-2">
                     {isLoading 
@@ -82,7 +155,7 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
                                 <Skeleton className="h-4 w-20" />
                             </div>
                         )))
-                        : (
+                        : activities.length > 0 ? (
                         activities.map(activity => (
                              <Link key={activity.user_id} href={`/dashboard/social/${activity.user_id}`} onClick={() => playSound('select')} className="block rounded-lg transition-colors hover:bg-white/5 focus:bg-white/10 focus:outline-none">
                                 <div className="flex items-center justify-between p-3">
@@ -104,6 +177,11 @@ const SocialHub = ({ user, onLogout }: { user: SocialUser, onLogout: () => void 
                                 </div>
                              </Link>
                         ))
+                    ) : (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>It's quiet in here... for now.</p>
+                            <p className="text-sm">Why not invite some friends?</p>
+                        </div>
                     )}
                 </div>
             </ScrollArea>
@@ -239,3 +317,5 @@ export default function SocialPage() {
     </div>
   );
 }
+
+    

@@ -2,14 +2,17 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
-import { getSocialProfile, type SocialProfile } from '@/lib/social-service';
+import React, { useEffect, useState, useCallback } from 'react';
+import { getSocialProfile, type SocialProfile, sendFriendRequest, getFriendshipStatus, type FriendshipStatus } from '@/lib/social-service';
 import { useBackNavigation } from '@/hooks/use-back-navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, UserPlus, type LucideIcon, Download } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Award, Tv, Loader2, Rocket, Album, Library, Users, UserPlus, type LucideIcon, UserCheck, Clock, UserX } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import { useSound } from '@/context/SoundContext';
 
 const iconMap: Record<string, LucideIcon> = {
     Rocket,
@@ -25,6 +28,29 @@ const AchievementIcon = ({ name, className }: { name: string, className?: string
     return <Icon className={className} />;
 };
 
+const FriendActionButton = ({ status, onAction }: { status: FriendshipStatus; onAction: () => void }) => {
+    const { playSound } = useSound();
+    
+    const handleClick = () => {
+        playSound('select');
+        onAction();
+    };
+
+    switch (status) {
+        case 'not_friends':
+            return <Button variant="outline" size="sm" onClick={handleClick}><UserPlus className="mr-2 h-4 w-4" /> Add Friend</Button>;
+        case 'pending_sent':
+            return <Button variant="outline" size="sm" disabled><Clock className="mr-2 h-4 w-4" /> Request Sent</Button>;
+        case 'pending_received':
+             return <Button variant="outline" size="sm" disabled><UserCheck className="mr-2 h-4 w-4" /> Respond to Request</Button>;
+        case 'friends':
+            return <Button variant="outline" size="sm" disabled><UserCheck className="mr-2 h-4 w-4" /> Friends</Button>;
+        case 'self':
+        default:
+            return null;
+    }
+};
+
 export default function SocialProfilePage() {
     const params = useParams();
     const router = useRouter();
@@ -32,26 +58,60 @@ export default function SocialProfilePage() {
     
     const [profile, setProfile] = useState<SocialProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentSocialUserId, setCurrentSocialUserId] = useState<number | null>(null);
+    const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus | null>(null);
 
+    const { toast } = useToast();
     useBackNavigation('/dashboard/social');
 
     useEffect(() => {
+        try {
+            const userJson = localStorage.getItem('macro-social-user');
+            if (userJson) {
+                setCurrentSocialUserId(JSON.parse(userJson).id);
+            }
+        } catch (e) {
+            console.error("Failed to parse social user from localStorage", e);
+        }
+    }, []);
+
+    const fetchProfileData = useCallback(async () => {
         if (!userId) {
             setIsLoading(false);
             return;
         }
         
-        const fetchProfile = async () => {
-            setIsLoading(true);
-            const profileData = await getSocialProfile(userId);
-            setProfile(profileData);
-            setIsLoading(false);
-        };
+        setIsLoading(true);
+        const profileData = await getSocialProfile(userId);
+        setProfile(profileData);
+        
+        if (currentSocialUserId) {
+            const status = await getFriendshipStatus(currentSocialUserId, userId);
+            setFriendshipStatus(status);
+        }
+        
+        setIsLoading(false);
+    }, [userId, currentSocialUserId]);
 
-        fetchProfile();
+    useEffect(() => {
+        fetchProfileData();
+    }, [fetchProfileData]);
 
-    }, [userId]);
+    const handleSendFriendRequest = async () => {
+        if (!currentSocialUserId || !userId) return;
 
+        const result = await sendFriendRequest(currentSocialUserId, userId);
+        toast({
+            title: result.success ? "Success" : "Error",
+            description: result.message,
+            variant: result.success ? "default" : "destructive",
+        });
+
+        if (result.success) {
+            setFriendshipStatus('pending_sent');
+        }
+    };
+    
     const renderStatus = () => {
         if (!profile) return null;
 
@@ -96,9 +156,7 @@ export default function SocialProfilePage() {
                  <Button variant="outline" size="sm" onClick={() => router.back()} >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Social Hub
                 </Button>
-                 <Button variant="outline" size="sm">
-                    <UserPlus className="mr-2 h-4 w-4" /> Add Friend
-                </Button>
+                {friendshipStatus && <FriendActionButton status={friendshipStatus} onAction={handleSendFriendRequest} />}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-1">
@@ -120,7 +178,7 @@ export default function SocialProfilePage() {
                      <Tabs defaultValue="achievements" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="achievements">Achievements ({profile.achievements.length})</TabsTrigger>
-                            <TabsTrigger value="friends" disabled>Friends (Coming Soon)</TabsTrigger>
+                            <TabsTrigger value="friends">Friends ({profile.friends.length})</TabsTrigger>
                         </TabsList>
                         <TabsContent value="achievements">
                              <Card>
@@ -160,8 +218,26 @@ export default function SocialProfilePage() {
                                     <CardTitle>Friends</CardTitle>
                                     <CardDescription>This user's network on Macro.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
-                                    <p>Friends list coming soon!</p>
+                                <CardContent>
+                                     {profile.friends.length > 0 ? (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {profile.friends.map((friend) => (
+                                                <Button key={friend.id} variant="outline" asChild className="justify-start">
+                                                    <Link href={`/dashboard/social/${friend.id}`}>
+                                                        <Avatar className="w-6 h-6 mr-3">
+                                                            <AvatarImage />
+                                                            <AvatarFallback>{friend.username.substring(0,1).toUpperCase()}</AvatarFallback>
+                                                        </Avatar>
+                                                        {friend.username}
+                                                    </Link>
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-32 text-muted-foreground">
+                                            <p>This user hasn't added any friends yet.</p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -171,3 +247,5 @@ export default function SocialProfilePage() {
         </div>
     );
 }
+
+    

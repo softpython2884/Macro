@@ -37,7 +37,6 @@ CREATE TABLE `achievements` (
   PRIMARY KEY (`id`)
 );
 
--- Initial achievements to insert into the `achievements` table.
 INSERT INTO `achievements` (`id`, `name`, `description`, `icon`) VALUES
 ('PIONEER', 'Pioneer', 'Joined the Macro community.', 'Rocket'),
 ('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
@@ -85,6 +84,22 @@ export type Achievement = {
   icon: string; // lucide-react icon name
   unlocked_at: string;
 };
+
+export type SocialFriend = {
+    id: number;
+    username: string;
+}
+
+export type PendingRequest = {
+    id: number;
+    username: string;
+};
+
+// The friendship status between two users.
+// 'pending_sent' means userOneId sent a request to userTwoId.
+// 'pending_received' means userOneId received a request from userTwoId.
+export type FriendshipStatus = 'not_friends' | 'pending_sent' | 'pending_received' | 'friends' | 'self';
+
 
 // Internal helper function to grant an achievement. Not exported.
 async function grantAchievement(userId: number, achievementId: string, connection: PoolConnection): Promise<boolean> {
@@ -243,6 +258,7 @@ export type SocialProfile = {
     activity_status: string | null;
     activity_details: string | null;
     achievements: Achievement[];
+    friends: SocialFriend[];
 };
 
 export async function getSocialProfile(userId: number): Promise<SocialProfile | null> {
@@ -276,9 +292,12 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
             ORDER BY ua.unlocked_at DESC
         `, [userId]);
 
+        const friends = await getFriends(userId, connection);
+
         return {
             ...profileRows[0],
             achievements: achievementRows,
+            friends: friends
         };
 
     } catch (error) {
@@ -350,3 +369,126 @@ export async function checkAndAwardAchievements(userId: number, criteria: { game
         if (connection) connection.release();
     }
 }
+
+
+// --- Friends System ---
+
+export async function sendFriendRequest(requesterId: number, addresseeId: number): Promise<{ success: boolean; message: string }> {
+    if (requesterId === addresseeId) return { success: false, message: "You cannot add yourself as a friend." };
+
+    const [userOneId, userTwoId] = [requesterId, addresseeId].sort((a, b) => a - b);
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        await connection.execute(
+            'INSERT INTO friends (user_one_id, user_two_id, status, action_user_id) VALUES (?, ?, ?, ?)',
+            [userOneId, userTwoId, 'pending', requesterId]
+        );
+        return { success: true, message: 'Friend request sent!' };
+    } catch (error: any) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return { success: false, message: 'A friend request is already pending.' };
+        }
+        console.error('[SOCIAL-DB] Send Friend Request Error:', error);
+        return { success: false, message: 'A database error occurred.' };
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export async function respondToFriendRequest(userId: number, requesterId: number, action: 'accept' | 'decline'): Promise<{ success: boolean; message: string }> {
+    const [userOneId, userTwoId] = [userId, requesterId].sort((a, b) => a - b);
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        if (action === 'accept') {
+            await connection.execute(
+                'UPDATE friends SET status = ?, action_user_id = ? WHERE user_one_id = ? AND user_two_id = ? AND status = "pending"',
+                ['accepted', userId, userOneId, userTwoId]
+            );
+            return { success: true, message: 'Friend request accepted.' };
+        } else { // decline
+            await connection.execute(
+                'DELETE FROM friends WHERE user_one_id = ? AND user_two_id = ?',
+                [userOneId, userTwoId]
+            );
+            return { success: true, message: 'Friend request declined.' };
+        }
+    } catch (error: any) {
+        console.error('[SOCIAL-DB] Respond to Friend Request Error:', error);
+        return { success: false, message: 'A database error occurred.' };
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export async function getFriendshipStatus(userOneId: number, userTwoId: number): Promise<FriendshipStatus> {
+    if (userOneId === userTwoId) return 'self';
+
+    const [id1, id2] = [userOneId, userTwoId].sort((a, b) => a - b);
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [rows]: any = await connection.execute(
+            'SELECT status, action_user_id FROM friends WHERE user_one_id = ? AND user_two_id = ?',
+            [id1, id2]
+        );
+        if (rows.length === 0) return 'not_friends';
+
+        const friendship = rows[0];
+        if (friendship.status === 'accepted') return 'friends';
+        if (friendship.status === 'pending') {
+            return friendship.action_user_id === userOneId ? 'pending_sent' : 'pending_received';
+        }
+
+        return 'not_friends';
+    } catch (error) {
+        console.error('[SOCIAL-DB] Get Friendship Status Error:', error);
+        return 'not_friends';
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export async function getPendingRequests(userId: number): Promise<PendingRequest[]> {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [rows]: any = await connection.execute(`
+            SELECT u.id, u.username 
+            FROM friends f
+            JOIN social_users u ON u.id = f.action_user_id
+            WHERE (f.user_one_id = ? OR f.user_two_id = ?) 
+              AND f.status = 'pending' 
+              AND f.action_user_id != ?
+        `, [userId, userId, userId]);
+        return rows;
+    } catch (error) {
+        console.error('[SOCIAL-DB] Get Pending Requests Error:', error);
+        return [];
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export async function getFriends(userId: number, existingConnection?: PoolConnection): Promise<SocialFriend[]> {
+    const connection = existingConnection || await pool.getConnection();
+    try {
+        const [rows]: any = await connection.execute(`
+            SELECT u.id, u.username
+            FROM social_users u
+            JOIN friends f ON (u.id = f.user_one_id OR u.id = f.user_two_id)
+            WHERE (f.user_one_id = ? OR f.user_two_id = ?)
+              AND f.status = 'accepted'
+              AND u.id != ?
+        `, [userId, userId, userId]);
+        return rows;
+    } catch (error) {
+        console.error('[SOCIAL-DB] Get Friends Error:', error);
+        return [];
+    } finally {
+        if (!existingConnection && connection) (connection as PoolConnection).release();
+    }
+}
+
+    
