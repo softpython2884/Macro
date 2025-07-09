@@ -71,7 +71,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
   }, [allScannedGames, userToEdit, form]);
 
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     const userData: Omit<User, 'id'> = {
         name: values.name,
         avatar: values.avatar || 'https://icon-library.com/images/netflix-icon-black/netflix-icon-black-19.jpg',
@@ -82,7 +82,7 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
     if (userToEdit) {
       updateUser({ ...userData, id: userToEdit.id });
     } else {
-      addUser(userData);
+      await addUser(userData);
     }
     playSound('select');
     onFinished();

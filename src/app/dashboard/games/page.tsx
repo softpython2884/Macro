@@ -2,7 +2,7 @@
 'use client';
 
 import { Card } from "@/components/ui/card";
-import { Gamepad2, Search, Wand2, Loader2 } from 'lucide-react';
+import { Gamepad2, Search, Wand2, Loader2, Award } from 'lucide-react';
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { useHints } from '@/context/HintContext';
 import { useGridNavigation } from '@/hooks/use-grid-navigation';
@@ -19,6 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useBackground } from "@/context/BackgroundContext";
 import { recommendGames } from "@/ai/flows/recommend-games-flow";
 import { Button } from "@/components/ui/button";
+import { checkAndAwardAchievements } from "@/lib/social-service";
+import { useToast } from "@/hooks/use-toast";
 
 const GameCard = ({ game }: { game: Game }) => {
   const { setBackgroundImage } = useBackground();
@@ -68,6 +70,7 @@ export default function GamesPage() {
   const [isRecsOpen, setIsRecsOpen] = useState(false);
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [isRecsLoading, setIsRecsLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchGameMetadata();
@@ -96,6 +99,35 @@ export default function GamesPage() {
         setIsRecsLoading(false);
     }
   }, [permittedGames]);
+
+  useEffect(() => {
+    const checkAchievements = async () => {
+        if (isLoading || permittedGames.length === 0) return;
+
+        try {
+            const socialUserJson = localStorage.getItem('macro-social-user');
+            if (!socialUserJson) return;
+            
+            const socialUser = JSON.parse(socialUserJson);
+            if (!socialUser.id) return;
+
+            const newAchievements = await checkAndAwardAchievements(socialUser.id, { gameCount: permittedGames.length });
+            
+            if (newAchievements.length > 0) {
+                toast({
+                    title: "Achievement Unlocked!",
+                    description: `You've earned: ${newAchievements.join(', ')}`,
+                    action: <Award className="h-6 w-6 text-yellow-400" />,
+                });
+            }
+        } catch (e) {
+            console.error("Failed to check for achievements:", e);
+        }
+    };
+    if (!isLoading && permittedGames.length > 0) {
+        checkAchievements();
+    }
+  }, [permittedGames, isLoading, toast]);
 
   useEffect(() => {
     setHints([

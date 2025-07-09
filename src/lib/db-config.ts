@@ -1,5 +1,3 @@
-'use server';
-
 // Encoded connection routing parameters for the data service.
 
 // This function decodes Base64 strings to retrieve the configuration.

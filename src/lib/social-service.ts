@@ -2,6 +2,8 @@
 'use server';
 
 import pool from './db';
+import type { PoolConnection } from 'mysql2/promise';
+
 // NOTE: For a real production app, passwords MUST be hashed using a library like bcrypt.
 // This implementation stores plaintext passwords for prototype simplicity.
 
@@ -27,8 +29,6 @@ CREATE TABLE `social_activities` (
   CONSTRAINT `social_activities_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `social_users` (`id`) ON DELETE CASCADE
 );
 
--- New required tables for achievements
-
 CREATE TABLE `achievements` (
   `id` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -37,6 +37,7 @@ CREATE TABLE `achievements` (
   PRIMARY KEY (`id`)
 );
 
+-- Initial achievements to insert into the `achievements` table.
 INSERT INTO `achievements` (`id`, `name`, `description`, `icon`) VALUES
 ('PIONEER', 'Pioneer', 'Joined the Macro community.', 'Rocket'),
 ('COLLECTOR_1', 'Novice Collector', 'Have at least 5 games in your library.', 'Album'),
@@ -71,6 +72,16 @@ export type Achievement = {
   unlocked_at: string;
 };
 
+// Internal helper function to grant an achievement. Not exported.
+async function grantAchievement(userId: number, achievementId: string, connection: PoolConnection): Promise<boolean> {
+    const [result]: any = await connection.execute(
+        'INSERT IGNORE INTO user_achievements (user_id, achievement_id) VALUES (?, ?)',
+        [userId, achievementId]
+    );
+    return result.affectedRows > 0;
+}
+
+
 export async function registerUser({ username, email, password }: Record<string, string>): Promise<AuthResult> {
   if (!username || !email || !password) {
     return { success: false, message: 'All fields are required.' };
@@ -79,40 +90,38 @@ export async function registerUser({ username, email, password }: Record<string,
   let connection;
   try {
     connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    // Check if username or email already exists
     const [existingUsers]: any = await connection.execute(
       'SELECT id FROM social_users WHERE username = ? OR email = ?',
       [username, email]
     );
     if (existingUsers.length > 0) {
+      await connection.rollback();
       return { success: false, message: 'Username or email already exists.' };
     }
 
-    // Insert new user
     const [result]: any = await connection.execute(
       'INSERT INTO social_users (username, email, password) VALUES (?, ?, ?)',
-      [username, email, password] // Storing plaintext password
+      [username, email, password]
     );
 
     if (result.insertId) {
        const userId = result.insertId;
-       // Initialize activity for new user
-      await connection.execute(
+       await connection.execute(
         'INSERT INTO social_activities (user_id, activity_status) VALUES (?, ?)',
         [userId, 'online']
       );
-      // Grant "Pioneer" achievement
-      await connection.execute(
-        'INSERT IGNORE INTO user_achievements (user_id, achievement_id) VALUES (?, ?)',
-        [userId, 'PIONEER']
-      );
+      await grantAchievement(userId, 'PIONEER', connection);
+      await connection.commit();
       return { success: true, message: 'Registration successful!' };
     } else {
+      await connection.rollback();
       return { success: false, message: 'Failed to create user.' };
     }
 
   } catch (error: any) {
+    if (connection) await connection.rollback();
     console.error('[SOCIAL-DB] Registration Error:', error);
     return { success: false, message: 'A database error occurred.' };
   } finally {
@@ -139,7 +148,6 @@ export async function loginUser({ email, password }: Record<string, string>): Pr
         }
 
         const user = rows[0];
-        // Plaintext password comparison
         if (user.password !== password) {
             return { success: false, message: 'Invalid email or password.' };
         }
@@ -171,8 +179,8 @@ export async function updateUserActivity(userId: number, status: string | null, 
   try {
     connection = await pool.getConnection();
     await connection.execute(
-      'UPDATE social_activities SET activity_status = ?, activity_details = ? WHERE user_id = ?',
-      [status, details, userId]
+      'INSERT INTO social_activities (user_id, activity_status, activity_details) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE activity_status = VALUES(activity_status), activity_details = VALUES(activity_details)',
+      [userId, status, details]
     );
     return { success: true };
   } catch (error) {
@@ -203,7 +211,7 @@ export async function getSocialActivities(): Promise<SocialActivity[]> {
         a.activity_details,
         a.updated_at
       FROM social_users u
-      LEFT JOIN social_activities a ON u.id = a.user_id
+      JOIN social_activities a ON u.id = a.user_id
       ORDER BY a.updated_at DESC
     `);
     return rows;
@@ -267,4 +275,56 @@ export async function getSocialProfile(userId: number): Promise<SocialProfile | 
     }
 }
 
+
+export async function checkAndAwardAchievements(userId: number, criteria: { gameCount?: number; profileCount?: number }): Promise<string[]> {
+    if (!userId) return [];
+
+    let connection;
+    const newlyAwarded: string[] = [];
+
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        const [existingAchievements]: any = await connection.execute(
+            'SELECT achievement_id FROM user_achievements WHERE user_id = ?',
+            [userId]
+        );
+        const existingIds = new Set(existingAchievements.map((a: any) => a.achievement_id));
+
+        // Collector Achievements
+        if (criteria.gameCount !== undefined) {
+            if (criteria.gameCount >= 10 && !existingIds.has('COLLECTOR_2')) {
+                if (await grantAchievement(userId, 'COLLECTOR_2', connection)) {
+                    newlyAwarded.push('Adept Collector');
+                }
+            }
+            if (criteria.gameCount >= 5 && !existingIds.has('COLLECTOR_1')) {
+                if (await grantAchievement(userId, 'COLLECTOR_1', connection)) {
+                    newlyAwarded.push('Novice Collector');
+                }
+            }
+        }
+
+        // Socialite Achievement
+        if (criteria.profileCount !== undefined) {
+            // The creator has their own profile, so we check for more than 1.
+            if (criteria.profileCount > 1 && !existingIds.has('SOCIALITE')) {
+                 if (await grantAchievement(userId, 'SOCIALITE', connection)) {
+                    newlyAwarded.push('Socialite');
+                }
+            }
+        }
+        
+        await connection.commit();
+        return newlyAwarded;
+
+    } catch (error: any) {
+        console.error(`[SOCIAL-DB] Error checking achievements for user ${userId}:`, error);
+        if (connection) await connection.rollback();
+        return [];
+    } finally {
+        if (connection) connection.release();
+    }
+}
     

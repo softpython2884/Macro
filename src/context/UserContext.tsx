@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import type { User } from '@/lib/data';
 import { INITIAL_USERS } from '@/lib/data';
 import { useRouter } from 'next/navigation';
+import { checkAndAwardAchievements } from '@/lib/social-service';
 
 const USERS_KEY = 'macro-users';
 
@@ -13,7 +14,7 @@ type UserContextType = {
   currentUser: User | null;
   login: (user: User, pin?: string) => boolean;
   logout: () => void;
-  addUser: (user: Omit<User, 'id'>) => void;
+  addUser: (user: Omit<User, 'id'>) => Promise<void>;
   updateUser: (user: User) => void;
   deleteUser: (userId: string) => void;
 };
@@ -63,13 +64,25 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
-  const addUser = (newUser: Omit<User, 'id'>) => {
+  const addUser = async (newUser: Omit<User, 'id'>) => {
     const userWithId = {
       ...newUser,
       id: `user-${Date.now()}`,
       avatar: newUser.avatar || 'https://icon-library.com/images/netflix-icon-black/netflix-icon-black-19.jpg',
     };
-    saveUsers([...users, userWithId]);
+    const newUsers = [...users, userWithId];
+    saveUsers(newUsers);
+
+    // Check for Socialite achievement for the logged-in social user
+    try {
+        const socialUserJson = localStorage.getItem('macro-social-user');
+        if (socialUserJson) {
+            const socialUserId = JSON.parse(socialUserJson).id;
+            await checkAndAwardAchievements(socialUserId, { profileCount: newUsers.length });
+        }
+    } catch (e) {
+        console.error("Failed to check for socialite achievement:", e);
+    }
   };
 
   const updateUser = (updatedUser: User) => {

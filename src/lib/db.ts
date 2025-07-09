@@ -1,4 +1,3 @@
-'use server';
 import mysql from 'mysql2/promise';
 import { getDbConfig } from './db-config';
 
