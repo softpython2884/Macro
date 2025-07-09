@@ -172,37 +172,37 @@ export const ProfileForm = ({ userToEdit, onFinished }: ProfileFormProps) => {
               )} />
               
               <div className="grid grid-cols-2 gap-6">
-                  <FormField control={form.control} name="permissions.apps" render={() => (
-                      <FormItem>
-                          <div className="mb-4">
-                              <FormLabel>App Permissions</FormLabel>
-                              <FormDescription>Select the apps this profile can access.</FormDescription>
-                          </div>
-                          <ScrollArea className="h-40 rounded-md border p-4">
-                          {ALL_APPS.map((app) => (
-                              <FormField key={app.id} control={form.control} name="permissions.apps" render={({ field }) => (
-                                  <FormItem key={app.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                  <FormControl>
-                                      <Checkbox
-                                      checked={field.value?.includes(app.id)}
-                                      onCheckedChange={(checked) => {
-                                          return checked
-                                          ? field.onChange([...(field.value || []), app.id])
-                                          : field.onChange(field.value?.filter((value) => value !== app.id));
-                                      }}
-                                      />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">{app.name}</FormLabel>
-                                  </FormItem>
-                              )} />
-                          ))}
-                          </ScrollArea>
-                          <FormMessage />
-                      </FormItem>
-                  )} />
+                  {/* APP PERMISSIONS */}
+                  <div className="space-y-2">
+                      <div className="mb-2">
+                          <FormLabel>App Permissions</FormLabel>
+                          <FormDescription>Select the apps this profile can access.</FormDescription>
+                      </div>
+                      <ScrollArea className="h-40 rounded-md border p-4">
+                      {ALL_APPS.map((app) => (
+                          <FormField key={app.id} control={form.control} name="permissions.apps" render={({ field }) => (
+                              <FormItem key={app.id} className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                  <Checkbox
+                                  checked={field.value?.includes(app.id)}
+                                  onCheckedChange={(checked) => {
+                                      return checked
+                                      ? field.onChange([...(field.value || []), app.id])
+                                      : field.onChange(field.value?.filter((value) => value !== app.id));
+                                  }}
+                                  />
+                              </FormControl>
+                              <FormLabel className="font-normal">{app.name}</FormLabel>
+                              </FormItem>
+                          )} />
+                      ))}
+                      </ScrollArea>
+                      <FormField control={form.control} name="permissions.apps" render={() => <FormMessage />} />
+                  </div>
 
-                  <div className="space-y-4">
-                      <div>
+                  {/* GAME PERMISSIONS */}
+                  <div className="space-y-2">
+                      <div className="mb-2">
                           <FormLabel>Game Permissions</FormLabel>
                           <FormDescription>Select the games this profile can access.</FormDescription>
                       </div>
