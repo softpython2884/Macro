@@ -20,6 +20,9 @@ const config = {
       },
     },
     extend: {
+      screens: {
+        '3xl': '1920px',
+      },
       fontFamily: {
         sans: fontFamily.sans,
       },
@@ -123,5 +126,3 @@ const config = {
 } satisfies Config
 
 export default config
-
-    

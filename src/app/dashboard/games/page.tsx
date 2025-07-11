@@ -21,9 +21,9 @@ import { recommendGames } from "@/ai/flows/recommend-games-flow";
 import { Button } from "@/components/ui/button";
 import { checkAndAwardAchievements } from "@/lib/social-service";
 import { useToast } from "@/hooks/use-toast";
-import { GlareHover } from "@/components/animations/glare-hover";
-import { AnimatedContent } from "@/components/animations/animated-content";
-import { ShinyText } from "@/components/animations/shiny-text";
+import { GlareHover } from '@/components/animations/glare-hover';
+import { AnimatedContent } from '@/components/animations/animated-content';
+import { ShinyText } from '@/components/animations/shiny-text';
 
 const GameCard = ({ initialGame }: { initialGame: Game }) => {
   const { setBackgroundImage } = useBackground();
@@ -243,7 +243,7 @@ export default function GamesPage() {
                 </div>
             </div>
         </div>
-        <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+        <div ref={gridRef} className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8">
             {isLoading 
               ? Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)
               : filteredGames.map((game, index) => (
@@ -294,5 +294,3 @@ export default function GamesPage() {
     </div>
   );
 }
-
-    
