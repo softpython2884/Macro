@@ -291,7 +291,7 @@ export default function GameDetailPage() {
                 </Button>
             </div>
 
-            <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden">
+            <div className="relative w-full h-72 md:h-[450px] rounded-lg overflow-hidden flex items-center justify-center">
                 {effectiveHeroUrls && effectiveHeroUrls.length > 0 ? (
                     <Image
                         key={effectiveHeroUrls[currentHeroIndex]}
@@ -305,6 +305,11 @@ export default function GameDetailPage() {
                     <div className="w-full h-full bg-card" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                
+                {/* Title fallback */}
+                { !game.logoUrl && (
+                    <h1 className="relative z-10 text-6xl font-bold text-glow text-center drop-shadow-2xl">{game.name}</h1>
+                )}
             </div>
 
             <div className="relative z-10 -mt-24 md:-mt-48 px-8 md:px-12 pb-8 flex flex-col md:flex-row items-center md:items-end gap-8">
@@ -336,7 +341,8 @@ export default function GameDetailPage() {
                             />
                         </div>
                     ) : (
-                        <h1 className="text-5xl md:text-6xl font-bold text-glow">{game.name}</h1>
+                        // If there is no logo, the name is shown on the banner, so we can have a smaller element here or nothing
+                        <div className="h-24" />
                     )}
 
                     <div className="max-w-2xl flex items-center justify-center md:justify-start gap-4 mx-auto md:mx-0">
@@ -376,3 +382,5 @@ export default function GameDetailPage() {
         </div>
     );
 }
+
+    

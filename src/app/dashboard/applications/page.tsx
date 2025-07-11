@@ -26,6 +26,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { checkAndAwardAchievements } from '@/lib/social-service';
 import { Award } from 'lucide-react';
+import { GlareHover } from '@/components/animations/glare-hover';
+import { AnimatedContent } from '@/components/animations/animated-content';
+import { ShinyText } from '@/components/animations/shiny-text';
 
 // --- AppPosterSelector Component ---
 const AppPosterSelector = ({ app, onSave, onRevert, onClose }: { app: AppInfo, onSave: (url: string) => void, onRevert: () => void, onClose: () => void }) => {
@@ -188,7 +191,7 @@ const AppCard = ({ app, onFocus }: { app: AppInfo; onFocus: () => void }) => {
     };
     
     const cardContent = (
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
+      <Card className="bg-black/20 backdrop-blur-lg border-transparent group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
         {posterUrl ? (
             <Image src={posterUrl} alt={name} fill className="object-cover group-hover:scale-105 group-focus-within:scale-105 transition-transform duration-300" />
           ) : (
@@ -210,11 +213,17 @@ const AppCard = ({ app, onFocus }: { app: AppInfo; onFocus: () => void }) => {
         onBlur: () => setBackgroundImage(null),
     };
     
+    const cardContainer = (
+        <GlareHover className="w-full h-full" borderRadius="var(--radius)">
+           {cardContent}
+        </GlareHover>
+    );
+    
     if (href && !href.startsWith('http') && !href.startsWith('steam') && !href.startsWith('spotify')) {
-        return <Link href={href} onClick={() => playSound('select')} {...commonProps}>{cardContent}</Link>;
+        return <Link href={href} onClick={() => playSound('select')} {...commonProps}>{cardContainer}</Link>;
     }
     
-    return <button onClick={handleLaunch} {...commonProps} type="button">{cardContent}</button>;
+    return <button onClick={handleLaunch} {...commonProps} type="button">{cardContainer}</button>;
 };
 
 const AppCardSkeleton = () => (
@@ -365,11 +374,17 @@ export default function ApplicationsPage() {
   return (
     <div className="animate-fade-in space-y-12">
       <div>
-        <h2 className="text-4xl font-bold tracking-tight text-glow mb-6">Applications &amp; Actions</h2>
+        <h2 className="text-4xl font-bold tracking-tight mb-6">
+            <ShinyText text="Applications & Actions" />
+        </h2>
         <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {isLoading 
               ? Array.from({ length: permittedApps.length || 10 }).map((_, i) => <AppCardSkeleton key={i} />)
-              : enrichedApps.map((app) => <AppCard key={app.id} app={app} onFocus={() => setFocusedApp(app)} />)}
+              : enrichedApps.map((app, index) => (
+                  <AnimatedContent key={app.id} delay={index * 0.05}>
+                    <AppCard app={app} onFocus={() => setFocusedApp(app)} />
+                  </AnimatedContent>
+              ))}
         </div>
       </div>
 
@@ -381,3 +396,5 @@ export default function ApplicationsPage() {
     </div>
   );
 }
+
+    

@@ -98,6 +98,10 @@ const config = {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-8px)' },
         },
+        shine: {
+          '0%': { 'background-position': '100%' },
+          '100%': { 'background-position': '-100%' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -108,6 +112,7 @@ const config = {
         "zoom-out-fade": 'zoom-out-fade 0.5s ease-out forwards',
         "shake": 'shake 0.82s cubic-bezier(.36,.07,.19,.97) both',
         "levitate": 'levitate 3s ease-in-out infinite',
+        shine: 'shine 5s linear infinite',
       },
       dropShadow: {
         'glow': '0 0 10px hsl(var(--primary) / 0.8)',
@@ -118,3 +123,5 @@ const config = {
 } satisfies Config
 
 export default config
+
+    

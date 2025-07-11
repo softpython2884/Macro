@@ -21,6 +21,9 @@ import { recommendGames } from "@/ai/flows/recommend-games-flow";
 import { Button } from "@/components/ui/button";
 import { checkAndAwardAchievements } from "@/lib/social-service";
 import { useToast } from "@/hooks/use-toast";
+import { GlareHover } from "@/components/animations/glare-hover";
+import { AnimatedContent } from "@/components/animations/animated-content";
+import { ShinyText } from "@/components/animations/shiny-text";
 
 const GameCard = ({ initialGame }: { initialGame: Game }) => {
   const { setBackgroundImage } = useBackground();
@@ -44,14 +47,8 @@ const GameCard = ({ initialGame }: { initialGame: Game }) => {
     return () => { isMounted = false };
   }, [game, updateGameMetadata]);
   
-  return (
-    <Link 
-      href={`/dashboard/games/${game.id}`} 
-      className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
-      onFocus={() => setBackgroundImage(game.posterUrl || null)}
-      onBlur={() => setBackgroundImage(null)}
-    >
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
+  const cardContent = (
+      <Card className="bg-black/20 backdrop-blur-lg border border-transparent group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
         {isEnriching ? (
             <Skeleton className="h-full w-full" />
         ) : game.posterUrl ? (
@@ -62,11 +59,24 @@ const GameCard = ({ initialGame }: { initialGame: Game }) => {
               className="object-cover group-hover:scale-105 group-focus-within:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
+                <h3 className="mt-4 text-xl font-bold text-card-foreground">{game.name}</h3>
             </div>
           )}
       </Card>
+  );
+
+  return (
+    <Link 
+      href={`/dashboard/games/${game.id}`} 
+      className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
+      onFocus={() => setBackgroundImage(game.posterUrl || null)}
+      onBlur={() => setBackgroundImage(null)}
+    >
+      <GlareHover className="w-full h-full" borderRadius="var(--radius)">
+        {cardContent}
+      </GlareHover>
     </Link>
   );
 };
@@ -212,7 +222,9 @@ export default function GamesPage() {
     <div className="space-y-12">
       <div>
         <div className="flex justify-between items-center mb-6">
-            <h2 className="text-4xl font-bold tracking-tight text-glow">My Game Library</h2>
+            <h2 className="text-4xl font-bold tracking-tight">
+                <ShinyText text="My Game Library" />
+            </h2>
             <div className="flex items-center gap-4">
                 <Button variant="outline" onClick={handleGetRecommendations}>
                     <Wand2 className="mr-2 h-4 w-4" />
@@ -234,7 +246,11 @@ export default function GamesPage() {
         <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {isLoading 
               ? Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)
-              : filteredGames.map(game => <GameCard key={game.id} initialGame={game} />)
+              : filteredGames.map((game, index) => (
+                  <AnimatedContent key={game.id} delay={index * 0.05}>
+                    <GameCard initialGame={game} />
+                  </AnimatedContent>
+              ))
             }
         </div>
       </div>
@@ -278,3 +294,5 @@ export default function GamesPage() {
     </div>
   );
 }
+
+    
