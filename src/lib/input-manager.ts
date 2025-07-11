@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview Manages gamepad input and maps it to keyboard events for navigation.
  */
@@ -29,8 +28,9 @@ export class GamepadInputManager {
   private gamepadIndex: number | null = null;
   private animationFrameId: number | null = null;
   private buttonStates: boolean[] = [];
-  private axisStates: { [key: string]: boolean } = {}; // Tracks if an axis is currently "active" to prevent spam
+  private axisStates: { [key: string]: boolean } = {}; // Tracks if an axis key is "down"
   private axisDebounceTime = 160; // ms
+  private axisDebounceTimers: { [key: string]: NodeJS.Timeout } = {};
 
   constructor() {
     this.pollGamepad = this.pollGamepad.bind(this);
@@ -39,6 +39,18 @@ export class GamepadInputManager {
   public start() {
     this.stop(); // Ensure no lingering listeners
     console.log("GamepadInputManager started. Listening for connections...");
+    window.addEventListener('gamepadconnected', (e) => {
+        console.log(`Gamepad connected at index ${e.gamepad.index}: ${e.gamepad.id}.`);
+        if (this.gamepadIndex === null) {
+            this.gamepadIndex = e.gamepad.index;
+        }
+    });
+    window.addEventListener('gamepaddisconnected', (e) => {
+        console.log(`Gamepad disconnected from index ${e.gamepad.index}.`);
+        if (this.gamepadIndex === e.gamepad.index) {
+            this.gamepadIndex = null;
+        }
+    });
     this.animationFrameId = requestAnimationFrame(this.pollGamepad);
   }
 
@@ -50,69 +62,80 @@ export class GamepadInputManager {
   }
 
   private dispatchKeyEvent(key: string, type: 'keydown' | 'keyup') {
-    window.dispatchEvent(new KeyboardEvent(type, { key: key, bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent(type, { key: key, bubbles: true, cancelable: true }));
   }
 
   private pollGamepad() {
     const gamepads = navigator.getGamepads();
-    const connectedGamepad = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3] || null;
+    if (this.gamepadIndex === null) {
+        // Try to find a connected gamepad if we don't have one
+        for (const gp of gamepads) {
+            if (gp) {
+                this.gamepadIndex = gp.index;
+                console.log(`Gamepad detected at index ${gp.index}: ${gp.id}.`);
+                break;
+            }
+        }
+    }
+    
+    const gamepad = this.gamepadIndex !== null ? gamepads[this.gamepadIndex] : null;
 
-    if (connectedGamepad) {
-      if (this.gamepadIndex !== connectedGamepad.index) {
-        console.log(`Gamepad connected at index ${connectedGamepad.index}: ${connectedGamepad.id}.`);
-        this.gamepadIndex = connectedGamepad.index;
-        this.buttonStates = Array(connectedGamepad.buttons.length).fill(false);
-        GAMEPAD_AXIS_MAP.forEach(map => {
-            this.axisStates[`${map.axis}+`] = false;
-            this.axisStates[`${map.axis}-`] = false;
-        });
-      }
-
+    if (gamepad) {
       // Handle Buttons (A, B, X, Y, D-pad etc.)
-      connectedGamepad.buttons.forEach((button, index) => {
+      gamepad.buttons.forEach((button, index) => {
         const isPressed = button.pressed;
         const wasPressed = this.buttonStates[index];
-
-        if (isPressed !== wasPressed) {
-          const key = GAMEPAD_BUTTON_MAP[index];
-          if (key) {
-            this.dispatchKeyEvent(key, isPressed ? 'keydown' : 'keyup');
-          }
-          this.buttonStates[index] = isPressed;
+        const key = GAMEPAD_BUTTON_MAP[index];
+        
+        if (key) {
+            if (isPressed && !wasPressed) {
+                this.dispatchKeyEvent(key, 'keydown');
+            } else if (!isPressed && wasPressed) {
+                this.dispatchKeyEvent(key, 'keyup');
+            }
         }
+        this.buttonStates[index] = isPressed;
       });
 
       // Handle Analog Sticks
       GAMEPAD_AXIS_MAP.forEach(({ axis, threshold, positiveKey, negativeKey }) => {
-        const value = connectedGamepad!.axes[axis];
-        const keyPositive = `${axis}+`;
-        const keyNegative = `${axis}-`;
+        const value = gamepad.axes[axis];
 
-        // Positive direction
+        // --- Positive direction ---
+        const positiveStateKey = `${axis}+`;
         if (value > threshold) {
-          if (!this.axisStates[keyPositive]) {
-            this.dispatchKeyEvent(positiveKey, 'keydown');
-            this.axisStates[keyPositive] = true;
-            setTimeout(() => { this.axisStates[keyPositive] = false; }, this.axisDebounceTime);
-          }
-        } else {
-            this.axisStates[keyPositive] = false;
-        }
+            if (!this.axisStates[positiveStateKey]) {
+                this.dispatchKeyEvent(positiveKey, 'keydown');
+                this.axisStates[positiveStateKey] = true;
+                
+                // Clear any existing timer to prevent premature release
+                if (this.axisDebounceTimers[positiveStateKey]) {
+                    clearTimeout(this.axisDebounceTimers[positiveStateKey]);
+                }
+                // Set a timer to re-allow input after a delay
+                this.axisDebounceTimers[positiveStateKey] = setTimeout(() => {
+                    this.axisStates[positiveStateKey] = false;
+                }, this.axisDebounceTime);
+            }
+        } 
 
-        // Negative direction
+        // --- Negative direction ---
+        const negativeStateKey = `${axis}-`;
         if (value < -threshold) {
-          if (!this.axisStates[keyNegative]) {
-            this.dispatchKeyEvent(negativeKey, 'keydown');
-            this.axisStates[keyNegative] = true;
-            setTimeout(() => { this.axisStates[keyNegative] = false; }, this.axisDebounceTime);
-          }
-        } else {
-          this.axisStates[keyNegative] = false;
+             if (!this.axisStates[negativeStateKey]) {
+                this.dispatchKeyEvent(negativeKey, 'keydown');
+                this.axisStates[negativeStateKey] = true;
+                
+                if (this.axisDebounceTimers[negativeStateKey]) {
+                    clearTimeout(this.axisDebounceTimers[negativeStateKey]);
+                }
+                this.axisDebounceTimers[negativeStateKey] = setTimeout(() => {
+                    this.axisStates[negativeStateKey] = false;
+                }, this.axisDebounceTime);
+            }
         }
       });
-    } else if (this.gamepadIndex !== null) {
-      console.log(`Gamepad at index ${this.gamepadIndex} disconnected.`);
-      this.gamepadIndex = null;
+
     }
     
     this.animationFrameId = requestAnimationFrame(this.pollGamepad);
