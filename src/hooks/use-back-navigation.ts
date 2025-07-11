@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSound } from '@/context/SoundContext';
 
 /**
- * A hook to handle back navigation on Escape or Backspace key press.
+ * A hook to handle back navigation on Escape or 'B' (gamepad) key press.
  * @param path The path to navigate back to.
  */
 export function useBackNavigation(path: string) {
@@ -14,8 +14,13 @@ export function useBackNavigation(path: string) {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Use 'B' for controller 'Back' button, and standard keyboard keys
-            if (e.key === 'Escape' || e.key === 'Backspace') {
+            const key = e.key.toLowerCase();
+            const isAnyDialogOpen = !!document.querySelector('[role="dialog"]');
+
+            if (isAnyDialogOpen) return;
+
+            // Use 'b' for controller 'Back' button, and standard keyboard keys
+            if (key === 'escape' || key === 'backspace' || key === 'b') {
                 e.preventDefault();
                 playSound('back');
                 router.push(path);

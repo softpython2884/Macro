@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BackgroundProvider, useBackground } from "@/context/BackgroundContext";
 import Image from "next/image";
 import { updateUserActivity, checkAndAwardAchievements } from "@/lib/social-service";
+import { GamepadInputManager } from "@/lib/input-manager";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -56,6 +57,15 @@ const LayoutWithBackground = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    const inputManager = new GamepadInputManager();
+    inputManager.start();
+
+    return () => {
+      inputManager.stop();
+    };
+  }, []);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
