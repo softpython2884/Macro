@@ -71,9 +71,13 @@ export default function SettingsPage() {
       const savedSettings = localStorage.getItem(SETTINGS_KEY);
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
+        // Ensure that games and plugins are always arrays of objects
+        const gamesArray = (parsed.games || []).map((g: any) => typeof g === 'string' ? { value: g } : g);
+        const pluginsArray = (parsed.plugins || []).map((p: any) => typeof p === 'string' ? { value: p } : p);
+
         const sanitizedSettings: SettingsFormValues = {
-          games: (parsed.games && parsed.games.length > 0) ? parsed.games : [{ value: "" }],
-          plugins: (parsed.plugins && parsed.plugins.length > 0) ? parsed.plugins : [{ value: "" }],
+          games: (gamesArray.length > 0) ? gamesArray : [{ value: "" }],
+          plugins: (pluginsArray.length > 0) ? pluginsArray : [{ value: "" }],
           browser: parsed.browser || 'chrome.exe',
           moonlightPath: parsed.moonlightPath || '',
           downloadsPath: parsed.downloadsPath || '',
@@ -85,6 +89,7 @@ export default function SettingsPage() {
         console.error("Failed to load settings from localStorage", error);
     }
   }, [form]);
+
 
   React.useEffect(() => {
     setHints([

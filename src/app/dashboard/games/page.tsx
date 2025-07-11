@@ -22,8 +22,27 @@ import { Button } from "@/components/ui/button";
 import { checkAndAwardAchievements } from "@/lib/social-service";
 import { useToast } from "@/hooks/use-toast";
 
-const GameCard = ({ game }: { game: Game }) => {
+const GameCard = ({ initialGame }: { initialGame: Game }) => {
   const { setBackgroundImage } = useBackground();
+  const { updateGameMetadata } = useGames();
+  const [game, setGame] = useState(initialGame);
+  const [isEnriching, setIsEnriching] = useState(!initialGame.posterUrl);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function enrichGame() {
+      if (!game.posterUrl) {
+        setIsEnriching(true);
+        const enrichedGame = await updateGameMetadata(game);
+        if (isMounted) {
+          setGame(enrichedGame);
+          setIsEnriching(false);
+        }
+      }
+    }
+    enrichGame();
+    return () => { isMounted = false };
+  }, [game, updateGameMetadata]);
   
   return (
     <Link 
@@ -33,7 +52,9 @@ const GameCard = ({ game }: { game: Game }) => {
       onBlur={() => setBackgroundImage(null)}
     >
       <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
-        {game.posterUrl ? (
+        {isEnriching ? (
+            <Skeleton className="h-full w-full" />
+        ) : game.posterUrl ? (
             <Image 
               src={game.posterUrl} 
               alt={game.name} 
@@ -51,8 +72,8 @@ const GameCard = ({ game }: { game: Game }) => {
 };
 
 const GameCardSkeleton = () => (
-    <div className="flex flex-col space-y-3">
-      <Skeleton className="h-[350px] w-full rounded-xl" />
+    <div className="flex flex-col space-y-3 aspect-[3/4]">
+      <Skeleton className="h-full w-full rounded-xl" />
     </div>
 )
 
@@ -60,7 +81,7 @@ export default function GamesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   const { currentUser } = useUser();
-  const { games, isLoading, fetchGameMetadata } = useGames();
+  const { games, isLoading } = useGames();
   useGridNavigation({ gridRef });
   useBackNavigation('/dashboard');
 
@@ -71,10 +92,6 @@ export default function GamesPage() {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [isRecsLoading, setIsRecsLoading] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    fetchGameMetadata();
-  }, [fetchGameMetadata]);
   
   const permittedGames = React.useMemo(() => {
     if (!currentUser) return [];
@@ -132,7 +149,7 @@ export default function GamesPage() {
   useEffect(() => {
     setHints([
       { key: '↕↔', action: 'Navigate' },
-      { key: 'A', action: 'Launch' },
+      { key: 'A', action: 'Select' },
       { key: 'B', action: 'Back' },
       { key: 'Y', action: 'Search' },
       { key: 'X', action: 'Suggestions' },
@@ -217,7 +234,7 @@ export default function GamesPage() {
         <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {isLoading 
               ? Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)
-              : filteredGames.map(game => <GameCard key={game.id} game={game} />)
+              : filteredGames.map(game => <GameCard key={game.id} initialGame={game} />)
             }
         </div>
       </div>
