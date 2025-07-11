@@ -72,8 +72,8 @@ export default function SettingsPage() {
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
         // Ensure that games and plugins are always arrays of objects
-        const gamesArray = (parsed.games || []).map((g: any) => typeof g === 'string' ? { value: g } : g);
-        const pluginsArray = (parsed.plugins || []).map((p: any) => typeof p === 'string' ? { value: p } : p);
+        const gamesArray = (Array.isArray(parsed.games) ? parsed.games : []).map((g: any) => typeof g === 'string' ? { value: g } : g);
+        const pluginsArray = (Array.isArray(parsed.plugins) ? parsed.plugins : []).map((p: any) => typeof p === 'string' ? { value: p } : p);
 
         const sanitizedSettings: SettingsFormValues = {
           games: (gamesArray.length > 0) ? gamesArray : [{ value: "" }],
