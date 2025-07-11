@@ -243,7 +243,7 @@ export default function GamesPage() {
                 </div>
             </div>
         </div>
-        <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {isLoading 
               ? Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)
               : filteredGames.map((game, index) => (

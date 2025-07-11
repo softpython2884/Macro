@@ -4,7 +4,7 @@
 import { useGames } from "@/context/GameContext";
 import { useUser } from "@/context/UserContext";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Rocket, FileCode, ArrowLeft, Clock, Camera, GalleryThumbnails } from "lucide-react";
@@ -17,7 +17,7 @@ import { formatDuration } from "@/lib/utils";
 import { useBackground } from "@/context/BackgroundContext";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { HeroImageSelector } from "@/components/hero-image-selector";
-import { getGrids, type SteamGridDbImage } from "@/lib/steamgrid";
+import { getGrids, getHeroes, type SteamGridDbImage } from "@/lib/steamgrid";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -90,7 +90,7 @@ const PosterImageSelector = ({ gameId, onSave, onRevert, onClose }: { gameId: nu
 export default function GameDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const { games, updateGamePoster } = useGames();
+    const { games, updateGamePoster, updateGameMetadata } = useGames();
     const { currentUser } = useUser();
     const { setHints } = useHints();
     const { playSound } = useSound();
@@ -102,24 +102,29 @@ export default function GameDetailPage() {
     const [isPosterSelectorOpen, setIsPosterSelectorOpen] = useState(false);
     const [effectiveHeroUrls, setEffectiveHeroUrls] = useState<string[]>([]);
     const [isCustomHeroPinned, setIsCustomHeroPinned] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const gameId = typeof params.gameId === 'string' ? params.gameId : '';
-    const game = React.useMemo(() => games.find(g => g.id === gameId), [games, gameId]);
+    const [game, setGame] = useState(() => games.find(g => g.id === gameId));
     
     const [playtime, setPlaytime] = useState<string | null>(null);
 
     useBackNavigation(`/dashboard/games`);
     useGridNavigation({ gridRef: executableListRef });
-    
-    useEffect(() => {
-        if (!game || !currentUser) return;
-        
+
+    const loadGameDetails = useCallback(async () => {
+        if (!currentUser || !game) return;
+        setIsLoading(true);
+
+        const enrichedGame = await updateGameMetadata(game);
+        setGame(enrichedGame); // Update state with enriched data
+
         try {
             const customHeroesJSON = localStorage.getItem(`macro-custom-heroes-${currentUser.id}`);
             const customHeroes = customHeroesJSON ? JSON.parse(customHeroesJSON) : {};
-            const customHero = customHeroes[game.id];
+            const customHero = customHeroes[enrichedGame.id];
             
-            let urls = [...(game.heroUrls || [])];
+            let urls = [...(enrichedGame.heroUrls || [])];
             
             if (customHero) {
                 urls = urls.filter(url => url !== customHero);
@@ -131,22 +136,25 @@ export default function GameDetailPage() {
             setEffectiveHeroUrls(urls);
         } catch(e) {
             console.error("Failed to parse custom heroes", e);
-            setEffectiveHeroUrls(game.heroUrls || []);
+            setEffectiveHeroUrls(enrichedGame.heroUrls || []);
             setIsCustomHeroPinned(false);
         }
+        setIsLoading(false);
+    }, [game, currentUser, updateGameMetadata]);
 
-    }, [game, currentUser]);
 
     useEffect(() => {
-        if (game) {
-            const newImage = effectiveHeroUrls?.[currentHeroIndex] || game.posterUrl;
-            setBackgroundImage(newImage || null);
-        }
+        loadGameDetails();
+    }, [loadGameDetails]);
+
+    useEffect(() => {
+        const newImage = effectiveHeroUrls?.[currentHeroIndex] || game?.posterUrl;
+        setBackgroundImage(newImage || null);
         return () => setBackgroundImage(null);
     }, [game, currentHeroIndex, effectiveHeroUrls, setBackgroundImage]);
 
     useEffect(() => {
-        if (!game || !effectiveHeroUrls || effectiveHeroUrls.length <= 1 || isCustomHeroPinned) {
+        if (isLoading || !effectiveHeroUrls || effectiveHeroUrls.length <= 1 || isCustomHeroPinned) {
             return;
         }
         
@@ -155,7 +163,7 @@ export default function GameDetailPage() {
         }, 8000);
         
         return () => clearInterval(timer);
-    }, [game, effectiveHeroUrls, isCustomHeroPinned]);
+    }, [isLoading, effectiveHeroUrls, isCustomHeroPinned]);
 
 
     useEffect(() => {
@@ -182,7 +190,7 @@ export default function GameDetailPage() {
             { key: 'X', action: 'Change Poster' },
         ]);
         
-        if (!isDialogOpen) {
+        if (!isLoading && !isDialogOpen) {
             const firstButton = executableListRef.current?.querySelector('button') as HTMLElement;
             firstButton?.focus();
         }
@@ -200,7 +208,7 @@ export default function GameDetailPage() {
             setHints([]);
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [setHints, isHeroSelectorOpen, isPosterSelectorOpen]);
+    }, [setHints, isLoading, isHeroSelectorOpen, isPosterSelectorOpen]);
 
     const handleLaunch = async (executable: string) => {
         if (!game) return;
@@ -273,8 +281,24 @@ export default function GameDetailPage() {
         triggerLibraryRefresh(); // Let the context re-fetch the original poster
     };
 
-    if (!currentUser || !game) {
-        return null; 
+    if (isLoading || !currentUser || !game) {
+        return (
+            <div className="flex flex-col text-white animate-fade-in">
+                 <div className="relative w-full h-72 md:h-[450px] bg-card rounded-lg" />
+                 <div className="relative z-10 -mt-24 md:-mt-48 px-8 md:px-12 pb-8 flex flex-col md:flex-row items-center md:items-end gap-8">
+                     <div className="flex-shrink-0">
+                         <Skeleton className="w-48 md:w-64 aspect-[3/4] rounded-lg" />
+                     </div>
+                     <div className="flex-grow space-y-4 pt-8 text-center md:text-left">
+                        <Skeleton className="h-10 w-3/4 mx-auto md:mx-0" />
+                        <Skeleton className="h-6 w-1/2 mx-auto md:mx-0" />
+                        <div className="flex justify-center md:justify-start gap-4 pt-2">
+                           <Skeleton className="h-12 w-48" />
+                        </div>
+                     </div>
+                 </div>
+            </div>
+        );
     }
 
     return (
@@ -306,7 +330,6 @@ export default function GameDetailPage() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
                 
-                {/* Title fallback */}
                 { !game.logoUrl && (
                     <h1 className="relative z-10 text-6xl font-bold text-glow text-center drop-shadow-2xl">{game.name}</h1>
                 )}
