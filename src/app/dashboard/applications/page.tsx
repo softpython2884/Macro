@@ -377,7 +377,7 @@ export default function ApplicationsPage() {
         <h2 className="text-4xl font-bold tracking-tight mb-6">
             <ShinyText text="Applications & Actions" />
         </h2>
-        <div ref={gridRef} className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8">
+        <div ref={gridRef} className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8 4xl:grid-cols-9 5xl:grid-cols-10">
             {isLoading 
               ? Array.from({ length: permittedApps.length || 10 }).map((_, i) => <AppCardSkeleton key={i} />)
               : enrichedApps.map((app, index) => (
