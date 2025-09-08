@@ -1,3 +1,6 @@
+Macro is a "subsystem" for home consoles or PCs, which is installed on the user's computer. It features a web-based graphical interface, and requires running scripts found in SystemScript for Xbox emulation.  Our store is very special... because everything is 100% off all year round! :P
+
+
 # 👋 Bienvenue !
 
 Bienvenue dans ce projet publié sous le label **NightFury Devs** ⚙️  
