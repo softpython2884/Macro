@@ -33,6 +33,7 @@ import { useHints } from "@/context/HintContext";
 import { useBackNavigation } from "@/hooks/use-back-navigation";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
+import { ShinyText } from "@/components/animations/shiny-text";
 
 type SocialUser = {
   id: number;
@@ -431,6 +432,12 @@ export default function SocialPage() {
 
   return (
     <div ref={pageRef} className="flex flex-1 items-center justify-center animate-fade-in">
+        <div className="text-center absolute top-24">
+            <h1 className="text-5xl font-bold tracking-tight">
+                <ShinyText text="Social Hub" />
+            </h1>
+            <p className="text-muted-foreground mt-2">Connect with friends, track stats and unlock achievements.</p>
+        </div>
       <Tabs defaultValue="sign-in" className="w-[400px]">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sign-in">Sign In</TabsTrigger>
@@ -486,3 +493,5 @@ export default function SocialPage() {
     </div>
   );
 }
+
+    

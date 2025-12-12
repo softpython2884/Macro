@@ -21,19 +21,37 @@ import { recommendGames } from "@/ai/flows/recommend-games-flow";
 import { Button } from "@/components/ui/button";
 import { checkAndAwardAchievements } from "@/lib/social-service";
 import { useToast } from "@/hooks/use-toast";
+import { GlareHover } from '@/components/animations/glare-hover';
+import { AnimatedContent } from '@/components/animations/animated-content';
+import { ShinyText } from '@/components/animations/shiny-text';
 
-const GameCard = ({ game }: { game: Game }) => {
+const GameCard = ({ initialGame }: { initialGame: Game }) => {
   const { setBackgroundImage } = useBackground();
+  const { updateGameMetadata } = useGames();
+  const [game, setGame] = useState(initialGame);
+  const [isEnriching, setIsEnriching] = useState(!initialGame.posterUrl);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function enrichGame() {
+      if (!game.posterUrl) {
+        setIsEnriching(true);
+        const enrichedGame = await updateGameMetadata(game);
+        if (isMounted) {
+          setGame(enrichedGame);
+          setIsEnriching(false);
+        }
+      }
+    }
+    enrichGame();
+    return () => { isMounted = false };
+  }, [game, updateGameMetadata]);
   
-  return (
-    <Link 
-      href={`/dashboard/games/${game.id}`} 
-      className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
-      onFocus={() => setBackgroundImage(game.posterUrl || null)}
-      onBlur={() => setBackgroundImage(null)}
-    >
-      <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
-        {game.posterUrl ? (
+  const cardContent = (
+      <Card className="bg-black/20 backdrop-blur-lg border border-transparent group-hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out h-full w-full overflow-hidden">
+        {isEnriching ? (
+            <Skeleton className="h-full w-full" />
+        ) : game.posterUrl ? (
             <Image 
               src={game.posterUrl} 
               alt={game.name} 
@@ -41,18 +59,31 @@ const GameCard = ({ game }: { game: Game }) => {
               className="object-cover group-hover:scale-105 group-focus-within:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <Gamepad2 className="h-16 w-16 text-primary/50 drop-shadow-[0_0_8px_hsl(var(--primary))] transition-all duration-300 group-hover:scale-110 group-focus-within:scale-110 group-hover:text-primary" />
+                <h3 className="mt-4 text-xl font-bold text-card-foreground">{game.name}</h3>
             </div>
           )}
       </Card>
+  );
+
+  return (
+    <Link 
+      href={`/dashboard/games/${game.id}`} 
+      className="block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]"
+      onFocus={() => setBackgroundImage(game.posterUrl || null)}
+      onBlur={() => setBackgroundImage(null)}
+    >
+      <GlareHover className="w-full h-full" borderRadius="var(--radius)">
+        {cardContent}
+      </GlareHover>
     </Link>
   );
 };
 
 const GameCardSkeleton = () => (
-    <div className="flex flex-col space-y-3">
-      <Skeleton className="h-[350px] w-full rounded-xl" />
+    <div className="flex flex-col space-y-3 aspect-[3/4]">
+      <Skeleton className="h-full w-full rounded-xl" />
     </div>
 )
 
@@ -60,7 +91,7 @@ export default function GamesPage() {
   const { setHints } = useHints();
   const gridRef = useRef<HTMLDivElement>(null);
   const { currentUser } = useUser();
-  const { games, isLoading, fetchGameMetadata } = useGames();
+  const { games, isLoading } = useGames();
   useGridNavigation({ gridRef });
   useBackNavigation('/dashboard');
 
@@ -71,10 +102,6 @@ export default function GamesPage() {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [isRecsLoading, setIsRecsLoading] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    fetchGameMetadata();
-  }, [fetchGameMetadata]);
   
   const permittedGames = React.useMemo(() => {
     if (!currentUser) return [];
@@ -132,7 +159,7 @@ export default function GamesPage() {
   useEffect(() => {
     setHints([
       { key: '↕↔', action: 'Navigate' },
-      { key: 'A', action: 'Launch' },
+      { key: 'A', action: 'Select' },
       { key: 'B', action: 'Back' },
       { key: 'Y', action: 'Search' },
       { key: 'X', action: 'Suggestions' },
@@ -195,7 +222,9 @@ export default function GamesPage() {
     <div className="space-y-12">
       <div>
         <div className="flex justify-between items-center mb-6">
-            <h2 className="text-4xl font-bold tracking-tight text-glow">My Game Library</h2>
+            <h2 className="text-4xl font-bold tracking-tight">
+                <ShinyText text="My Game Library" />
+            </h2>
             <div className="flex items-center gap-4">
                 <Button variant="outline" onClick={handleGetRecommendations}>
                     <Wand2 className="mr-2 h-4 w-4" />
@@ -214,10 +243,14 @@ export default function GamesPage() {
                 </div>
             </div>
         </div>
-        <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div ref={gridRef} className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8 4xl:grid-cols-9 5xl:grid-cols-10">
             {isLoading 
               ? Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)
-              : filteredGames.map(game => <GameCard key={game.id} game={game} />)
+              : filteredGames.map((game, index) => (
+                  <AnimatedContent key={game.id} delay={index * 0.05}>
+                    <GameCard initialGame={game} />
+                  </AnimatedContent>
+              ))
             }
         </div>
       </div>

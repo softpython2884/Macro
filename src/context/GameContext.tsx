@@ -12,9 +12,9 @@ const SETTINGS_KEY = 'macro-settings';
 type GameContextType = {
   games: Game[];
   isLoading: boolean;
-  fetchGameMetadata: () => Promise<void>;
-  refreshGames: () => void;
   allScannedGames: Game[];
+  refreshGames: () => void;
+  updateGameMetadata: (game: Game) => Promise<Game>;
   updateGamePoster: (gameId: string, posterUrl: string) => void;
 };
 
@@ -23,20 +23,14 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [games, setGames] = useState<Game[]>([]);
   const [allScannedGames, setAllScannedGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useUser();
   const hasFetched = useRef(false);
 
-  const fetchGameMetadata = useCallback(async () => {
-    if (hasFetched.current || !currentUser) {
-        return;
-    }
-
+  const fetchInitialGames = useCallback(async () => {
+    if (hasFetched.current) return;
     setIsLoading(true);
     hasFetched.current = true;
-    
-    const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
-    const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
 
     let initialGames: Omit<Game, 'posterUrl' | 'heroUrls' | 'logoUrl' | 'steamgridGameId'>[] = [];
     try {
@@ -44,64 +38,64 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
             const gameDirsRaw = settings.games?.map((g: { value: string }) => g.value).filter(Boolean) ?? [];
-            
-            // Deduplicate the array to prevent issues from corrupted localStorage data
             const gameDirs = [...new Set(gameDirsRaw)];
 
             if (gameDirs.length > 0) {
                 initialGames = await scanForGames(gameDirs);
-                setAllScannedGames(initialGames as Game[]);
             }
         }
     } catch (error) {
         console.error("Failed to scan for games:", error);
-        setIsLoading(false);
-        return;
     }
     
-    if (initialGames.length === 0) {
-        setGames([]);
-        setIsLoading(false);
-        return;
-    }
-
-    const customPostersJSON = localStorage.getItem(`macro-custom-posters-${currentUser.id}`);
-    const customPosters = customPostersJSON ? JSON.parse(customPostersJSON) : {};
-
-    const enrichedGames = await Promise.all(
-      initialGames.map(async (game) => {
-        try {
-            const foundGame = await searchGame(game.name, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
-            if (!foundGame) return game as Game;
-
-            const [grids, heroes, logos] = await Promise.all([
-                getGrids(foundGame.id, ['600x900'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw),
-                getHeroes(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw),
-                getLogos(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw)
-            ]);
-            
-            const customPosterUrl = customPosters[game.id];
-            const posterUrl = customPosterUrl || (grids.length > 0 ? grids[0].url : undefined);
-            const heroUrls = heroes.length > 0 ? heroes.map(h => h.url).slice(0, 9) : undefined;
-            const logoUrl = logos.length > 0 ? logos[0].url : undefined;
-            
-            return {
-              ...game,
-              steamgridGameId: foundGame.id,
-              posterUrl,
-              heroUrls,
-              logoUrl,
-            };
-        } catch (error) {
-            console.error(`Failed to enrich metadata for game "${game.name}":`, error);
-            return game as Game;
-        }
-      })
-    );
-
-    setGames(enrichedGames);
+    setGames(initialGames as Game[]);
+    setAllScannedGames(initialGames as Game[]);
     setIsLoading(false);
+  }, []);
+
+  const updateGameMetadata = useCallback(async (game: Game): Promise<Game> => {
+      if (!currentUser || game.steamgridGameId) return game; // Already enriched
+
+      try {
+          const { nsfwEnabled, prioritizeNsfw } = currentUser.permissions;
+          const nsfwApiSetting = nsfwEnabled ? 'any' : 'false';
+
+          const customPostersJSON = localStorage.getItem(`macro-custom-posters-${currentUser.id}`);
+          const customPosters = customPostersJSON ? JSON.parse(customPostersJSON) : {};
+
+          const foundGame = await searchGame(game.name, nsfwApiSetting, nsfwEnabled && prioritizeNsfw);
+          if (!foundGame) return game;
+
+          const [grids, heroes, logos] = await Promise.all([
+              getGrids(foundGame.id, ['600x900'], nsfwApiSetting, nsfwEnabled && prioritizeNsfw),
+              getHeroes(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw),
+              getLogos(foundGame.id, nsfwApiSetting, nsfwEnabled && prioritizeNsfw)
+          ]);
+          
+          const customPosterUrl = customPosters[game.id];
+          const posterUrl = customPosterUrl || (grids.length > 0 ? grids[0].url : undefined);
+          const heroUrls = heroes.length > 0 ? heroes.map(h => h.url).slice(0, 9) : undefined;
+          const logoUrl = logos.length > 0 ? logos[0].url : undefined;
+          
+          const enrichedGame = {
+            ...game,
+            steamgridGameId: foundGame.id,
+            posterUrl,
+            heroUrls,
+            logoUrl,
+          };
+
+          setGames(prevGames => prevGames.map(g => g.id === game.id ? enrichedGame : g));
+          return enrichedGame;
+      } catch (error) {
+          console.error(`Failed to enrich metadata for game "${game.name}":`, error);
+          return game; // Return original game on error
+      }
   }, [currentUser]);
+
+  useEffect(() => {
+    fetchInitialGames();
+  }, [fetchInitialGames]);
 
   const updateGamePoster = (gameId: string, posterUrl: string) => {
     setGames(prevGames => 
@@ -113,10 +107,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     hasFetched.current = false;
     setGames([]);
     setAllScannedGames([]);
-    // Use a small timeout to let the state update before fetching
-    setTimeout(() => fetchGameMetadata(), 0);
-  }, [fetchGameMetadata]);
-
+    fetchInitialGames();
+  }, [fetchInitialGames]);
 
   useEffect(() => {
     window.addEventListener('settings-updated', refreshGames);
@@ -125,7 +117,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [refreshGames]);
 
-  const value = { games, isLoading, fetchGameMetadata, allScannedGames, updateGamePoster, refreshGames };
+  const value = { games, isLoading, allScannedGames, refreshGames, updateGameMetadata, updateGamePoster };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };
