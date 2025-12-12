@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+inputs
+pyautogui
+keyboard
+psutil
+websockets
