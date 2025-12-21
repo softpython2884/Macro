@@ -1,129 +1,135 @@
 import pygame
 from pynput.keyboard import Controller, Key
 import time
+import subprocess
 
-# Initialisation
+# =====================
+# CONFIG
+# =====================
+DEADZONE = 0.4
+REPEAT_DELAY = 0.2      # délai entre répétitions
+TOGGLE_BUTTON = 7       # MENU (☰)
+KILL_GAMEBAR = True
+
+# =====================
+# INIT
+# =====================
+keyboard = Controller()
+active = True
+
 pygame.init()
 pygame.joystick.init()
 
-keyboard = Controller()
-active = True  # Script actif par défaut
+def kill_xbox_gamebar():
+    procs = [
+        "GameBar.exe",
+        "GameBarFTServer.exe",
+        "XboxGameBarWidgets.exe",
+        "XboxGameBar.exe"
+    ]
+    for p in procs:
+        subprocess.run(
+            ["taskkill", "/f", "/im", p],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
 
-# Attente de la manette
+if KILL_GAMEBAR:
+    kill_xbox_gamebar()
+
+# Attente manette
 while pygame.joystick.get_count() == 0:
-    print("⏳ En attente de la manette Xbox...")
+    print("⏳ En attente de la manette...")
     time.sleep(1)
     pygame.joystick.quit()
     pygame.joystick.init()
 
 joystick = pygame.joystick.Joystick(0)
 joystick.init()
-print(f"🎮 Manette détectée : {joystick.get_name()}")
 
-# Boutons (Xbox)
-BUTTON_A = 0
-BUTTON_B = 1
-BUTTON_X = 2
-BUTTON_Y = 3
-BUTTON_LB = 4  # Gauche → Q
-BUTTON_RB = 5  # Droite → E
-BUTTON_MENU = 7  # Start/Menu
+print(f"🎮 {joystick.get_name()}")
+print("☰ MENU = Activer / Désactiver")
 
-DPAD_TO_KEY = {
-    (0, 1): Key.up,
-    (0, -1): Key.down,
-    (-1, 0): Key.left,
-    (1, 0): Key.right,
+# =====================
+# UTILS
+# =====================
+last_toggle = 0
+last_move_time = {
+    Key.up: 0,
+    Key.down: 0,
+    Key.left: 0,
+    Key.right: 0
 }
 
-def press_key(k):
-    keyboard.press(k)
-    keyboard.release(k)
+def tap(key):
+    keyboard.press(key)
+    keyboard.release(key)
 
-print("✅ Script activé. Appuie sur le bouton MENU pour activer/désactiver.")
+def can_repeat(key):
+    now = time.time()
+    if now - last_move_time[key] >= REPEAT_DELAY:
+        last_move_time[key] = now
+        return True
+    return False
 
-# Boucle principale
+# =====================
+# LOOP
+# =====================
 while True:
     pygame.event.pump()
 
-    # Activer/désactiver le script
-    if joystick.get_button(BUTTON_MENU):
-        active = not active
-        print(f"{'🟢 Activé' if active else '🔴 Désactivé'}")
-        time.sleep(0.5)  # Pour éviter le double clic
+    # TOGGLE SCRIPT
+    if joystick.get_button(TOGGLE_BUTTON):
+        if time.time() - last_toggle > 0.5:
+            active = not active
+            print("🟢 Activé" if active else "🔴 Désactivé")
+            last_toggle = time.time()
 
     if not active:
-        time.sleep(0.1)
+        time.sleep(0.05)
         continue
 
-    # Boutons simples
-    if joystick.get_button(BUTTON_LB):
-        press_key('q')  # Gauche → Q
-        time.sleep(0.1)
-
-    if joystick.get_button(BUTTON_RB):
-        press_key('e')  # Droite → E
-        time.sleep(0.1)
-
-    if joystick.get_button(BUTTON_A):
-        press_key(Key.enter)
-        time.sleep(0.1)
-
-    if joystick.get_button(BUTTON_B):
-        press_key(Key.backspace)
-        time.sleep(0.1)
-
-    if joystick.get_button(BUTTON_X):
-        press_key('x')
-        time.sleep(0.1)
-
-    if joystick.get_button(BUTTON_Y):
-        press_key('y')
-        time.sleep(0.1)
-
-    # DPad
-    hat = joystick.get_hat(0)
-    if hat in DPAD_TO_KEY:
-        press_key(DPAD_TO_KEY[hat])
-        time.sleep(0.1)
-
-    # Joystick (avec seuil pour éviter les dérives)
-    axis_threshold = 0.5
-
-    # Gauche
+    # =====================
+    # STICK GAUCHE (MENU)
+    # =====================
     lx = joystick.get_axis(0)
     ly = joystick.get_axis(1)
 
-    # Droite
-    rx = joystick.get_axis(3)
-    ry = joystick.get_axis(4)
+    if ly < -DEADZONE and can_repeat(Key.up):
+        tap(Key.up)
 
-    if ly < -axis_threshold:
-        press_key(Key.up)
-        time.sleep(0.1)
-    elif ly > axis_threshold:
-        press_key(Key.down)
-        time.sleep(0.1)
+    elif ly > DEADZONE and can_repeat(Key.down):
+        tap(Key.down)
 
-    if lx < -axis_threshold:
-        press_key(Key.left)
-        time.sleep(0.1)
-    elif lx > axis_threshold:
-        press_key(Key.right)
-        time.sleep(0.1)
+    if lx < -DEADZONE and can_repeat(Key.left):
+        tap(Key.left)
 
-    if ry < -axis_threshold:
-        press_key(Key.up)
-        time.sleep(0.1)
-    elif ry > axis_threshold:
-        press_key(Key.down)
-        time.sleep(0.1)
+    elif lx > DEADZONE and can_repeat(Key.right):
+        tap(Key.right)
 
-    if rx < -axis_threshold:
-        press_key(Key.left)
-        time.sleep(0.1)
-    elif rx > axis_threshold:
-        press_key(Key.right)
-        time.sleep(0.1)
+    # =====================
+    # DPAD (OPTIONNEL)
+    # =====================
+    hat = joystick.get_hat(0)
+
+    if hat == (0, 1) and can_repeat(Key.up):
+        tap(Key.up)
+    elif hat == (0, -1) and can_repeat(Key.down):
+        tap(Key.down)
+    elif hat == (-1, 0) and can_repeat(Key.left):
+        tap(Key.left)
+    elif hat == (1, 0) and can_repeat(Key.right):
+        tap(Key.right)
+
+    # =====================
+    # BOUTONS
+    # =====================
+    if joystick.get_button(0):  # A
+        tap(Key.enter)
+        time.sleep(0.15)
+
+    if joystick.get_button(1):  # B
+        tap(Key.esc)
+        time.sleep(0.15)
 
     time.sleep(0.01)
