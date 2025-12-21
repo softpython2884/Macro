@@ -7,8 +7,9 @@ import subprocess
 # CONFIG
 # =====================
 DEADZONE = 0.4
-REPEAT_DELAY = 0.2      # délai entre répétitions
-TOGGLE_BUTTON = 7       # MENU (☰)
+REPEAT_DELAY = 0.2      # délai entre répétitions de direction
+BUTTON_DELAY = 0.15     # anti-spam boutons
+TOGGLE_BUTTON = 7       # MENU ☰
 KILL_GAMEBAR = True
 
 # =====================
@@ -20,6 +21,9 @@ active = True
 pygame.init()
 pygame.joystick.init()
 
+# =====================
+# KILL XBOX GAME BAR
+# =====================
 def kill_xbox_gamebar():
     procs = [
         "GameBar.exe",
@@ -37,7 +41,9 @@ def kill_xbox_gamebar():
 if KILL_GAMEBAR:
     kill_xbox_gamebar()
 
-# Attente manette
+# =====================
+# WAIT CONTROLLER
+# =====================
 while pygame.joystick.get_count() == 0:
     print("⏳ En attente de la manette...")
     time.sleep(1)
@@ -61,16 +67,27 @@ last_move_time = {
     Key.right: 0
 }
 
+last_button_time = {}
+
 def tap(key):
     keyboard.press(key)
     keyboard.release(key)
 
+# répétition directions
 def can_repeat(key):
     now = time.time()
     if now - last_move_time[key] >= REPEAT_DELAY:
         last_move_time[key] = now
         return True
     return False
+
+# anti-spam boutons
+def button_tap(btn, key):
+    now = time.time()
+    if joystick.get_button(btn):
+        if btn not in last_button_time or now - last_button_time[btn] > BUTTON_DELAY:
+            tap(key)
+            last_button_time[btn] = now
 
 # =====================
 # LOOP
@@ -97,18 +114,16 @@ while True:
 
     if ly < -DEADZONE and can_repeat(Key.up):
         tap(Key.up)
-
     elif ly > DEADZONE and can_repeat(Key.down):
         tap(Key.down)
 
     if lx < -DEADZONE and can_repeat(Key.left):
         tap(Key.left)
-
     elif lx > DEADZONE and can_repeat(Key.right):
         tap(Key.right)
 
     # =====================
-    # DPAD (OPTIONNEL)
+    # DPAD
     # =====================
     hat = joystick.get_hat(0)
 
@@ -124,12 +139,11 @@ while True:
     # =====================
     # BOUTONS
     # =====================
-    if joystick.get_button(0):  # A
-        tap(Key.enter)
-        time.sleep(0.15)
-
-    if joystick.get_button(1):  # B
-        tap(Key.esc)
-        time.sleep(0.15)
+    button_tap(0, Key.enter)   # A
+    button_tap(1, Key.esc)     # B
+    button_tap(2, 'x')         # X
+    button_tap(3, 'y')         # Y
+    button_tap(4, 'q')         # LB → Q
+    button_tap(5, 'e')         # RB → E
 
     time.sleep(0.01)
