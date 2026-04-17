@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2, Download, RefreshCw } from "lucide-react";
+import { PlusCircle, Trash2, Download, RefreshCw, Palette } from "lucide-react";
 import React from 'react';
 import { useHints } from '@/context/HintContext';
 import { useBackNavigation } from "@/hooks/use-back-navigation";
@@ -26,6 +26,7 @@ import { scanAndInstallGames } from "@/lib/installer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGridNavigation } from "@/hooks/use-grid-navigation";
 import { useGames } from "@/context/GameContext";
+import { useTheme } from "@/context/ThemeContext";
 
 const SETTINGS_KEY = 'macro-settings';
 
@@ -48,9 +49,10 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { setHints } = useHints();
   const { refreshGames } = useGames();
+  const { theme, setTheme } = useTheme();
   const [isScanning, setIsScanning] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
-  
+
   useBackNavigation('/dashboard');
   useGridNavigation({ gridRef: formRef });
   
@@ -305,6 +307,27 @@ export default function SettingsPage() {
                 </TabsContent>
 
                 <TabsContent value="system" className="space-y-8">
+                  <FormItem>
+                    <FormLabel>Theme</FormLabel>
+                    <Select value={theme} onValueChange={(value) => setTheme(value as any)}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a theme" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="default">Default (Deep Space)</SelectItem>
+                        <SelectItem value="gaming">Gaming (High-contrast)</SelectItem>
+                        <SelectItem value="media">Media (Cinematic)</SelectItem>
+                        <SelectItem value="minimal">Minimal (Light)</SelectItem>
+                        <SelectItem value="neon">Neon (Cyberpunk)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Customize the visual appearance of Macro with different themes.
+                    </FormDescription>
+                  </FormItem>
+
                   <FormField
                     control={form.control}
                     name="browser"

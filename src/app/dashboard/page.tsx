@@ -27,11 +27,11 @@ type ContentItem = {
 
 const ContentCard = ({ item }: { item: ContentItem }) => {
     const { playSound } = useSound();
-    
+
     return (
-        <Link 
-            href={item.href} 
-            className="block group w-full h-full rounded-lg focus:outline-none" 
+        <Link
+            href={item.href}
+            className="block group w-full h-full rounded-lg focus:outline-none gamepad-focus"
             onClick={() => playSound('select')}
         >
             <Card className="bg-black/20 backdrop-blur-lg border border-white/10 group-hover:border-primary group-focus-within:border-primary h-full w-full aspect-video overflow-hidden relative">
@@ -40,12 +40,12 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
                 ) : (
                   <div className="w-full h-full bg-card flex flex-col items-center justify-center p-4">
                     {item.Icon && <item.Icon className="w-16 h-16 text-muted-foreground mb-4" />}
-                    <p className="text-center text-3xl font-bold text-foreground">{item.name}</p>
+                    <p className="text-center text-display font-bold text-foreground">{item.name}</p>
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
                 <div className="absolute bottom-0 left-0 p-6">
-                    <h3 className="text-3xl font-bold text-white text-glow">{item.name}</h3>
+                    <h3 className="text-headline font-bold text-white text-glow">{item.name}</h3>
                 </div>
             </Card>
         </Link>

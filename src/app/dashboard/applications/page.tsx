@@ -205,7 +205,7 @@ const AppCard = ({ app, onFocus }: { app: AppInfo; onFocus: () => void }) => {
     );
 
     const commonProps = {
-        className:"block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4]",
+        className:"block group w-full h-full rounded-lg focus:outline-none text-left aspect-[3/4] gamepad-focus",
         onFocus: () => {
             setBackgroundImage(posterUrl || null);
             onFocus();
@@ -374,7 +374,7 @@ export default function ApplicationsPage() {
   return (
     <div className="animate-fade-in space-y-12">
       <div>
-        <h2 className="text-4xl font-bold tracking-tight mb-6">
+        <h2 className="text-headline font-bold tracking-tight mb-6">
             <ShinyText text="Applications & Actions" />
         </h2>
         <div ref={gridRef} className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8 4xl:grid-cols-9 5xl:grid-cols-10">

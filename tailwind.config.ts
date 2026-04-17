@@ -26,7 +26,18 @@ const config = {
         '5xl': '3440px',
       },
       fontFamily: {
-        sans: fontFamily.sans,
+        sans: ['Inter', 'Sora', ...fontFamily.sans],
+      },
+      spacing: {
+        'safe': '80px',
+        'grid': '8px',
+        'gutter': '32px',
+      },
+      fontSize: {
+        'display': ['72px', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'headline': ['40px', { lineHeight: '1.2', fontWeight: '600' }],
+        'body': ['24px', { lineHeight: '1.4', fontWeight: '500' }],
+        'caption': ['18px', { lineHeight: '1.3', letterSpacing: '0.05em', fontWeight: '400', textTransform: 'uppercase' }],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -62,11 +73,25 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Design System specific colors
+        obsidian: "#0A0B10",
+        charcoal: "#161821",
+        cyan: "#00F0FF",
+        violet: "#7000FF",
+        emerald: "#00E676",
+        crimson: "#FF1744",
+        frost: "#F5F5F7",
+        slate: "#8E8E93",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        pill: "100px",
+      },
+      aspectRatio: {
+        'gaming': '2 / 3',
+        'media': '16 / 9',
       },
       keyframes: {
         "accordion-down": {
@@ -118,9 +143,18 @@ const config = {
         "shake": 'shake 0.82s cubic-bezier(.36,.07,.19,.97) both',
         "levitate": 'levitate 3s ease-in-out infinite',
         shine: 'shine 5s linear infinite',
+        // 60fps optimized animations
+        'smooth': 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        'micro': 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        'page': 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        'crossfade': 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
       },
       dropShadow: {
-        'glow': '0 0 10px hsl(var(--primary) / 0.8)',
+        'glow': '0 0 20px rgba(0, 240, 255, 0.4)',
+        'glow-strong': '0 0 30px rgba(0, 240, 255, 0.6)',
+      },
+      boxShadow: {
+        'focus': '0 0 20px rgba(0, 240, 255, 0.4)',
       }
     },
   },

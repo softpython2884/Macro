@@ -4,60 +4,103 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Deep Space & Neon Pulse Color Palette */
+    --background-obsidian: #0A0B10;
+    --background-charcoal: #161821;
+    --accent-cyan: #00F0FF;
+    --accent-violet: #7000FF;
+    --success-emerald: #00E676;
+    --danger-crimson: #FF1744;
+    --text-frost: #F5F5F7;
+    --text-slate: #8E8E93;
+
+    /* HSL values for Tailwind compatibility */
+    --background: 224 71% 4%;
+    --foreground: 220 20% 97%;
+    --card: 223 20% 13%;
+    --card-foreground: 220 20% 97%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 220 20% 97%;
+    --primary: 182 100% 50%;
+    --primary-foreground: 224 71% 4%;
+    --secondary: 223 20% 13%;
+    --secondary-foreground: 220 20% 97%;
+    --muted: 223 20% 13%;
+    --muted-foreground: 215 10% 58%;
+    --accent: 182 100% 50%;
+    --accent-foreground: 224 71% 4%;
+    --destructive: 350 100% 50%;
+    --destructive-foreground: 220 20% 97%;
+    --border: 223 20% 13%;
+    --input: 223 20% 13%;
+    --ring: 182 100% 50%;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 224 71% 4%; /* Deep Blue-Black */
-    --foreground: 210 40% 98%; /* Almost White */
-    
-    --card: 216 34% 17%; /* Dark Slate Blue */
-    --card-foreground: 210 40% 98%;
-    
+    --background: 224 71% 4%;
+    --foreground: 220 20% 97%;
+    --card: 223 20% 13%;
+    --card-foreground: 220 20% 97%;
     --popover: 224 71% 4%;
-    --popover-foreground: 210 40% 98%;
-    
-    --primary-default: 217 91% 60%; /* Bright Blue */
-    --primary: var(--primary-default);
-    --primary-foreground: 210 40% 98%;
-    
-    --secondary: 216 34% 17%;
-    --secondary-foreground: 210 40% 98%;
-    
-    --muted: 216 34% 17%;
-    --muted-foreground: 215 28% 63%;
-    
-    --accent-default: 217 91% 60%;
-    --accent: var(--accent-default);
-    --accent-foreground: 210 40% 98%;
-    
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring-default: 217 91% 60%;
-    --ring: var(--ring-default);
-    --radius: 0.75rem;
+    --popover-foreground: 220 20% 97%;
+    --primary: 182 100% 50%;
+    --primary-foreground: 224 71% 4%;
+    --secondary: 223 20% 13%;
+    --secondary-foreground: 220 20% 97%;
+    --muted: 223 20% 13%;
+    --muted-foreground: 215 10% 58%;
+    --accent: 182 100% 50%;
+    --accent-foreground: 224 71% 4%;
+    --destructive: 350 100% 50%;
+    --destructive-foreground: 220 20% 97%;
+    --border: 223 20% 13%;
+    --input: 223 20% 13%;
+    --ring: 182 100% 50%;
+    --radius: 1rem;
+  }
+
+  /* Theme Variants */
+  .dark.theme-gaming {
+    --background: 240 50% 3%;
+    --card: 270 40% 12%;
+    --primary: 275 100% 60%;
+    --accent: 275 100% 60%;
+    --ring: 275 100% 60%;
+  }
+
+  .dark.theme-media {
+    --background: 220 15% 10%;
+    --card: 220 15% 15%;
+    --primary: 0 0% 100%;
+    --accent: 0 0% 100%;
+    --ring: 0 0% 100%;
+  }
+
+  .dark.theme-minimal {
+    --background: 220 20% 97%;
+    --foreground: 220 30% 10%;
+    --card: 220 20% 100%;
+    --card-foreground: 220 30% 10%;
+    --primary: 220 30% 10%;
+    --primary-foreground: 220 20% 97%;
+    --secondary: 220 15% 90%;
+    --secondary-foreground: 220 30% 10%;
+    --muted: 220 15% 90%;
+    --muted-foreground: 220 10% 40%;
+    --accent: 220 30% 10%;
+    --accent-foreground: 220 20% 97%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 220 30% 10%;
+  }
+
+  .dark.theme-neon {
+    --background: 240 60% 8%;
+    --card: 300 60% 12%;
+    --primary: 320 100% 50%;
+    --accent: 320 100% 50%;
+    --ring: 320 100% 50%;
   }
 
   .dark.dynamic-theme {
@@ -71,13 +114,77 @@
   * {
     @apply border-border;
   }
+  
+  html {
+    font-family: 'Inter', 'Sora', system-ui, sans-serif;
+  }
+  
   body {
     @apply bg-background text-foreground;
     background-color: hsl(var(--background));
     background-image: radial-gradient(ellipse 80% 80% at 50% -20%, hsl(var(--primary) / 0.3), transparent);
     background-repeat: no-repeat;
     cursor: none;
-    transition: background-image 0.5s ease-in-out;
+    padding: 0;
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  /* Typography Scale */
+  .display-l {
+    font-size: 72px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .headline-m {
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .body-l {
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .caption-s {
+    font-size: 18px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+  }
+
+  /* Safe Zone Container */
+  .safe-zone {
+    padding: 80px;
+    max-width: 100%;
+  }
+
+  /* Focus State for Gamepad Navigation */
+  .gamepad-focus {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .gamepad-focus:focus-visible,
+  .gamepad-focus:focus {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+    border: 3px solid hsl(var(--primary));
+    outline: none;
+    z-index: 10;
+  }
+
+  /* Card Ratios */
+  .card-gaming {
+    aspect-ratio: 2 / 3;
+  }
+
+  .card-media {
+    aspect-ratio: 16 / 9;
   }
 }
 
@@ -85,5 +192,22 @@
   .text-glow {
     text-shadow: 0 0 8px hsl(var(--primary) / 0.75);
     transition: text-shadow 0.5s ease-in-out;
+  }
+
+  /* 60fps Animation Utilities */
+  .animate-smooth {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-micro {
+    transition-duration: 200ms;
+  }
+
+  .animate-page {
+    transition-duration: 400ms;
+  }
+
+  .animate-crossfade {
+    transition-duration: 500ms;
   }
 }
