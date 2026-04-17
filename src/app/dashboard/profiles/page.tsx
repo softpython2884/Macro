@@ -113,7 +113,7 @@ export default function ProfilesPage() {
 
       <div ref={gridRef} className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {users.map(user => (
-          <Card key={user.id} className="bg-black/20 backdrop-blur-lg border border-white/10 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out transform hover:scale-105 focus-within:scale-105 h-full flex flex-col group">
+          <Card key={user.id} className="gamepad-focus bg-black/20 backdrop-blur-lg border border-white/10 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all duration-300 ease-in-out transform hover:scale-105 focus-within:scale-105 h-full flex flex-col group">
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <Avatar className="w-16 h-16">

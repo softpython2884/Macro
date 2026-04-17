@@ -361,6 +361,10 @@ export default function SocialPage() {
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
 
+  // On-screen keyboard state
+  const [activeInput, setActiveInput] = useState<string | null>(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
   const { toast } = useToast();
   const pageRef = useRef<HTMLDivElement>(null);
   const { setHints } = useHints();
@@ -368,9 +372,14 @@ export default function SocialPage() {
   useGridNavigation({ gridRef: pageRef });
 
   useEffect(() => {
-    setHints([{ key: '↕↔', action: 'Navigate' }, { key: 'A', action: 'Select' }, { key: 'B', action: 'Back' }]);
+    setHints([
+      { key: '↕↔', action: 'Navigate' },
+      { key: 'A', action: 'Select / Open Keyboard' },
+      { key: 'B', action: 'Back / Close Keyboard' }
+    ]);
     if (!socialUser) {
-        pageRef.current?.querySelector('button[role="tab"]')?.focus()
+        const tabButton = pageRef.current?.querySelector('button[role="tab"]') as HTMLElement;
+        tabButton?.focus();
     } else {
         // Focus is handled by the SocialHub component now
     }
@@ -453,11 +462,26 @@ export default function SocialPage() {
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
-                  <Input id="signin-email" type="email" placeholder="m@example.com" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} required />
+                  <Input 
+                    id="signin-email" 
+                    type="email" 
+                    placeholder="m@example.com" 
+                    value={signInEmail} 
+                    readOnly
+                    onClick={() => { setActiveInput('signin-email'); setIsKeyboardOpen(true); }}
+                    required 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>
-                  <Input id="signin-password" type="password" value={signInPassword} onChange={e => setSignInPassword(e.target.value)} required />
+                  <Input 
+                    id="signin-password" 
+                    type="password" 
+                    value={signInPassword} 
+                    readOnly
+                    onClick={() => { setActiveInput('signin-password'); setIsKeyboardOpen(true); }}
+                    required 
+                  />
                 </div>
                 <Button type="submit" className="w-full">Sign In</Button>
               </form>
@@ -474,15 +498,38 @@ export default function SocialPage() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="signup-username">Username</Label>
-                    <Input id="signup-username" type="text" placeholder="Your Gamer Tag" value={signUpUsername} onChange={e => setSignUpUsername(e.target.value)} required />
+                    <Input 
+                      id="signup-username" 
+                      type="text" 
+                      placeholder="Your Gamer Tag" 
+                      value={signUpUsername} 
+                      readOnly
+                      onClick={() => { setActiveInput('signup-username'); setIsKeyboardOpen(true); }}
+                      required 
+                    />
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input id="signup-email" type="email" placeholder="m@example.com" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} required />
+                  <Input 
+                    id="signup-email" 
+                    type="email" 
+                    placeholder="m@example.com" 
+                    value={signUpEmail} 
+                    readOnly
+                    onClick={() => { setActiveInput('signup-email'); setIsKeyboardOpen(true); }}
+                    required 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input id="signup-password" type="password" value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} required />
+                  <Input 
+                    id="signup-password" 
+                    type="password" 
+                    value={signUpPassword} 
+                    readOnly
+                    onClick={() => { setActiveInput('signup-password'); setIsKeyboardOpen(true); }}
+                    required 
+                  />
                 </div>
                 <Button type="submit" className="w-full">Create Account</Button>
               </form>
@@ -490,8 +537,32 @@ export default function SocialPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      <Dialog open={isKeyboardOpen} onOpenChange={(isOpen) => !isOpen && setIsKeyboardOpen(false)}>
+        <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-4xl flex justify-center" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader className="sr-only">
+            <DialogTitle>On-Screen Keyboard</DialogTitle>
+            <DialogDescription>Enter your credentials.</DialogDescription>
+          </DialogHeader>
+          <OnScreenKeyboard
+            onInput={(char) => {
+              if (activeInput === 'signin-email') setSignInEmail(v => v + char);
+              if (activeInput === 'signin-password') setSignInPassword(v => v + char);
+              if (activeInput === 'signup-username') setSignUpUsername(v => v + char);
+              if (activeInput === 'signup-email') setSignUpEmail(v => v + char);
+              if (activeInput === 'signup-password') setSignUpPassword(v => v + char);
+            }}
+            onDelete={() => {
+              if (activeInput === 'signin-email') setSignInEmail(v => v.slice(0, -1));
+              if (activeInput === 'signin-password') setSignInPassword(v => v.slice(0, -1));
+              if (activeInput === 'signup-username') setSignUpUsername(v => v.slice(0, -1));
+              if (activeInput === 'signup-email') setSignUpEmail(v => v.slice(0, -1));
+              if (activeInput === 'signup-password') setSignUpPassword(v => v.slice(0, -1));
+            }}
+            onEnter={() => setIsKeyboardOpen(false)}
+            onClose={() => setIsKeyboardOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-    
